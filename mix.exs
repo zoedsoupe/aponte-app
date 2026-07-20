@@ -57,7 +57,8 @@ defmodule Aponte.MixProject do
       {:eqrcode, "~> 0.1"},
       {:tzdata, "~> 1.1"},
       {:finch, "~> 0.18"},
-      {:web_push, "~> 0.1.0"}
+      {:web_push, "~> 0.1.0"},
+      {:image, "~> 0.71.0"}
     ]
   end
 

@@ -9,6 +9,9 @@ defmodule Aponte.Notifications.PushSubscription do
   def topics, do: @topics
 
   schema "push_subscriptions" do
+    # Nullable forever: admin subs and Aponte-wide client subs have no tenant.
+    belongs_to :org, Aponte.Orgs.Org, type: :binary_id
+
     field :endpoint, :string
     field :p256dh, :string
     field :auth, :string

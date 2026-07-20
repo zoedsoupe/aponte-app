@@ -17,6 +17,7 @@ defmodule Aponte.Tickets.Ticket do
   @foreign_key_type :binary_id
   schema "tickets" do
     belongs_to :order, Order, type: :binary_id
+    belongs_to :org, Aponte.Orgs.Org
     field :ticket_type_id, :binary_id
     field :edition_id, :binary_id
     field :code, :string

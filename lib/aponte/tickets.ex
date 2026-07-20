@@ -21,7 +21,7 @@ defmodule Aponte.Tickets do
   import Ecto.Query
 
   alias Aponte.{Clock, Coupons, Editions, Notifications, Repo}
-  alias Aponte.Editions.TicketType
+  alias Aponte.Editions.{Edition, TicketType}
   alias Aponte.Tickets.{Order, OrderItem, Ticket}
   alias Ecto.Multi
 
@@ -61,6 +61,7 @@ defmodule Aponte.Tickets do
           {:ok, coupon, discount} ->
             order_attrs =
               attrs
+              |> put_attr(:org_id, resolve_org_id(attrs, merch))
               |> put_attr(:total_cents, subtotal - discount)
               |> put_attr(:coupon_code, coupon && coupon.code)
               |> put_attr(:discount_cents, discount)
@@ -103,6 +104,22 @@ defmodule Aponte.Tickets do
       Map.put(attrs, to_string(key), value)
     else
       Map.put(attrs, key, value)
+    end
+  end
+
+  # Phase-2 bridge: orgs aren't a context argument yet (phase 3 wires that),
+  # so the org is derived from what the order already references — the edition
+  # for ticket orders, the merch items for edition-less pure-merch orders.
+  defp resolve_org_id(attrs, merch) do
+    case attrs[:edition_id] || attrs["edition_id"] do
+      nil ->
+        case Map.values(merch) do
+          [%{org_id: org_id} | _] -> org_id
+          [] -> nil
+        end
+
+      edition_id ->
+        Repo.one(from e in Edition, where: e.id == ^edition_id, select: e.org_id)
     end
   end
 
@@ -328,11 +345,15 @@ defmodule Aponte.Tickets do
     code_fun = Keyword.get(opts, :code_fun, &generate_code/0)
     qty = input.quantity
     type = Editions.get_ticket_type!(input.ticket_type_id)
+    # Phase-2 bridge: org derived from the edition until comp_input gains a
+    # required :org_id in phase 3.
+    org_id = Repo.one(from e in Edition, where: e.id == ^input.edition_id, select: e.org_id)
 
     Repo.transaction(fn ->
       order =
         %Order{}
         |> Order.changeset(%{
+          org_id: org_id,
           edition_id: input.edition_id,
           customer_name: input.customer_name,
           customer_instagram: input.customer_instagram,
@@ -444,6 +465,7 @@ defmodule Aponte.Tickets do
   defp insert_ticket!(order, item, code_fun, attempts) do
     %Ticket{
       order_id: order.id,
+      org_id: order.org_id,
       ticket_type_id: item.ticket_type_id,
       edition_id: order.edition_id,
       code: code_fun.()

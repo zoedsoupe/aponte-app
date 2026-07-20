@@ -68,19 +68,23 @@ defmodule Aponte.Coupons do
   def issue_for_order(%Order{} = order) do
     now = Clock.now_utc()
 
-    for rule <- list_active_rules(), order.total_cents >= rule.min_order_cents do
-      %{
-        code: generate_code(),
-        discount_kind: rule.discount_kind,
-        discount_value: rule.discount_value,
-        expires_at: DateTime.add(now, rule.expires_in_days * 86_400, :second),
-        rule_id: rule.id,
-        customer_instagram: order.customer_instagram,
-        client_endpoint: order.client_endpoint,
-        order_id: order.id
-      }
-      |> Coupon.bound_changeset()
-      |> Repo.insert()
+    # Bound coupons require instagram: phone-only orders earn none.
+    if order.customer_instagram not in [nil, ""] do
+      for rule <- list_active_rules(), order.total_cents >= rule.min_order_cents do
+        %{
+          org_id: order.org_id,
+          code: generate_code(),
+          discount_kind: rule.discount_kind,
+          discount_value: rule.discount_value,
+          expires_at: DateTime.add(now, rule.expires_in_days * 86_400, :second),
+          rule_id: rule.id,
+          customer_instagram: order.customer_instagram,
+          client_endpoint: order.client_endpoint,
+          order_id: order.id
+        }
+        |> Coupon.bound_changeset()
+        |> Repo.insert()
+      end
     end
 
     :ok

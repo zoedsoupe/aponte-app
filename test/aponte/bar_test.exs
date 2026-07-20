@@ -7,7 +7,7 @@ defmodule Aponte.BarTest do
   alias Aponte.Merch.Item
 
   defp counter_item(attrs) do
-    base = %{kind: :counter, price_cents: 500}
+    base = %{org_id: org_fixture().id, kind: :counter, price_cents: 500}
     {:ok, item} = Merch.create_item(Map.merge(base, attrs))
     item
   end

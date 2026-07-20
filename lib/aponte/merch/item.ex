@@ -17,6 +17,8 @@ defmodule Aponte.Merch.Item do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "merch_items" do
+    belongs_to :org, Aponte.Orgs.Org
+
     # :online → vendido em /loja (PIX async). :counter → vendido no balcão da
     # festa (POS, pago na hora). Mesmo catálogo, canais distintos.
     field :kind, Ecto.Enum, values: [:online, :counter], default: :online
@@ -33,8 +35,9 @@ defmodule Aponte.Merch.Item do
     timestamps()
   end
 
-  @castable ~w(kind track_stock name description price_cents stock image_path is_active position)a
-  @required ~w(name price_cents)a
+  @castable ~w(org_id kind track_stock name description price_cents stock image_path
+               is_active position)a
+  @required ~w(org_id name price_cents)a
 
   def changeset(item, attrs) do
     item

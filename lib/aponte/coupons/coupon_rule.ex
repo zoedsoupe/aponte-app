@@ -5,6 +5,8 @@ defmodule Aponte.Coupons.CouponRule do
   @type t :: %__MODULE__{}
 
   schema "coupon_rules" do
+    belongs_to :org, Aponte.Orgs.Org, type: :binary_id
+
     field :name, :string
     field :min_order_cents, :integer
     field :discount_kind, Ecto.Enum, values: [:percent, :fixed]
@@ -15,7 +17,7 @@ defmodule Aponte.Coupons.CouponRule do
     timestamps()
   end
 
-  @castable ~w(name min_order_cents discount_kind discount_value expires_in_days is_active)a
+  @castable ~w(org_id name min_order_cents discount_kind discount_value expires_in_days is_active)a
   @required ~w(name min_order_cents discount_kind discount_value)a
 
   def changeset(rule, attrs) do

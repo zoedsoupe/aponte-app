@@ -9,7 +9,7 @@ defmodule Aponte.MerchTest do
   alias Aponte.Tickets.{Order, Ticket}
 
   defp merch_item(attrs \\ %{}) do
-    defaults = %{name: "Poster", price_cents: 2000, stock: 10}
+    defaults = %{org_id: org_fixture().id, name: "Poster", price_cents: 2000, stock: 10}
     {:ok, item} = Merch.create_item(Map.merge(defaults, attrs))
     item
   end
@@ -17,7 +17,12 @@ defmodule Aponte.MerchTest do
   describe "catalog" do
     test "create_item valid -> active, available == stock" do
       assert {:ok, %Item{} = item} =
-               Merch.create_item(%{name: "Poster", price_cents: 2000, stock: 10})
+               Merch.create_item(%{
+                 org_id: org_fixture().id,
+                 name: "Poster",
+                 price_cents: 2000,
+                 stock: 10
+               })
 
       assert item.is_active
       assert item.available == 10
@@ -26,17 +31,32 @@ defmodule Aponte.MerchTest do
 
     test "rejects blank name" do
       assert {:error, %Ecto.Changeset{}} =
-               Merch.create_item(%{name: "", price_cents: 2000, stock: 10})
+               Merch.create_item(%{
+                 org_id: org_fixture().id,
+                 name: "",
+                 price_cents: 2000,
+                 stock: 10
+               })
     end
 
     test "rejects negative price" do
       assert {:error, %Ecto.Changeset{}} =
-               Merch.create_item(%{name: "Poster", price_cents: -1, stock: 10})
+               Merch.create_item(%{
+                 org_id: org_fixture().id,
+                 name: "Poster",
+                 price_cents: -1,
+                 stock: 10
+               })
     end
 
     test "rejects negative stock" do
       assert {:error, %Ecto.Changeset{}} =
-               Merch.create_item(%{name: "Poster", price_cents: 2000, stock: -1})
+               Merch.create_item(%{
+                 org_id: org_fixture().id,
+                 name: "Poster",
+                 price_cents: 2000,
+                 stock: -1
+               })
     end
 
     test "toggle_active flips is_active" do

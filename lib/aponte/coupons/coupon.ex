@@ -5,6 +5,8 @@ defmodule Aponte.Coupons.Coupon do
   @type t :: %__MODULE__{}
 
   schema "coupons" do
+    belongs_to :org, Aponte.Orgs.Org, type: :binary_id
+
     field :code, :string
     field :scope, Ecto.Enum, values: [:bound, :public]
     field :discount_kind, Ecto.Enum, values: [:percent, :fixed]
@@ -32,7 +34,7 @@ defmodule Aponte.Coupons.Coupon do
   @doc "Changeset for an admin-created public coupon."
   def public_changeset(coupon, attrs) do
     coupon
-    |> cast(attrs, ~w(code discount_kind discount_value expires_at min_order_cents
+    |> cast(attrs, ~w(org_id code discount_kind discount_value expires_at min_order_cents
                       max_uses is_active)a)
     |> put_change(:scope, :public)
     |> update_change(:code, &normalize_code/1)
@@ -48,7 +50,7 @@ defmodule Aponte.Coupons.Coupon do
   @doc "Changeset for a system-issued bound coupon (no user input)."
   def bound_changeset(attrs) do
     %__MODULE__{scope: :bound}
-    |> cast(attrs, ~w(code discount_kind discount_value expires_at rule_id
+    |> cast(attrs, ~w(org_id code discount_kind discount_value expires_at rule_id
                       customer_instagram client_endpoint order_id)a)
     |> validate_required(~w(code discount_kind discount_value expires_at customer_instagram)a)
     |> validate_discount()

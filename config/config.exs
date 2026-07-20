@@ -12,6 +12,9 @@ config :aponte,
   generators: [timestamp_type: :utc_datetime],
   time_zone: "America/Sao_Paulo"
 
+# Gallery image processing (libvips). Test env swaps in Aponte.Images.Fake.
+config :aponte, :image_processor, Aponte.Images.Vips
+
 # VAPID keys for Web Push. Generate with: mix web_push.gen.vapid
 # Both keys must be URL-safe base64 (no padding).
 # subject is a mailto: or https:// URL identifying the application server.

@@ -29,6 +29,7 @@ defmodule Aponte.DataCase do
 
   setup tags do
     Aponte.DataCase.setup_sandbox(tags)
+    Aponte.DataCase.clean_uploads()
     :ok
   end
 
@@ -38,6 +39,16 @@ defmodule Aponte.DataCase do
   def setup_sandbox(tags) do
     pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Aponte.Repo, shared: not tags[:async])
     on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+  end
+
+  @doc """
+  Resets the test uploads dir so each test sees a clean filesystem.
+  """
+  def clean_uploads do
+    root = Aponte.Uploads.root()
+    File.rm_rf!(root)
+    File.mkdir_p!(root)
+    :ok
   end
 
   @doc """

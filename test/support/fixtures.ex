@@ -3,12 +3,26 @@ defmodule Aponte.Fixtures do
 
   alias Aponte.Repo
   alias Aponte.Editions.{Edition, TicketType}
+  alias Aponte.Orgs.Org
   alias Aponte.Tickets.Order
+
+  def org_fixture(attrs \\ %{}) do
+    defaults = %{
+      slug: "org-#{System.unique_integer([:positive])}",
+      name: "Coletivo"
+    }
+
+    %Org{}
+    |> Org.changeset(Map.merge(defaults, attrs))
+    |> Repo.insert!()
+  end
 
   def edition_fixture(attrs \\ %{}) do
     n = System.unique_integer([:positive])
+    {org_id, attrs} = Map.pop(attrs, :org_id)
 
     defaults = %{
+      org_id: org_id || org_fixture().id,
       number: n,
       name: "SESH ##{n}",
       starts_at: DateTime.add(DateTime.utc_now(), 7 * 86_400) |> DateTime.truncate(:second),
@@ -59,6 +73,7 @@ defmodule Aponte.Fixtures do
 
   def insert_order(edition, attrs \\ %{}) do
     defaults = %{
+      org_id: edition.org_id,
       edition_id: edition.id,
       customer_name: "Fulano",
       customer_instagram: "fulano",

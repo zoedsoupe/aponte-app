@@ -17,6 +17,11 @@ config :aponte, AponteWeb.Endpoint,
   secret_key_base: "MjvcACO517uW0QUEZIXYC039UQgNku5M/sstPwcH9kV5yvn8VUTZAtTRb7Ynbwic",
   server: false
 
+# No vips in test: byte-copy fake. Uploads go to a tmp dir cleaned per test
+# (see Aponte.DataCase.clean_uploads/0).
+config :aponte, :image_processor, Aponte.Images.Fake
+config :aponte, :uploads_dir, System.tmp_dir!() <> "/aponte_test_uploads"
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

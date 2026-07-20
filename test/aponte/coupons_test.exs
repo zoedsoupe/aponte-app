@@ -1,7 +1,7 @@
 defmodule Aponte.CouponsTest do
   use Aponte.DataCase, async: false
 
-  import Aponte.Fixtures, only: [edition_fixture: 0]
+  import Aponte.Fixtures, only: [edition_fixture: 0, org_fixture: 0]
 
   alias Aponte.{Coupons, Repo}
   alias Aponte.Coupons.Coupon
@@ -12,6 +12,7 @@ defmodule Aponte.CouponsTest do
 
   defp insert_coupon(attrs) do
     defaults = %{
+      org_id: org_fixture().id,
       code: "APO-TEST#{System.unique_integer([:positive])}",
       scope: :public,
       discount_kind: :percent,
@@ -50,19 +51,22 @@ defmodule Aponte.CouponsTest do
       expires_in_days: 7
     }
 
+    defp rule_attrs(extra \\ %{}),
+      do: Map.merge(@valid_rule, Map.put(extra, :org_id, org_fixture().id))
+
     test "create_rule/1 inserts a valid rule" do
-      assert {:ok, rule} = Coupons.create_rule(@valid_rule)
+      assert {:ok, rule} = Coupons.create_rule(rule_attrs())
       assert rule.is_active
     end
 
     test "rejects a percent discount over 100" do
-      assert {:error, cs} = Coupons.create_rule(%{@valid_rule | discount_value: 150})
+      assert {:error, cs} = Coupons.create_rule(rule_attrs(%{discount_value: 150}))
       assert %{discount_value: _} = errors_on(cs)
     end
 
     test "list_active_rules/0 excludes inactive" do
-      {:ok, _} = Coupons.create_rule(@valid_rule)
-      {:ok, _} = Coupons.create_rule(Map.merge(@valid_rule, %{name: "off", is_active: false}))
+      {:ok, _} = Coupons.create_rule(rule_attrs())
+      {:ok, _} = Coupons.create_rule(rule_attrs(%{name: "off", is_active: false}))
       assert [%{name: "pedido grande"}] = Coupons.list_active_rules()
     end
   end
@@ -71,6 +75,7 @@ defmodule Aponte.CouponsTest do
     test "auto-generates a code when blank" do
       assert {:ok, c} =
                Coupons.create_public_coupon(%{
+                 "org_id" => org_fixture().id,
                  "discount_kind" => "percent",
                  "discount_value" => "10"
                })
@@ -82,6 +87,7 @@ defmodule Aponte.CouponsTest do
     test "keeps a custom code, upcased" do
       assert {:ok, c} =
                Coupons.create_public_coupon(%{
+                 "org_id" => org_fixture().id,
                  "code" => "blackfriday10",
                  "discount_kind" => "percent",
                  "discount_value" => "10"
@@ -95,6 +101,7 @@ defmodule Aponte.CouponsTest do
     setup do
       {:ok, rule} =
         Coupons.create_rule(%{
+          org_id: org_fixture().id,
           name: "premia",
           min_order_cents: 8000,
           discount_kind: :percent,

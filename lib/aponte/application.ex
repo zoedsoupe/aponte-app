@@ -11,6 +11,7 @@ defmodule Aponte.Application do
 
   @impl true
   def start(_type, _args) do
+    Aponte.Uploads.ensure_dirs!()
     Aponte.Editions.ensure_uploads_dir!()
 
     children =

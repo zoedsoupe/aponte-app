@@ -10,6 +10,9 @@ defmodule Aponte.DjApplications.DjApplication do
   @type t :: %__MODULE__{}
 
   schema "dj_applications" do
+    # Nullable forever by design (pre-orgs rows; org wired in a later phase).
+    belongs_to :org, Aponte.Orgs.Org, type: :binary_id
+
     field :name, :string
     field :whatsapp, :string
     field :instagram, :string

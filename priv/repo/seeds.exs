@@ -7,7 +7,11 @@ import Ecto.Query
 
 alias Aponte.Editions
 alias Aponte.Editions.Edition
+alias Aponte.Orgs.Org
 alias Aponte.Repo
+
+# Orgs foram criadas pela migration 20260719000001 (seed "sesh" lendo PIX_KEY).
+org = Repo.get_by!(Org, slug: "sesh")
 
 upsert = fn attrs ->
   number = attrs.number
@@ -16,7 +20,7 @@ upsert = fn attrs ->
     IO.puts("· edição ##{number} já existe — pulando")
     nil
   else
-    {:ok, ed} = Editions.create_edition(attrs)
+    {:ok, ed} = Editions.create_edition(Map.put(attrs, :org_id, org.id))
     IO.puts("✓ criada edição ##{number}: #{ed.name} (#{ed.accent_color})")
     ed
   end
@@ -81,7 +85,7 @@ merch_upsert = fn attrs ->
   if Repo.exists?(from(m in Item, where: m.name == ^attrs.name)) do
     IO.puts("· merch “#{attrs.name}” já existe — pulando")
   else
-    {:ok, item} = Merch.create_item(attrs)
+    {:ok, item} = Merch.create_item(Map.put(attrs, :org_id, org.id))
     IO.puts("✓ criado merch: #{item.name} (#{item.available}/#{item.stock})")
   end
 end

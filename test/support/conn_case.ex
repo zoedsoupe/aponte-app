@@ -33,6 +33,7 @@ defmodule AponteWeb.ConnCase do
 
   setup tags do
     Aponte.DataCase.setup_sandbox(tags)
+    Aponte.DataCase.clean_uploads()
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end
