@@ -1,12 +1,12 @@
-defmodule SeshLabWeb do
+defmodule AponteWeb do
   @moduledoc """
   The entrypoint for defining your web interface, such
   as controllers, components, channels, and so on.
 
   This can be used in your application as:
 
-      use SeshLabWeb, :controller
-      use SeshLabWeb, :html
+      use AponteWeb, :controller
+      use AponteWeb, :html
 
   The definitions below will be executed for every controller,
   component, etc, so keep them short and clean, focused
@@ -80,11 +80,11 @@ defmodule SeshLabWeb do
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components
-      import SeshLabWeb.CoreComponents
+      import AponteWeb.CoreComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS
-      alias SeshLabWeb.Layouts
+      alias AponteWeb.Layouts
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())
@@ -94,9 +94,9 @@ defmodule SeshLabWeb do
   def verified_routes do
     quote do
       use Phoenix.VerifiedRoutes,
-        endpoint: SeshLabWeb.Endpoint,
-        router: SeshLabWeb.Router,
-        statics: SeshLabWeb.static_paths()
+        endpoint: AponteWeb.Endpoint,
+        router: AponteWeb.Router,
+        statics: AponteWeb.static_paths()
     end
   end
 

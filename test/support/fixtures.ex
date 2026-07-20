@@ -1,9 +1,9 @@
-defmodule SeshLab.Fixtures do
+defmodule Aponte.Fixtures do
   @moduledoc "Builders compartilhados pros testes de domínio."
 
-  alias SeshLab.Repo
-  alias SeshLab.Editions.{Edition, TicketType}
-  alias SeshLab.Tickets.Order
+  alias Aponte.Repo
+  alias Aponte.Editions.{Edition, TicketType}
+  alias Aponte.Tickets.Order
 
   def edition_fixture(attrs \\ %{}) do
     n = System.unique_integer([:positive])

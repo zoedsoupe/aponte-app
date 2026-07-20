@@ -12,31 +12,31 @@ import Config
 # If you use `mix release`, you need to explicitly enable the server
 # by passing the PHX_SERVER=true when you start it:
 #
-#     PHX_SERVER=true bin/sesh_lab start
+#     PHX_SERVER=true bin/aponte start
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
 if System.get_env("PHX_SERVER") do
-  config :sesh_lab, SeshLabWeb.Endpoint, server: true
+  config :aponte, AponteWeb.Endpoint, server: true
 end
 
-config :sesh_lab, SeshLabWeb.Endpoint,
+config :aponte, AponteWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
-config :sesh_lab, :admin_auth,
+config :aponte, :admin_auth,
   username: System.fetch_env!("ADMIN_USER"),
   password: System.fetch_env!("ADMIN_PASS")
 
-config :sesh_lab, :pix,
+config :aponte, :pix,
   key: System.fetch_env!("PIX_KEY"),
   merchant_name: System.get_env("MERCHANT_NAME", "SESH LAB"),
   merchant_city: System.get_env("MERCHANT_CITY", "CAMPOS")
 
 if vapid_pub = System.get_env("VAPID_PUBLIC_KEY") do
-  config :sesh_lab, :vapid,
+  config :web_push, :vapid,
     public_key: vapid_pub,
     private_key: System.fetch_env!("VAPID_PRIVATE_KEY"),
-    subject: System.get_env("VAPID_SUBJECT", "mailto:contato@sesh-lab.fly.dev")
+    subject: System.get_env("VAPID_SUBJECT", "mailto:contato@aponte.fly.dev")
 end
 
 if config_env() == :prod do
@@ -44,10 +44,10 @@ if config_env() == :prod do
     System.get_env("DATABASE_PATH") ||
       raise """
       environment variable DATABASE_PATH is missing.
-      For example: /etc/sesh_lab/sesh_lab.db
+      For example: /etc/aponte/aponte.db
       """
 
-  config :sesh_lab, SeshLab.Repo,
+  config :aponte, Aponte.Repo,
     database: database_path,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
 
@@ -63,11 +63,11 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("PHX_HOST") || "sesh-lab.fly.dev"
+  host = System.get_env("PHX_HOST") || "aponte.fly.dev"
 
-  config :sesh_lab, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  config :aponte, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
-  config :sesh_lab, SeshLabWeb.Endpoint,
+  config :aponte, AponteWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
       # Enable IPv6 and bind on all interfaces.
@@ -77,14 +77,14 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0}
     ],
     secret_key_base: secret_key_base,
-    check_origin: ["https://sesh-lab.fly.dev"]
+    check_origin: ["https://aponte.fly.dev"]
 
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key
   # to your endpoint configuration:
   #
-  #     config :sesh_lab, SeshLabWeb.Endpoint,
+  #     config :aponte, AponteWeb.Endpoint,
   #       https: [
   #         ...,
   #         port: 443,
@@ -106,7 +106,7 @@ if config_env() == :prod do
   # We also recommend setting `force_ssl` in your config/prod.exs,
   # ensuring no data is ever sent via http, always redirecting to https:
   #
-  #     config :sesh_lab, SeshLabWeb.Endpoint,
+  #     config :aponte, AponteWeb.Endpoint,
   #       force_ssl: [hsts: true]
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.

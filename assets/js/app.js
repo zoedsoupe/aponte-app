@@ -36,7 +36,7 @@ import { bindVitrineStream } from "./vitrine_stream";
 // Establish Phoenix Socket and LiveView configuration.
 import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
-import { hooks as colocatedHooks } from "phoenix-colocated/sesh_lab";
+import { hooks as colocatedHooks } from "phoenix-colocated/aponte";
 import topbar from "../vendor/topbar";
 
 // Auto-dismiss flashes so the fixed-bottom toast never sits on top of a button

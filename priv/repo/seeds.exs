@@ -5,9 +5,9 @@
 
 import Ecto.Query
 
-alias SeshLab.Editions
-alias SeshLab.Editions.Edition
-alias SeshLab.Repo
+alias Aponte.Editions
+alias Aponte.Editions.Edition
+alias Aponte.Repo
 
 upsert = fn attrs ->
   number = attrs.number
@@ -74,8 +74,8 @@ if ed1, do: {:ok, _} = Editions.publish(ed1)
 
 # ── Merch (catálogo global da loja) ───────────────────────────────────────────
 # Idempotente: pula itens cujo `name` já existe.
-alias SeshLab.Merch
-alias SeshLab.Merch.Item
+alias Aponte.Merch
+alias Aponte.Merch.Item
 
 merch_upsert = fn attrs ->
   if Repo.exists?(from(m in Item, where: m.name == ^attrs.name)) do

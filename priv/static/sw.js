@@ -1,4 +1,4 @@
-const CACHE = "sesh-shell-v3";
+const CACHE = "aponte-v1";
 const SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -30,7 +30,7 @@ self.addEventListener("activate", (event) => {
 
 // ── Push notifications ──────────────────────────────────────────────────────
 // Payload is a JSON object with shape `{ t, ... }` where `t` is the event
-// type. Server: `SeshLab.Notifications`.
+// type. Server: `Aponte.Notifications`.
 
 self.addEventListener("push", (event) => {
   const data = parsePayload(event);

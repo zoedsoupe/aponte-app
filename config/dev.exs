@@ -1,7 +1,7 @@
 import Config
 
 # Configure your database
-config :sesh_lab, SeshLab.Repo,
+config :aponte, Aponte.Repo,
   database: Path.expand("../sesh_lab_dev.db", __DIR__),
   pool_size: 5,
   stacktrace: true,
@@ -13,7 +13,7 @@ config :sesh_lab, SeshLab.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :sesh_lab, SeshLabWeb.Endpoint,
+config :aponte, AponteWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}],
@@ -22,7 +22,7 @@ config :sesh_lab, SeshLabWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "/P2Rriy4rexxEqQGlGnfRiejl9/GexAfP4pSxwXMu+u80kB2YWTwLVEVdc526ide",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:sesh_lab, ~w(--sourcemap=inline --watch)]}
+    esbuild: {Esbuild, :install_and_run, [:aponte, ~w(--sourcemap=inline --watch)]}
   ]
 
 # ## SSL Support
@@ -49,20 +49,20 @@ config :sesh_lab, SeshLabWeb.Endpoint,
 # different ports.
 
 # Reload browser tabs when matching files change.
-config :sesh_lab, SeshLabWeb.Endpoint,
+config :aponte, AponteWeb.Endpoint,
   live_reload: [
     web_console_logger: true,
     patterns: [
       # Static assets, except user uploads
       ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$"E,
       # Router, Controllers, LiveViews and LiveComponents
-      ~r"lib/sesh_lab_web/router\.ex$"E,
-      ~r"lib/sesh_lab_web/(controllers|live|components)/.*\.(ex|heex)$"E
+      ~r"lib/aponte_web/router\.ex$"E,
+      ~r"lib/aponte_web/(controllers|live|components)/.*\.(ex|heex)$"E
     ]
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :sesh_lab, dev_routes: true
+config :aponte, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"

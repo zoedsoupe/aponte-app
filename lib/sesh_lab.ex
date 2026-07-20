@@ -1,6 +1,6 @@
-defmodule SeshLab do
+defmodule Aponte do
   @moduledoc """
-  SeshLab keeps the contexts that define your domain
+  Aponte keeps the contexts that define your domain
   and business logic.
 
   Contexts are also responsible for managing your data, regardless

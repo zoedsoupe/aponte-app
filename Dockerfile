@@ -58,7 +58,7 @@ ENV DATABASE_PATH=/data/sesh.db
 RUN mkdir -p /data /data/uploads/products
 
 ENV MIX_ENV=prod
-COPY --from=builder /app/_build/${MIX_ENV}/rel/sesh_lab ./
+COPY --from=builder /app/_build/${MIX_ENV}/rel/aponte ./
 
 # NOTE: container runs as root. Fly volume mounted at /data is owned by root
 # on first mount; app reads/writes sesh.db and /data/uploads. Single-tenant

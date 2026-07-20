@@ -3,7 +3,7 @@
 // remember the ids THIS device created so the customer can return to them
 // without bookmarking. Mirrors the localStorage pattern in storage.js.
 
-const KEY = "sesh_lab.orders.v1";
+const KEY = "aponte.orders.v1";
 const MAX = 30;
 
 function read() {

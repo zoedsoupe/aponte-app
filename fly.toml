@@ -1,5 +1,5 @@
 # fly.io config for sesh-lab (Phoenix + sqlite, single machine).
-# Update PHX_HOST se trocar domínio depois.
+# Fly app name stays sesh-lab; the volume is attached to it.
 
 app = "sesh-lab"
 primary_region = "gru"
@@ -8,13 +8,13 @@ primary_region = "gru"
   dockerfile = "Dockerfile"
 
 [deploy]
-  # Migrações rodam automaticamente via SeshLab.Application
+  # Migrações rodam automaticamente via Aponte.Application
   # (Ecto.Migrator dispara no boot quando RELEASE_NAME está setado),
   # sem release_command.
   strategy = "immediate"
 
 [env]
-  PHX_HOST = "sesh-lab.fly.dev"
+  PHX_HOST = "aponte.fly.dev"
   PORT = "4000"
   PHX_SERVER = "true"
   DATABASE_PATH = "/data/sesh.db"

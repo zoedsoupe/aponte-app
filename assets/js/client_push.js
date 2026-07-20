@@ -8,7 +8,7 @@
 
 const VAPID_URL = "/push/vapid-key";
 const SUB_URL = "/push/subscribe";
-const DISMISS_KEY = "sesh_lab.push_prompt_dismissed.v1";
+const DISMISS_KEY = "aponte.push_prompt_dismissed.v1";
 const DEFAULT_TOPICS = ["order_status"];
 
 function csrfToken() {

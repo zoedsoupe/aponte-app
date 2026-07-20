@@ -1,4 +1,4 @@
-const KEY = "sesh_lab.customer.v2";
+const KEY = "aponte.customer.v2";
 const FIELDS = [
   "customer_name",
   "customer_instagram",

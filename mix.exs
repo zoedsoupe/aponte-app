@@ -1,11 +1,11 @@
-defmodule SeshLab.MixProject do
+defmodule Aponte.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :sesh_lab,
+      app: :aponte,
       version: "0.1.0",
-      elixir: "~> 1.15",
+      elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -20,7 +20,7 @@ defmodule SeshLab.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {SeshLab.Application, []},
+      mod: {Aponte.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -56,7 +56,8 @@ defmodule SeshLab.MixProject do
       {:bandit, "~> 1.5"},
       {:eqrcode, "~> 0.1"},
       {:tzdata, "~> 1.1"},
-      {:finch, "~> 0.18"}
+      {:finch, "~> 0.18"},
+      {:web_push, "~> 0.1.0"}
     ]
   end
 
@@ -73,10 +74,10 @@ defmodule SeshLab.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["esbuild.install --if-missing"],
-      "assets.build": ["compile", "esbuild sesh_lab"],
+      "assets.build": ["compile", "esbuild aponte"],
       "assets.deploy": [
         "compile",
-        "esbuild sesh_lab --minify",
+        "esbuild aponte --minify",
         "phx.digest"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]

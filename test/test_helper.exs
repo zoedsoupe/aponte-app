@@ -1,2 +1,2 @@
 ExUnit.start()
-Ecto.Adapters.SQL.Sandbox.mode(SeshLab.Repo, :manual)
+Ecto.Adapters.SQL.Sandbox.mode(Aponte.Repo, :manual)

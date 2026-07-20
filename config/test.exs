@@ -5,14 +5,14 @@ import Config
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
-config :sesh_lab, SeshLab.Repo,
+config :aponte, Aponte.Repo,
   database: Path.expand("../sesh_lab_test.db", __DIR__),
   pool_size: 5,
   pool: Ecto.Adapters.SQL.Sandbox
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
-config :sesh_lab, SeshLabWeb.Endpoint,
+config :aponte, AponteWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "MjvcACO517uW0QUEZIXYC039UQgNku5M/sstPwcH9kV5yvn8VUTZAtTRb7Ynbwic",
   server: false

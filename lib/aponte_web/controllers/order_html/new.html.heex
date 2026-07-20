@@ -1,0 +1,87 @@
+<Layouts.app flash={@flash}>
+  <.form :let={f} for={@changeset} action={~p"/comprar"} class="stack-5" id="order-form">
+    <input type="hidden" name="order[client_endpoint]" data-client-endpoint />
+
+    <header class="stack-1">
+      <h1 class="text-xl text-mono">Comprar — {@edition.name}</h1>
+      <p class="text-xs text-dim">Escolha as quantidades e preencha seus dados.</p>
+    </header>
+
+    <div :if={Phoenix.Flash.get(@flash, :error)} class="alert alert--error" role="alert">
+      <p class="text-sm">{Phoenix.Flash.get(@flash, :error)}</p>
+    </div>
+
+    <div
+      :if={@changeset.action && not Enum.empty?(@changeset.errors)}
+      class="alert alert--error"
+      role="alert"
+    >
+      <p class="text-sm">Não foi possível registrar o pedido. Confira os campos destacados.</p>
+    </div>
+
+    <section class="stack-3">
+      <h2 class="text-sm text-muted">Ingressos</h2>
+
+      <p :if={@lots == []} class="text-sm text-dim">
+        Nenhum lote à venda agora. Fica de olho que abre logo.
+      </p>
+
+      <ul :if={@lots != []} class="stack-3">
+        <.lot_row lots={@lots} items={@items} />
+      </ul>
+    </section>
+
+    <section :if={@merch != []} class="stack-3">
+      <h2 class="text-sm text-muted">Leve também</h2>
+
+      <ul class="stack-3">
+        <.merch_row merch={@merch} items={@items} />
+      </ul>
+    </section>
+
+    <section :if={@lots != [] or @merch != []} class="stack-3">
+      <h2 class="text-sm text-muted">Seus dados</h2>
+
+      <.input field={f[:customer_name]} label="Nome" required autocomplete="name" />
+
+      <.input
+        field={f[:customer_instagram]}
+        type="text"
+        label="Instagram (sem o @)"
+        required
+        inputmode="text"
+        autocomplete="off"
+        placeholder="seu.usuario"
+      />
+      <p class="text-xs text-dim">
+        É por aí que a SESH te chama caso precise falar do seu ingresso.
+      </p>
+
+      <.input
+        field={f[:coupon_code]}
+        type="text"
+        label="Cupom (opcional)"
+        autocomplete="off"
+        placeholder="Ex: APO-7K9Q"
+      />
+
+      <label class="field field--inline">
+        <input type="checkbox" id="remember-me" data-remember class="checkbox" />
+        <span class="field-label">Lembrar meus dados neste aparelho</span>
+      </label>
+    </section>
+
+    <.button
+      :if={@lots != [] or @merch != []}
+      type="submit"
+      variant={:primary}
+      class="btn--block btn--blob"
+    >
+      Ir pro PIX
+    </.button>
+
+    <button type="button" class="btn btn--ghost btn--block" data-clear-storage>
+      Limpar meus dados deste dispositivo
+    </button>
+  </.form>
+</Layouts.app>
