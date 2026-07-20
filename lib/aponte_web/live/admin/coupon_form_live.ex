@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.CouponFormLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, Coupons}
+  alias Aponte.{Clock, Coupons, Orgs}
   alias Aponte.Coupons.Coupon
 
   @impl true
@@ -21,9 +21,11 @@ defmodule AponteWeb.Admin.CouponFormLive do
   end
 
   def handle_event("save", %{"coupon" => params}, %{assigns: %{live_action: :new}} = socket) do
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
     attrs = params |> blank_to_nil() |> put_expires_at()
 
-    case Coupons.create_public_coupon(attrs) do
+    case Coupons.create_public_coupon(org, attrs) do
       {:ok, coupon} ->
         {:noreply,
          socket

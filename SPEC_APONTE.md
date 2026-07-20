@@ -42,6 +42,9 @@ de dados.
   a produtora.
 - Tema por org: o accent CSS var sai de "edição publicada global" para "edição
   publicada desta org".
+- Paleta Aponte (default plataforma, extraída do logo aquarela 2026-07-20):
+  bg `#FEF8DA`, ink `#49422F`, accent `#BF7262` (terracota). Tabela completa
+  em `SPEC_APONTE_V1.md` §2.1. Org `sesh` mantém `#F07BC0`.
 
 ### Identidade do comprador (sem contas)
 

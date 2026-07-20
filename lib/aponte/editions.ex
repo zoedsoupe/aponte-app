@@ -11,13 +11,15 @@ defmodule Aponte.Editions do
 
   alias Aponte.{Clock, Repo}
   alias Aponte.Editions.{Edition, EditionMerchItem, TicketType}
+  alias Aponte.Orgs.Org
   alias Aponte.Tickets.{OrderItem, Ticket}
 
   # ── Queries ─────────────────────────────────────────────────────────────────
 
-  @spec list_editions() :: [Edition.t()]
-  def list_editions do
+  @spec list_editions(Ecto.UUID.t()) :: [Edition.t()]
+  def list_editions(org_id) do
     Edition
+    |> where(org_id: ^org_id)
     |> order_by(desc: :number)
     |> Repo.all()
     |> Repo.preload(:ticket_types)
@@ -28,22 +30,32 @@ defmodule Aponte.Editions do
     Edition |> Repo.get!(id) |> Repo.preload(:ticket_types)
   end
 
-  @doc "Edição publicada (a que a landing mostra). `nil` se nenhuma."
-  @spec current_edition() :: Edition.t() | nil
-  def current_edition do
+  @doc "Edição por id dentro da org — guarda contra URL-tampering cross-org."
+  @spec get_edition_in_org(Ecto.UUID.t(), Ecto.UUID.t()) ::
+          {:ok, Edition.t()} | {:error, :not_found}
+  def get_edition_in_org(org_id, edition_id) do
+    case Edition |> where(org_id: ^org_id) |> Repo.get(edition_id) do
+      nil -> {:error, :not_found}
+      %Edition{} = edition -> {:ok, Repo.preload(edition, :ticket_types)}
+    end
+  end
+
+  @doc "Edição publicada da org (a que a landing mostra). `nil` se nenhuma."
+  @spec current_edition(Ecto.UUID.t()) :: Edition.t() | nil
+  def current_edition(org_id) do
     Edition
-    |> where(status: :published)
+    |> where(status: :published, org_id: ^org_id)
     |> order_by(desc: :starts_at)
     |> limit(1)
     |> Repo.one()
     |> Repo.preload(:ticket_types)
   end
 
-  @doc "Só a cor de accent da edição publicada (query leve, p/ tematizar toda página). `nil` se nenhuma."
-  @spec current_accent() :: String.t() | nil
-  def current_accent do
+  @doc "Só a cor de accent da edição publicada da org (query leve, p/ tematizar toda página). `nil` se nenhuma."
+  @spec current_accent(Ecto.UUID.t()) :: String.t() | nil
+  def current_accent(org_id) do
     Edition
-    |> where(status: :published)
+    |> where(status: :published, org_id: ^org_id)
     |> order_by(desc: :starts_at)
     |> limit(1)
     |> select([e], e.accent_color)
@@ -57,8 +69,34 @@ defmodule Aponte.Editions do
 
   def change_edition(%Edition{} = edition, attrs \\ %{}), do: Edition.changeset(edition, attrs)
 
-  def create_edition(attrs) do
+  @spec create_edition(Org.t(), map()) :: {:ok, Edition.t()} | {:error, Ecto.Changeset.t()}
+  def create_edition(%Org{} = org, attrs) do
+    attrs =
+      attrs
+      |> put_attr(:org_id, org.id)
+      |> maybe_default_name(org)
+
     %Edition{} |> Edition.changeset(attrs) |> Repo.insert()
+  end
+
+  # Server-resolved values, never from user params. Accepts string- or
+  # atom-keyed attrs (form vs context callers).
+  defp put_attr(attrs, key, value) do
+    if Enum.any?(Map.keys(attrs), &is_binary/1),
+      do: Map.put(attrs, to_string(key), value),
+      else: Map.put(attrs, key, value)
+  end
+
+  # Nome default "#{org.name} ##{n}" quando em branco (era hardcoded "SESH").
+  defp maybe_default_name(attrs, %Org{} = org) do
+    name = attrs[:name] || attrs["name"]
+    number = attrs[:number] || attrs["number"]
+
+    if name in [nil, ""] and number not in [nil, ""] do
+      put_attr(attrs, :name, "#{org.name} ##{number}")
+    else
+      attrs
+    end
   end
 
   def update_edition(%Edition{} = edition, attrs) do
@@ -106,7 +144,9 @@ defmodule Aponte.Editions do
   @spec publish(Edition.t()) :: {:ok, Edition.t()} | {:error, Ecto.Changeset.t()}
   def publish(%Edition{} = edition) do
     Repo.transaction(fn ->
-      from(e in Edition, where: e.status == :published and e.id != ^edition.id)
+      from(e in Edition,
+        where: e.status == :published and e.id != ^edition.id and e.org_id == ^edition.org_id
+      )
       |> Repo.update_all(set: [status: :past, updated_at: Clock.now_utc()])
 
       case edition |> Ecto.Changeset.change(status: :published) |> Repo.update() do

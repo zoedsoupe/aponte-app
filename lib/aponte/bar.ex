@@ -26,13 +26,32 @@ defmodule Aponte.Bar do
           {:ok, Sale.t()}
           | {:error, :empty_cart | {:sold_out, String.t()} | Ecto.Changeset.t()}
   def record_sale(edition_id, payment_method, cart) when is_map(cart) do
-    items = Merch.get_counter_items(item_ids(cart))
+    items = counter_items(edition_id, item_ids(cart))
 
     case build_lines(items, cart) do
       {:ok, []} -> {:error, :empty_cart}
       {:ok, lines} -> insert_sale(edition_id, payment_method, lines)
       {:error, _} = err -> err
     end
+  end
+
+  # Bar has no org_id of its own: the org comes through the edition (spec §4).
+  # A sale without an edition (single-operator v1) has no org to scope by and
+  # falls back to an unscoped lookup.
+  defp counter_items(edition_id, ids) do
+    case edition_id && edition_org_id(edition_id) do
+      nil ->
+        Item
+        |> where([m], m.is_active and m.kind == :counter and m.id in ^ids)
+        |> Repo.all()
+
+      org_id ->
+        Merch.get_counter_items(org_id, ids)
+    end
+  end
+
+  defp edition_org_id(edition_id) do
+    Repo.one(from e in Aponte.Editions.Edition, where: e.id == ^edition_id, select: e.org_id)
   end
 
   # Pure: resolve cada id no item, valida qty e estoque, congela preço/nome.

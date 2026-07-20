@@ -16,6 +16,7 @@ defmodule Aponte.Coupons do
 
   alias Aponte.{Clock, Notifications, Repo}
   alias Aponte.Coupons.{Coupon, CouponRule}
+  alias Aponte.Orgs.Org
   alias Aponte.Tickets.Order
 
   # Unambiguous alphabet (no I/L/O/0/1) for generated codes.
@@ -23,20 +24,33 @@ defmodule Aponte.Coupons do
 
   # ── Rules ───────────────────────────────────────────────────────────────────
 
-  def list_rules, do: Repo.all(from r in CouponRule, order_by: [desc: r.inserted_at])
-  def list_active_rules, do: Repo.all(from r in CouponRule, where: r.is_active)
+  def list_rules(org_id),
+    do:
+      Repo.all(from r in CouponRule, where: r.org_id == ^org_id, order_by: [desc: r.inserted_at])
+
+  def list_active_rules(org_id),
+    do: Repo.all(from r in CouponRule, where: r.org_id == ^org_id and r.is_active)
+
   def get_rule!(id), do: Repo.get!(CouponRule, id)
-  def create_rule(attrs), do: %CouponRule{} |> CouponRule.changeset(attrs) |> Repo.insert()
+
+  def create_rule(%Org{} = org, attrs),
+    do: %CouponRule{} |> CouponRule.changeset(put_org_id(attrs, org)) |> Repo.insert()
+
   def update_rule(%CouponRule{} = r, attrs), do: r |> CouponRule.changeset(attrs) |> Repo.update()
   def delete_rule(%CouponRule{} = r), do: Repo.delete(r)
   def change_rule(%CouponRule{} = r, attrs \\ %{}), do: CouponRule.changeset(r, attrs)
 
   # ── Public coupons (admin) ──────────────────────────────────────────────────
 
-  def list_coupons, do: Repo.all(from c in Coupon, order_by: [desc: c.inserted_at])
+  def list_coupons(org_id),
+    do: Repo.all(from c in Coupon, where: c.org_id == ^org_id, order_by: [desc: c.inserted_at])
 
-  def list_public_coupons do
-    Repo.all(from c in Coupon, where: c.scope == :public, order_by: [desc: c.inserted_at])
+  def list_public_coupons(org_id) do
+    Repo.all(
+      from c in Coupon,
+        where: c.org_id == ^org_id and c.scope == :public,
+        order_by: [desc: c.inserted_at]
+    )
   end
 
   def get_coupon!(id), do: Repo.get!(Coupon, id)
@@ -45,7 +59,9 @@ defmodule Aponte.Coupons do
     do: Coupon.public_changeset(coupon, attrs)
 
   @doc "Creates a public coupon and, if active, announces it to opted-in clients."
-  def create_public_coupon(attrs) do
+  def create_public_coupon(%Org{} = org, attrs) do
+    attrs = put_org_id(attrs, org)
+
     case %Coupon{} |> Coupon.public_changeset(maybe_generate_code(attrs)) |> Repo.insert() do
       {:ok, coupon} = ok ->
         if coupon.is_active, do: Notifications.announce_coupon(coupon)
@@ -70,7 +86,7 @@ defmodule Aponte.Coupons do
 
     # Bound coupons require instagram: phone-only orders earn none.
     if order.customer_instagram not in [nil, ""] do
-      for rule <- list_active_rules(), order.total_cents >= rule.min_order_cents do
+      for rule <- list_active_rules(order.org_id), order.total_cents >= rule.min_order_cents do
         %{
           org_id: order.org_id,
           code: generate_code(),
@@ -132,14 +148,15 @@ defmodule Aponte.Coupons do
 
   @doc """
   Read-only validation + discount calc for a code, before the order is built.
-  `ctx` carries `:customer_instagram` and `:subtotal` (cents).
+  `ctx` carries `:customer_instagram`, `:subtotal` (cents) and `:org_id` —
+  codes are globally unique but redemption is org-scoped.
   """
   @spec preview(String.t() | nil, map()) ::
           {:ok, Coupon.t() | nil, non_neg_integer()} | {:error, preview_error()}
-  def preview(code, %{customer_instagram: ig, subtotal: subtotal}) do
+  def preview(code, %{customer_instagram: ig, subtotal: subtotal, org_id: org_id}) do
     now = Clock.now_utc()
 
-    case get_by_code(code) do
+    case get_by_code(org_id, code) do
       nil ->
         {:error, :not_found}
 
@@ -153,9 +170,11 @@ defmodule Aponte.Coupons do
     end
   end
 
-  def get_by_code(nil), do: nil
-  def get_by_code(""), do: nil
-  def get_by_code(code), do: Repo.get_by(Coupon, code: code |> String.trim() |> String.upcase())
+  def get_by_code(_org_id, nil), do: nil
+  def get_by_code(_org_id, ""), do: nil
+
+  def get_by_code(org_id, code),
+    do: Repo.get_by(Coupon, org_id: org_id, code: code |> String.trim() |> String.upcase())
 
   @doc """
   Atomically claims a coupon inside the order `Multi`. `:bound` flips `used_at`;
@@ -209,6 +228,13 @@ defmodule Aponte.Coupons do
       blank when blank in [nil, ""] -> Map.put(attrs, "code", generate_code())
       _ -> attrs
     end
+  end
+
+  # org_id comes from the org argument, never from user params.
+  defp put_org_id(attrs, %Org{id: id}) do
+    if Enum.any?(Map.keys(attrs), &is_binary/1),
+      do: Map.put(attrs, "org_id", id),
+      else: Map.put(attrs, :org_id, id)
   end
 
   defp random_suffix(n), do: for(_ <- 1..n, into: "", do: <<Enum.random(@code_alphabet)>>)

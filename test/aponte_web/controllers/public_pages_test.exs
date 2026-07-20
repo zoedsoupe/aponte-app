@@ -17,7 +17,10 @@ defmodule AponteWeb.PublicPagesTest do
 
   describe "with a published edition on sale" do
     setup do
-      {edition, _lot} = edition_with_lot(%{venue: "OCA ROOTS"}, %{name: "Lote 1"})
+      # Phase-3: public pages resolve the tenant via the "sesh" org (seeded by
+      # the orgs migration) until phase 4.
+      {:ok, org} = Aponte.Orgs.get_org_by_slug("sesh")
+      {edition, _lot} = edition_with_lot(%{org_id: org.id, venue: "OCA ROOTS"}, %{name: "Lote 1"})
       %{edition: edition}
     end
 

@@ -1,14 +1,17 @@
 defmodule AponteWeb.Admin.DjApplicationsLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, DjApplications}
+  alias Aponte.{Clock, DjApplications, Orgs}
   alias AponteWeb.Instagram
 
   @impl true
   def mount(_params, _session, socket) do
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
     {:ok,
      assign(socket,
-       applications: DjApplications.list(),
+       applications: DjApplications.list(org.id),
        open?: Aponte.Settings.dj_applications_open?(),
        page_title: "Quer tocar"
      )}

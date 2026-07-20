@@ -22,6 +22,7 @@ defmodule Aponte.Tickets do
 
   alias Aponte.{Clock, Coupons, Editions, Notifications, Repo}
   alias Aponte.Editions.{Edition, TicketType}
+  alias Aponte.Orgs.Org
   alias Aponte.Tickets.{Order, OrderItem, Ticket}
   alias Ecto.Multi
 
@@ -37,7 +38,7 @@ defmodule Aponte.Tickets do
 
   # ── Criação ─────────────────────────────────────────────────────────────────
 
-  @spec create_order(map()) ::
+  @spec create_order(Org.t(), map()) ::
           {:ok, Order.t()}
           | {:error, {:sold_out, String.t()}}
           | {:error, {:not_on_sale, String.t()}}
@@ -48,20 +49,23 @@ defmodule Aponte.Tickets do
           | {:error, {:merch_sold_out, String.t()}}
           | {:error, {:coupon, term()}}
           | {:error, Ecto.Changeset.t()}
-  def create_order(attrs) do
+  def create_order(%Org{} = org, attrs) do
     items = normalize_items(attrs)
     types = preload_types(items)
-    merch = preload_merch(items)
+    merch = preload_merch(items, org.id)
+    edition_id = attrs[:edition_id] || attrs["edition_id"]
+    edition_org_id = edition_org_id(edition_id)
 
-    case validate_items(items, types, merch) do
+    case validate_items(items, types, merch, edition_id, edition_org_id, org.id) do
       :ok ->
         subtotal = total_cents(items, types, merch)
 
-        case resolve_coupon(attrs, subtotal) do
+        case resolve_coupon(attrs, subtotal, org.id) do
           {:ok, coupon, discount} ->
             order_attrs =
               attrs
-              |> put_attr(:org_id, resolve_org_id(attrs, merch))
+              |> put_attr(:org_id, org.id)
+              |> put_attr(:pix_key, org.pix_key)
               |> put_attr(:total_cents, subtotal - discount)
               |> put_attr(:coupon_code, coupon && coupon.code)
               |> put_attr(:discount_cents, discount)
@@ -84,13 +88,23 @@ defmodule Aponte.Tickets do
     end
   end
 
-  defp resolve_coupon(attrs, subtotal) do
+  defp edition_org_id(nil), do: nil
+
+  defp edition_org_id(edition_id) do
+    Repo.one(from e in Edition, where: e.id == ^edition_id, select: e.org_id)
+  end
+
+  defp resolve_coupon(attrs, subtotal, org_id) do
     code = attrs[:coupon_code] || attrs["coupon_code"]
 
     if code in [nil, ""] do
       {:ok, nil, 0}
     else
-      Coupons.preview(code, %{customer_instagram: instagram(attrs), subtotal: subtotal})
+      Coupons.preview(code, %{
+        customer_instagram: instagram(attrs),
+        subtotal: subtotal,
+        org_id: org_id
+      })
     end
   end
 
@@ -104,22 +118,6 @@ defmodule Aponte.Tickets do
       Map.put(attrs, to_string(key), value)
     else
       Map.put(attrs, key, value)
-    end
-  end
-
-  # Phase-2 bridge: orgs aren't a context argument yet (phase 3 wires that),
-  # so the org is derived from what the order already references — the edition
-  # for ticket orders, the merch items for edition-less pure-merch orders.
-  defp resolve_org_id(attrs, merch) do
-    case attrs[:edition_id] || attrs["edition_id"] do
-      nil ->
-        case Map.values(merch) do
-          [%{org_id: org_id} | _] -> org_id
-          [] -> nil
-        end
-
-      edition_id ->
-        Repo.one(from e in Edition, where: e.id == ^edition_id, select: e.org_id)
     end
   end
 
@@ -171,21 +169,22 @@ defmodule Aponte.Tickets do
     |> Map.new(&{&1.id, &1})
   end
 
-  defp preload_merch(items) do
+  defp preload_merch(items, org_id) do
     ids = for %{kind: :merch, merch_item_id: id} <- items, do: id
 
     Aponte.Merch.Item
-    |> where([m], m.id in ^ids)
+    |> where([m], m.id in ^ids and m.org_id == ^org_id)
     |> Repo.all()
     |> Map.new(&{&1.id, &1})
   end
 
-  defp validate_items([], _types, _merch), do: {:error, :empty_cart}
+  defp validate_items([], _types, _merch, _edition_id, _edition_org_id, _org_id),
+    do: {:error, :empty_cart}
 
   # Soft gate at order time (good UX): reject obvious sold-out / closed lots.
   # Não é autoritativo — dois pendentes podem passar no mesmo último lugar; a
   # baixa atômica em `confirm_order/2` é quem decide de verdade.
-  defp validate_items(items, types, merch) do
+  defp validate_items(items, types, merch, edition_id, edition_org_id, org_id) do
     now = Clock.now_utc()
 
     Enum.reduce_while(items, :ok, fn item, _ ->
@@ -197,9 +196,19 @@ defmodule Aponte.Tickets do
 
             %TicketType{} = type ->
               cond do
-                not TicketType.on_sale?(type, now) -> {:halt, {:error, {:not_on_sale, id}}}
-                type.available < q -> {:halt, {:error, {:sold_out, id}}}
-                true -> {:cont, :ok}
+                # Cross-org / cross-edition injection reads as "unknown": the
+                # lote must belong to the order's edition, in the order's org.
+                type.edition_id != edition_id or edition_org_id != org_id ->
+                  {:halt, {:error, {:unknown_ticket_type, id}}}
+
+                not TicketType.on_sale?(type, now) ->
+                  {:halt, {:error, {:not_on_sale, id}}}
+
+                type.available < q ->
+                  {:halt, {:error, {:sold_out, id}}}
+
+                true ->
+                  {:cont, :ok}
               end
           end
 
@@ -321,6 +330,7 @@ defmodule Aponte.Tickets do
 
   @typedoc "input to issue_confirmed/2"
   @type comp_input :: %{
+          required(:org_id) => Ecto.UUID.t(),
           required(:edition_id) => Ecto.UUID.t(),
           required(:ticket_type_id) => Ecto.UUID.t(),
           required(:customer_name) => String.t(),
@@ -345,15 +355,12 @@ defmodule Aponte.Tickets do
     code_fun = Keyword.get(opts, :code_fun, &generate_code/0)
     qty = input.quantity
     type = Editions.get_ticket_type!(input.ticket_type_id)
-    # Phase-2 bridge: org derived from the edition until comp_input gains a
-    # required :org_id in phase 3.
-    org_id = Repo.one(from e in Edition, where: e.id == ^input.edition_id, select: e.org_id)
 
     Repo.transaction(fn ->
       order =
         %Order{}
         |> Order.changeset(%{
-          org_id: org_id,
+          org_id: input.org_id,
           edition_id: input.edition_id,
           customer_name: input.customer_name,
           customer_instagram: input.customer_instagram,
@@ -612,19 +619,40 @@ defmodule Aponte.Tickets do
     Order |> Repo.get!(id) |> Repo.preload([:items, :tickets, :merch_units])
   end
 
-  @spec list_recent(non_neg_integer()) :: [Order.t()]
-  def list_recent(limit \\ 50) do
+  @doc """
+  Buyer self-lookup (meus-ingressos): a single order matching the exact
+  (org, phone, id) triple. Phone is normalized before matching; there is no
+  list-by-phone path — a miss reveals nothing about which field failed.
+  """
+  @spec lookup_order(Ecto.UUID.t(), String.t(), String.t()) ::
+          {:ok, Order.t()} | {:error, :not_found}
+  def lookup_order(org_id, phone, order_id) do
+    phone = Order.normalize_phone(phone)
+
+    with true <- phone not in [nil, ""],
+         {:ok, uuid} <- Ecto.UUID.cast(order_id),
+         %Order{} = order <-
+           Repo.get_by(Order, id: uuid, org_id: org_id, customer_phone: phone) do
+      {:ok, Repo.preload(order, [:items, :tickets, :merch_units])}
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @spec list_recent(Ecto.UUID.t(), non_neg_integer()) :: [Order.t()]
+  def list_recent(org_id, limit \\ 50) do
     Order
+    |> where(org_id: ^org_id)
     |> order_by(desc: :inserted_at)
     |> limit(^limit)
     |> Repo.all()
     |> Repo.preload(:items)
   end
 
-  @spec list_pending() :: [Order.t()]
-  def list_pending do
+  @spec list_pending(Ecto.UUID.t()) :: [Order.t()]
+  def list_pending(org_id) do
     Order
-    |> where(status: :pending)
+    |> where(status: :pending, org_id: ^org_id)
     |> order_by(desc: :inserted_at)
     |> Repo.all()
     |> Repo.preload(:items)
@@ -642,8 +670,8 @@ defmodule Aponte.Tickets do
   # caminho principal, então aceitável. Gatilho pra revisitar: precisar de busca
   # accent-insensitive (aí vira coluna normalizada ou collation).
   """
-  @spec search_orders(String.t(), keyword()) :: [Order.t()]
-  def search_orders(term, opts \\ []) when is_binary(term) do
+  @spec search_orders(Ecto.UUID.t(), String.t(), keyword()) :: [Order.t()]
+  def search_orders(org_id, term, opts \\ []) when is_binary(term) do
     term = String.trim(term)
 
     if String.length(term) < 2 do
@@ -654,6 +682,7 @@ defmodule Aponte.Tickets do
       name_pat = "%" <> term <> "%"
 
       Order
+      |> where([o], o.org_id == ^org_id)
       |> where([o], like(o.customer_name, ^name_pat) or like(o.customer_instagram, ^handle))
       |> order_by(desc: :inserted_at)
       |> limit(^limit)

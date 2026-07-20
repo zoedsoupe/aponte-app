@@ -9,16 +9,19 @@ defmodule AponteWeb.LojaController do
   """
   use AponteWeb, :controller
 
-  alias Aponte.{Merch, Tickets}
+  alias Aponte.{Merch, Orgs, Tickets}
   alias Aponte.Tickets.Order
 
   def index(conn, _params) do
+    # TODO(phase-4): org comes from assigns (LoadOrg plug)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
     conn
     |> assign(:storefront, true)
     |> assign(:seo_description, "Produtos da SESH. Posters, adesivos e mais.")
     |> assign(:seo_type, "website")
     |> render(:index,
-      merch: Merch.list_active_items(),
+      merch: Merch.list_active_items(org.id),
       changeset: Order.changeset(%Order{}, %{}),
       items: %{},
       page_title: "Loja"
@@ -26,21 +29,24 @@ defmodule AponteWeb.LojaController do
   end
 
   def create(conn, params) do
+    # TODO(phase-4): org comes from assigns (LoadOrg plug)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
     order_params = Map.get(params, "order", %{})
     merch_params = Map.get(params, "merch", %{})
 
-    case Tickets.create_order(build_attrs(order_params, merch_params)) do
+    case Tickets.create_order(org, build_attrs(order_params, merch_params)) do
       {:ok, order} ->
         redirect(conn, to: ~p"/compra/#{order.id}")
 
       {:error, :empty_cart} ->
-        render_error(conn, order_params, merch_params, "Escolha pelo menos um produto.")
+        render_error(conn, org, order_params, merch_params, "Escolha pelo menos um produto.")
 
       {:error, {:merch_sold_out, _id}} ->
-        render_error(conn, order_params, merch_params, "Produto esgotado.")
+        render_error(conn, org, order_params, merch_params, "Produto esgotado.")
 
       {:error, {:merch_unavailable, _id}} ->
-        render_error(conn, order_params, merch_params, "Produto indisponivel.")
+        render_error(conn, org, order_params, merch_params, "Produto indisponivel.")
 
       {:error, %Ecto.Changeset{} = cs} ->
         conn
@@ -48,14 +54,20 @@ defmodule AponteWeb.LojaController do
         |> assign(:seo_description, "Produtos da SESH. Posters, adesivos e mais.")
         |> assign(:seo_type, "website")
         |> render(:index,
-          merch: Merch.list_active_items(),
+          merch: Merch.list_active_items(org.id),
           changeset: %{cs | action: :insert},
           items: merch_params,
           page_title: "Loja"
         )
 
       {:error, _} ->
-        render_error(conn, order_params, merch_params, "Nao foi possivel registrar o pedido.")
+        render_error(
+          conn,
+          org,
+          order_params,
+          merch_params,
+          "Nao foi possivel registrar o pedido."
+        )
     end
   end
 
@@ -68,18 +80,17 @@ defmodule AponteWeb.LojaController do
     order_params
     |> Map.put("edition_id", nil)
     |> Map.put("items", merch_lines)
-    |> Map.put("pix_key", Application.fetch_env!(:aponte, :pix)[:key])
     |> Map.put("status", "pending")
   end
 
-  defp render_error(conn, order_params, merch_params, msg) do
+  defp render_error(conn, org, order_params, merch_params, msg) do
     conn
     |> assign(:storefront, true)
     |> assign(:seo_description, "Produtos da SESH. Posters, adesivos e mais.")
     |> assign(:seo_type, "website")
     |> put_flash(:error, msg)
     |> render(:index,
-      merch: Merch.list_active_items(),
+      merch: Merch.list_active_items(org.id),
       changeset: Order.changeset(%Order{}, order_params),
       items: merch_params,
       page_title: "Loja"

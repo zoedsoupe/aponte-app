@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.DashboardLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Bar, Clock, Editions, Tickets}
+  alias Aponte.{Bar, Clock, Editions, Orgs, Tickets}
   alias Aponte.Editions.Edition
 
   @topic "admin:orders"
@@ -10,8 +10,12 @@ defmodule AponteWeb.Admin.DashboardLive do
   def mount(_params, _session, socket) do
     if connected?(socket), do: Phoenix.PubSub.subscribe(Aponte.PubSub, @topic)
 
-    editions = Editions.list_editions()
-    {:ok, socket |> assign(editions: editions) |> select_edition(default_edition(editions))}
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    editions = Editions.list_editions(org.id)
+
+    {:ok,
+     socket |> assign(org: org, editions: editions) |> select_edition(default_edition(editions))}
   end
 
   @impl true
@@ -55,9 +59,9 @@ defmodule AponteWeb.Admin.DashboardLive do
 
   defp refresh(%{assigns: %{edition: nil}} = socket), do: socket
 
-  defp refresh(%{assigns: %{edition: edition}} = socket) do
+  defp refresh(%{assigns: %{edition: edition, org: org}} = socket) do
     # Reload editions so a publish/status change elsewhere reflects in the selector.
-    editions = Editions.list_editions()
+    editions = Editions.list_editions(org.id)
     edition = Enum.find(editions, &(&1.id == edition.id)) || edition
 
     assign(socket,
@@ -66,8 +70,8 @@ defmodule AponteWeb.Admin.DashboardLive do
       stats: Tickets.stats(edition.id),
       bar: Bar.stats(edition.id),
       by_type: Tickets.stats_by_type(edition.id),
-      pending: edition_orders(Tickets.list_pending(), edition.id),
-      recent: edition_orders(Tickets.list_recent(20), edition.id)
+      pending: edition_orders(Tickets.list_pending(org.id), edition.id),
+      recent: edition_orders(Tickets.list_recent(org.id, 20), edition.id)
     )
   end
 

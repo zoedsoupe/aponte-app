@@ -1,15 +1,18 @@
 defmodule AponteWeb.Admin.CouponsLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, Coupons}
+  alias Aponte.{Clock, Coupons, Orgs}
 
   @impl true
   def mount(_params, _session, socket) do
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
     {:ok,
      socket
      |> assign(:page_title, "Cupons")
-     |> assign(:rules, Coupons.list_rules())
-     |> assign(:coupons, Coupons.list_public_coupons())}
+     |> assign(:rules, Coupons.list_rules(org.id))
+     |> assign(:coupons, Coupons.list_public_coupons(org.id))}
   end
 
   defp discount(%{discount_kind: :percent, discount_value: v}), do: "#{v}%"

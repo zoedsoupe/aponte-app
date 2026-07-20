@@ -1,18 +1,21 @@
 defmodule AponteWeb.Admin.ProductsLive do
   use AponteWeb, :live_view
 
-  alias Aponte.Merch
+  alias Aponte.{Merch, Orgs}
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, items: Merch.list_items(), page_title: "Produtos")}
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
+    {:ok, assign(socket, org: org, items: Merch.list_items(org.id), page_title: "Produtos")}
   end
 
   @impl true
   def handle_event("toggle", %{"id" => id}, socket) do
     item = Merch.get_item!(id)
     {:ok, _} = Merch.toggle_active(item)
-    {:noreply, assign(socket, items: Merch.list_items())}
+    {:noreply, assign(socket, items: Merch.list_items(socket.assigns.org.id))}
   end
 
   @impl true

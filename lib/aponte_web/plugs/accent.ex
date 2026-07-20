@@ -10,13 +10,16 @@ defmodule AponteWeb.Plugs.Accent do
 
   import Plug.Conn
 
-  alias Aponte.Editions
+  alias Aponte.{Editions, Orgs}
 
   def init(opts), do: opts
 
   def call(conn, _opts) do
-    case Editions.current_accent() do
-      color when is_binary(color) -> assign(conn, :accent, color)
+    # TODO(phase-4): org comes from assigns (LoadOrg plug)
+    with {:ok, org} <- Orgs.get_org_by_slug("sesh"),
+         color when is_binary(color) <- Editions.current_accent(org.id) do
+      assign(conn, :accent, color)
+    else
       _ -> conn
     end
   end

@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.CouponRuleFormLive do
   use AponteWeb, :live_view
 
-  alias Aponte.Coupons
+  alias Aponte.{Coupons, Orgs}
   alias Aponte.Coupons.CouponRule
 
   @impl true
@@ -20,7 +20,10 @@ defmodule AponteWeb.Admin.CouponRuleFormLive do
   end
 
   def handle_event("save", %{"coupon_rule" => params}, %{assigns: %{live_action: :new}} = socket) do
-    case Coupons.create_rule(params) do
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
+    case Coupons.create_rule(org, params) do
       {:ok, _rule} ->
         {:noreply,
          socket |> put_flash(:info, "Regra criada.") |> push_navigate(to: ~p"/admin/cupons")}

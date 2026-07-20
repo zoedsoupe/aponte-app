@@ -39,7 +39,6 @@ defmodule Aponte.Editions.Edition do
   def changeset(edition, attrs) do
     edition
     |> cast(attrs, @castable)
-    |> maybe_default_name()
     |> validate_required(@required)
     |> validate_number(:number, greater_than: 0)
     |> validate_format(:accent_color, ~r/^#[0-9a-fA-F]{6}$/, message: "use formato hex #RRGGBB")
@@ -60,16 +59,6 @@ defmodule Aponte.Editions.Edition do
         else
           add_error(changeset, :ends_at, "deve ser depois do início")
         end
-
-      _ ->
-        changeset
-    end
-  end
-
-  defp maybe_default_name(changeset) do
-    case {get_field(changeset, :name), get_field(changeset, :number)} do
-      {blank, n} when blank in [nil, ""] and is_integer(n) ->
-        put_change(changeset, :name, "SESH ##{n}")
 
       _ ->
         changeset

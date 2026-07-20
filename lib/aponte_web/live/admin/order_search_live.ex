@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.OrderSearchLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, Tickets}
+  alias Aponte.{Clock, Orgs, Tickets}
 
   # ponytail: load-more grows the limit and re-queries — no offset bookkeeping,
   # no keyset cursor. Re-fetching a growing recent-list is fine at admin scale;
@@ -10,29 +10,41 @@ defmodule AponteWeb.Admin.OrderSearchLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
     {:ok,
      assign(socket,
+       org: org,
        term: "",
        limit: @page_size,
-       results: Tickets.list_recent(@page_size),
+       results: Tickets.list_recent(org.id, @page_size),
        page_title: "Pedidos"
      )}
   end
 
   @impl true
   def handle_event("search", %{"q" => term}, socket) do
+    org_id = socket.assigns.org.id
+
     if searching?(term) do
-      {:noreply, assign(socket, term: term, results: Tickets.search_orders(term))}
+      {:noreply, assign(socket, term: term, results: Tickets.search_orders(org_id, term))}
     else
       # cleared/short term: back to history, reset paging
       {:noreply,
-       assign(socket, term: term, limit: @page_size, results: Tickets.list_recent(@page_size))}
+       assign(socket,
+         term: term,
+         limit: @page_size,
+         results: Tickets.list_recent(org_id, @page_size)
+       )}
     end
   end
 
   def handle_event("load_more", _params, socket) do
     limit = socket.assigns.limit + @page_size
-    {:noreply, assign(socket, limit: limit, results: Tickets.list_recent(limit))}
+
+    {:noreply,
+     assign(socket, limit: limit, results: Tickets.list_recent(socket.assigns.org.id, limit))}
   end
 
   defp order_url(id), do: url(~p"/compra/#{id}")

@@ -32,6 +32,7 @@ defmodule Aponte.Backfill do
 
   alias Aponte.Repo
   alias Aponte.Editions.{Edition, TicketType}
+  alias Aponte.Orgs.Org
   alias Aponte.Tickets
   alias Aponte.Tickets.Order
 
@@ -45,8 +46,9 @@ defmodule Aponte.Backfill do
         {:error, {:edition_not_found, edition_number}}
 
       %Edition{} = edition ->
+        org = Repo.get!(Org, edition.org_id)
         types = types_by_name(edition.id)
-        Enum.map(buyers, &backfill_one(edition, types, &1))
+        Enum.map(buyers, &backfill_one(edition, org, types, &1))
     end
   end
 
@@ -73,6 +75,7 @@ defmodule Aponte.Backfill do
         {:error, {:edition_not_found, edition_number}}
 
       %Edition{} = edition ->
+        org = Repo.get!(Org, edition.org_id)
         wanted = MapSet.new(handles, &norm_handle/1)
 
         Order
@@ -84,13 +87,13 @@ defmodule Aponte.Backfill do
             name: o.customer_name,
             instagram: o.customer_instagram,
             order_id: o.id,
-            url: order_url(o.id)
+            url: order_url(org.slug, o.id)
           }
         end)
     end
   end
 
-  defp order_url(id), do: AponteWeb.Endpoint.url() <> "/compra/#{id}"
+  defp order_url(org_slug, id), do: AponteWeb.Endpoint.url() <> "/#{org_slug}/compra/#{id}"
 
   defp norm_handle(nil), do: ""
 
@@ -106,7 +109,7 @@ defmodule Aponte.Backfill do
 
   defp norm(s), do: s |> to_string() |> String.trim() |> String.downcase()
 
-  defp backfill_one(edition, types, buyer) do
+  defp backfill_one(edition, org, types, buyer) do
     qty = buyer[:qty]
     lote = buyer[:lote]
 
@@ -119,14 +122,15 @@ defmodule Aponte.Backfill do
 
       true ->
         type = Map.get(types, norm(lote))
-        do_backfill(edition, type, buyer, qty)
+        do_backfill(edition, org, type, buyer, qty)
     end
   end
 
-  defp do_backfill(edition, type, buyer, qty) do
+  defp do_backfill(edition, org, type, buyer, qty) do
     {:ok, %{order: order, codes: codes}} =
       Tickets.issue_confirmed(
         %{
+          org_id: edition.org_id,
           edition_id: edition.id,
           ticket_type_id: type.id,
           customer_name: buyer[:name],
@@ -142,7 +146,7 @@ defmodule Aponte.Backfill do
       qty: qty,
       codes: codes,
       order_id: order.id,
-      url: order_url(order.id)
+      url: order_url(org.slug, order.id)
     }
   end
 end

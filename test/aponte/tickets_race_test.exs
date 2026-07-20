@@ -20,9 +20,11 @@ defmodule Aponte.TicketsRaceTest do
 
     # Pending orders hold nothing, so all N can be created; the race is at
     # confirm time, where the atomic decrement decides exactly K winners.
+    org = org_for(edition)
+
     orders =
       for _ <- 1..callers do
-        {:ok, order} = Tickets.create_order(order_attrs(edition, lot))
+        {:ok, order} = Tickets.create_order(org, order_attrs(edition, lot))
         order
       end
 
@@ -49,7 +51,7 @@ defmodule Aponte.TicketsRaceTest do
 
   test "two scanners on the same ticket: exactly one validation wins" do
     {edition, lot} = edition_with_lot()
-    {:ok, order} = Tickets.create_order(order_attrs(edition, lot))
+    {:ok, order} = Tickets.create_order(org_for(edition), order_attrs(edition, lot))
     {:ok, _} = Tickets.confirm_order(order.id)
     [ticket] = Repo.all(Ticket)
     parent = self()

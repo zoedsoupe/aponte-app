@@ -1,18 +1,18 @@
 defmodule Aponte.CouponsTest do
   use Aponte.DataCase, async: false
 
-  import Aponte.Fixtures, only: [edition_fixture: 0, org_fixture: 0]
+  import Aponte.Fixtures, only: [edition_fixture: 1, org_fixture: 0]
 
   alias Aponte.{Coupons, Repo}
   alias Aponte.Coupons.Coupon
 
-  defp insert_order(attrs \\ %{}) do
-    Aponte.Fixtures.insert_order(edition_fixture(), attrs)
+  defp insert_order(org, attrs \\ %{}) do
+    Aponte.Fixtures.insert_order(edition_fixture(%{org_id: org.id}), attrs)
   end
 
-  defp insert_coupon(attrs) do
+  defp insert_coupon(org, attrs) do
     defaults = %{
-      org_id: org_fixture().id,
+      org_id: org.id,
       code: "APO-TEST#{System.unique_integer([:positive])}",
       scope: :public,
       discount_kind: :percent,
@@ -51,43 +51,44 @@ defmodule Aponte.CouponsTest do
       expires_in_days: 7
     }
 
-    defp rule_attrs(extra \\ %{}),
-      do: Map.merge(@valid_rule, Map.put(extra, :org_id, org_fixture().id))
+    defp rule_attrs(extra \\ %{}), do: Map.merge(@valid_rule, extra)
 
-    test "create_rule/1 inserts a valid rule" do
-      assert {:ok, rule} = Coupons.create_rule(rule_attrs())
+    test "create_rule/2 inserts a valid rule" do
+      assert {:ok, rule} = Coupons.create_rule(org_fixture(), rule_attrs())
       assert rule.is_active
     end
 
     test "rejects a percent discount over 100" do
-      assert {:error, cs} = Coupons.create_rule(rule_attrs(%{discount_value: 150}))
+      assert {:error, cs} = Coupons.create_rule(org_fixture(), rule_attrs(%{discount_value: 150}))
       assert %{discount_value: _} = errors_on(cs)
     end
 
-    test "list_active_rules/0 excludes inactive" do
-      {:ok, _} = Coupons.create_rule(rule_attrs())
-      {:ok, _} = Coupons.create_rule(rule_attrs(%{name: "off", is_active: false}))
-      assert [%{name: "pedido grande"}] = Coupons.list_active_rules()
+    test "list_active_rules/1 excludes inactive" do
+      org = org_fixture()
+      {:ok, _} = Coupons.create_rule(org, rule_attrs())
+      {:ok, _} = Coupons.create_rule(org, rule_attrs(%{name: "off", is_active: false}))
+      assert [%{name: "pedido grande"}] = Coupons.list_active_rules(org.id)
     end
   end
 
-  describe "create_public_coupon/1" do
+  describe "create_public_coupon/2" do
     test "auto-generates a code when blank" do
+      org = org_fixture()
+
       assert {:ok, c} =
-               Coupons.create_public_coupon(%{
-                 "org_id" => org_fixture().id,
+               Coupons.create_public_coupon(org, %{
                  "discount_kind" => "percent",
                  "discount_value" => "10"
                })
 
       assert c.code =~ ~r/^APO-/
       assert c.scope == :public
+      assert c.org_id == org.id
     end
 
     test "keeps a custom code, upcased" do
       assert {:ok, c} =
-               Coupons.create_public_coupon(%{
-                 "org_id" => org_fixture().id,
+               Coupons.create_public_coupon(org_fixture(), %{
                  "code" => "blackfriday10",
                  "discount_kind" => "percent",
                  "discount_value" => "10"
@@ -99,9 +100,10 @@ defmodule Aponte.CouponsTest do
 
   describe "issue_for_order/1" do
     setup do
+      org = org_fixture()
+
       {:ok, rule} =
-        Coupons.create_rule(%{
-          org_id: org_fixture().id,
+        Coupons.create_rule(org, %{
           name: "premia",
           min_order_cents: 8000,
           discount_kind: :percent,
@@ -109,11 +111,11 @@ defmodule Aponte.CouponsTest do
           expires_in_days: 7
         })
 
-      {:ok, rule: rule}
+      {:ok, org: org, rule: rule}
     end
 
-    test "issues a bound coupon when the total meets the threshold", %{rule: rule} do
-      order = insert_order(%{total_cents: 9000, customer_instagram: "fulano"})
+    test "issues a bound coupon when the total meets the threshold", %{org: org, rule: rule} do
+      order = insert_order(org, %{total_cents: 9000, customer_instagram: "fulano"})
       assert :ok = Coupons.issue_for_order(order)
 
       assert [coupon] = Coupons.earned_for_order(order.id)
@@ -123,71 +125,76 @@ defmodule Aponte.CouponsTest do
       assert coupon.expires_at
     end
 
-    test "issues nothing below the threshold" do
-      order = insert_order(%{total_cents: 5000})
+    test "issues nothing below the threshold", %{org: org} do
+      order = insert_order(org, %{total_cents: 5000})
       assert :ok = Coupons.issue_for_order(order)
       assert Coupons.earned_for_order(order.id) == []
     end
   end
 
   describe "preview/2" do
-    test "returns not_found for an unknown code" do
-      assert {:error, :not_found} =
-               Coupons.preview("NOPE", %{customer_instagram: "x", subtotal: 1000})
+    setup do
+      {:ok, org: org_fixture()}
     end
 
-    test "computes discount for a valid public coupon" do
-      insert_coupon(%{code: "PUB10", discount_kind: :percent, discount_value: 10})
+    defp ctx(org, ig, subtotal), do: %{customer_instagram: ig, subtotal: subtotal, org_id: org.id}
 
-      assert {:ok, %Coupon{code: "PUB10"}, 1000} =
-               Coupons.preview("PUB10", %{customer_instagram: "x", subtotal: 10_000})
+    test "returns not_found for an unknown code", %{org: org} do
+      assert {:error, :not_found} = Coupons.preview("NOPE", ctx(org, "x", 1000))
     end
 
-    test "enforces public min_order" do
-      insert_coupon(%{code: "MIN50", min_order_cents: 5000})
+    test "computes discount for a valid public coupon", %{org: org} do
+      insert_coupon(org, %{code: "PUB10", discount_kind: :percent, discount_value: 10})
 
-      assert {:error, {:min_order, 5000}} =
-               Coupons.preview("MIN50", %{customer_instagram: "x", subtotal: 3000})
+      assert {:ok, %Coupon{code: "PUB10"}, 1000} = Coupons.preview("PUB10", ctx(org, "x", 10_000))
     end
 
-    test "rejects an exhausted public coupon" do
-      insert_coupon(%{code: "ONE", max_uses: 1, uses_count: 1})
+    test "enforces public min_order", %{org: org} do
+      insert_coupon(org, %{code: "MIN50", min_order_cents: 5000})
 
-      assert {:error, :exhausted} =
-               Coupons.preview("ONE", %{customer_instagram: "x", subtotal: 1000})
+      assert {:error, {:min_order, 5000}} = Coupons.preview("MIN50", ctx(org, "x", 3000))
     end
 
-    test "rejects an expired coupon" do
+    test "rejects an exhausted public coupon", %{org: org} do
+      insert_coupon(org, %{code: "ONE", max_uses: 1, uses_count: 1})
+
+      assert {:error, :exhausted} = Coupons.preview("ONE", ctx(org, "x", 1000))
+    end
+
+    test "rejects an expired coupon", %{org: org} do
       past = DateTime.add(DateTime.utc_now(), -3600, :second) |> DateTime.truncate(:second)
-      insert_coupon(%{code: "OLD", expires_at: past})
+      insert_coupon(org, %{code: "OLD", expires_at: past})
 
-      assert {:error, :expired} =
-               Coupons.preview("OLD", %{customer_instagram: "x", subtotal: 1000})
+      assert {:error, :expired} = Coupons.preview("OLD", ctx(org, "x", 1000))
     end
 
-    test "bound coupon requires the same customer" do
-      insert_coupon(%{code: "MINE", scope: :bound, customer_instagram: "alice"})
+    test "bound coupon requires the same customer", %{org: org} do
+      insert_coupon(org, %{code: "MINE", scope: :bound, customer_instagram: "alice"})
 
-      assert {:error, :wrong_customer} =
-               Coupons.preview("MINE", %{customer_instagram: "bob", subtotal: 1000})
+      assert {:error, :wrong_customer} = Coupons.preview("MINE", ctx(org, "bob", 1000))
 
-      assert {:ok, _, _} =
-               Coupons.preview("MINE", %{customer_instagram: "@Alice", subtotal: 1000})
+      assert {:ok, _, _} = Coupons.preview("MINE", ctx(org, "@Alice", 1000))
     end
 
-    test "bound coupon already used is rejected" do
+    test "bound coupon already used is rejected", %{org: org} do
       used = DateTime.utc_now() |> DateTime.truncate(:second)
-      insert_coupon(%{code: "DONE", scope: :bound, customer_instagram: "alice", used_at: used})
 
-      assert {:error, :used} =
-               Coupons.preview("DONE", %{customer_instagram: "alice", subtotal: 1000})
+      insert_coupon(org, %{
+        code: "DONE",
+        scope: :bound,
+        customer_instagram: "alice",
+        used_at: used
+      })
+
+      assert {:error, :used} = Coupons.preview("DONE", ctx(org, "alice", 1000))
     end
   end
 
   describe "claim/3" do
     test "bound coupon can only be claimed once" do
-      order = insert_order()
-      coupon = insert_coupon(%{code: "B1", scope: :bound, customer_instagram: "diana"})
+      org = org_fixture()
+      order = insert_order(org)
+      coupon = insert_coupon(org, %{code: "B1", scope: :bound, customer_instagram: "diana"})
 
       assert {:ok, :claimed} = Coupons.claim(Repo, coupon, order.id)
       assert {:error, :coupon_taken} = Coupons.claim(Repo, coupon, order.id)
@@ -196,8 +203,9 @@ defmodule Aponte.CouponsTest do
     end
 
     test "public coupon increments uses up to its cap" do
-      order = insert_order()
-      coupon = insert_coupon(%{code: "P1", scope: :public, max_uses: 2, uses_count: 0})
+      org = org_fixture()
+      order = insert_order(org)
+      coupon = insert_coupon(org, %{code: "P1", scope: :public, max_uses: 2, uses_count: 0})
 
       assert {:ok, :claimed} = Coupons.claim(Repo, coupon, order.id)
       assert {:ok, :claimed} = Coupons.claim(Repo, coupon, order.id)
@@ -210,14 +218,18 @@ defmodule Aponte.CouponsTest do
   describe "notify_expiring/1" do
     setup do
       now = DateTime.utc_now() |> DateTime.truncate(:second)
-      {:ok, now: now, soon: DateTime.add(now, 3600, :second)}
+      {:ok, org: org_fixture(), now: now, soon: DateTime.add(now, 3600, :second)}
     end
 
-    test "marks bound coupons expiring within 24h, skips later ones", %{now: now, soon: soon} do
+    test "marks bound coupons expiring within 24h, skips later ones", %{
+      org: org,
+      now: now,
+      soon: soon
+    } do
       later = DateTime.add(now, 3 * 86_400, :second)
 
       c_soon =
-        insert_coupon(%{
+        insert_coupon(org, %{
           code: "SOON",
           scope: :bound,
           customer_instagram: "a",
@@ -226,7 +238,7 @@ defmodule Aponte.CouponsTest do
         })
 
       c_later =
-        insert_coupon(%{
+        insert_coupon(org, %{
           code: "LATER",
           scope: :bound,
           customer_instagram: "a",
@@ -239,9 +251,9 @@ defmodule Aponte.CouponsTest do
       refute Repo.get(Coupon, c_later.id).notified_expiring_at
     end
 
-    test "skips coupons without a device", %{now: now, soon: soon} do
+    test "skips coupons without a device", %{org: org, now: now, soon: soon} do
       c =
-        insert_coupon(%{
+        insert_coupon(org, %{
           code: "NODEV",
           scope: :bound,
           customer_instagram: "a",
@@ -253,9 +265,9 @@ defmodule Aponte.CouponsTest do
       refute Repo.get(Coupon, c.id).notified_expiring_at
     end
 
-    test "skips already-used coupons", %{now: now, soon: soon} do
+    test "skips already-used coupons", %{org: org, now: now, soon: soon} do
       c =
-        insert_coupon(%{
+        insert_coupon(org, %{
           code: "USED",
           scope: :bound,
           customer_instagram: "a",
@@ -268,9 +280,9 @@ defmodule Aponte.CouponsTest do
       refute Repo.get(Coupon, c.id).notified_expiring_at
     end
 
-    test "is idempotent across ticks", %{now: now, soon: soon} do
+    test "is idempotent across ticks", %{org: org, now: now, soon: soon} do
       c =
-        insert_coupon(%{
+        insert_coupon(org, %{
           code: "ONCE",
           scope: :bound,
           customer_instagram: "a",

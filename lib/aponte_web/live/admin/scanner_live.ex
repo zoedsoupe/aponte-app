@@ -9,7 +9,7 @@ defmodule AponteWeb.Admin.ScannerLive do
   """
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, Editions, Tickets}
+  alias Aponte.{Clock, Editions, Orgs, Tickets}
 
   @impl true
   def mount(params, _session, socket) do
@@ -17,8 +17,13 @@ defmodule AponteWeb.Admin.ScannerLive do
     # publicada atual (link global do topo).
     edition =
       case params do
-        %{"edition_id" => id} -> Editions.get_edition!(id)
-        _ -> Editions.current_edition()
+        %{"edition_id" => id} ->
+          Editions.get_edition!(id)
+
+        _ ->
+          # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+          {:ok, org} = Orgs.get_org_by_slug("sesh")
+          Editions.current_edition(org.id)
       end
 
     if connected?(socket) and edition do

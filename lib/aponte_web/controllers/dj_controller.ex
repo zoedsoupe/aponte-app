@@ -1,7 +1,7 @@
 defmodule AponteWeb.DjController do
   use AponteWeb, :controller
 
-  alias Aponte.DjApplications
+  alias Aponte.{DjApplications, Orgs}
   alias Aponte.DjApplications.DjApplication
 
   # Tempo mínimo (s) entre carregar o form e enviar. Humano não preenche
@@ -34,7 +34,10 @@ defmodule AponteWeb.DjController do
   end
 
   defp persist(conn, attrs) do
-    case DjApplications.create(attrs) do
+    # TODO(phase-4): org comes from assigns (LoadOrg plug)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
+    case DjApplications.create(org, attrs) do
       {:ok, _application} ->
         redirect(conn, to: ~p"/tocar?ok=1")
 

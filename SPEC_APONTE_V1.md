@@ -21,7 +21,7 @@ sesh_lab becomes Aponte **in place**: same Fly app, same `sesh_data` volume, sam
 
 These do **not** block the build; defaults are stated and the implementer should use them unless corrected:
 
-- **Aponte default accent** (used on `/`, `/sobre`, and any org-less page): placeholder `#9AA0A8` (neutral gray). The `sesh` org keeps `#F07BC0`. User picks the real brand color before cutover.
+- **Aponte default accent** (used on `/`, `/sobre`, and any org-less page): `#BF7262` (terracotta, from the palm of the watercolor logo). The `sesh` org keeps `#F07BC0`. Full palette decided 2026-07-20 — see section 2.1.
 - **Default storage quota**: `52_428_800` bytes (50 MiB). At ~300 KB per 1600px webp + ~40 KB thumb that is ~150 images, far above the "10 images worth" floor; quota is soft-enforced anyway.
 - **"Order code" for meus-ingressos lookup = the full order UUID** (the code buyers already have in their `/compra/:id` link). No new short code is minted. Lookup without a matching phone reveals nothing.
 - **Bound coupons require instagram.** `Coupon.bound_changeset` validates `customer_instagram` required and redemption matches on handle. Phone-only orders earn no bound coupons (`Coupons.issue_for_order/1` becomes a no-op when `customer_instagram` is nil). Public coupons still work for phone-only buyers. Flagged here because it is a product-visible consequence of making instagram optional.
@@ -29,6 +29,24 @@ These do **not** block the build; defaults are stated and the implementer should
 - **`MERCHANT_NAME` env is retired**; Pix `merchant_name` becomes the org name (sanitized by `Pix.build` already). `MERCHANT_CITY` env stays as the global default city.
 - **Domain `aponte.live` is not purchased yet.** All config uses it as a placeholder behind env (`PHX_HOST`); nothing hard-codes it outside config and the legacy-redirect plug's target host, which is also config-driven.
 - **DNS/SEO**: old global paths (`/comprar`, `/loja`, etc.) on the NEW domain 301 to the `sesh` slug equivalents for a transition window (see router diff).
+
+### 2.1 Aponte brand palette
+
+Extracted from the watercolor hand logo (`aponte-logo.jpg`, pointing finger — the "aponte"/point gesture) via histogram + region sampling, approved 2026-07-20. These are the **Aponte platform defaults** (org-less pages + base app theme); org accents override only the accent var.
+
+| Token | Hex | Source region | Use |
+|---|---|---|---|
+| `--bg` | `#FEF8DA` | paper background | app background |
+| `--surface` | `#F3EBC3` | deeper cream | cards, inputs |
+| `--ink` | `#49422F` | hand outline | primary text |
+| `--ink-muted` | `#91817C` | washed outline | secondary text |
+| `--accent` | `#BF7262` | palm terracotta-red | Aponte default accent (CTAs, links) |
+| `--accent-warm` | `#DE9B68` | knuckle orange | hover, highlights |
+| `--accent-yellow` | `#EDCF63` | pointing finger | badges, callouts |
+| `--accent-green` | `#B6C7A8` | thumb sage | success states |
+| `--accent-mauve` | `#967577` | wrist | info/subtle accents |
+
+Contrast: `--ink` on `--bg` ≈ 9:1 (AAA). `--accent` on cream ≈ 3.3:1 — fine as CTA fill with cream/white text (AA-large); for small accent-colored text use `--ink` or darken to `#A85A4B`. The logo stays raster (jpg) — watercolor doesn't vectorize cleanly; no SVG needed.
 
 ## 3. Migration sequence
 
@@ -166,7 +184,7 @@ Changeset: `validate_required([:slug, :name])`, slug format `~r/^[a-z0-9][a-z0-9
 
 **`AponteWeb.Plugs.LoadOrg`** (`lib/aponte_web/plugs/load_org.ex`): `@behaviour Plug`. Reads `conn.path_params["org_slug"]`; `Orgs.get_org_by_slug/1` -> `assign(conn, :org, org)`; on `{:error, :not_found}` sends 404 via `AponteWeb.ErrorHTML` and halts. Used in both public and admin org scopes.
 
-**`AponteWeb.Plugs.Accent`** (changed): no longer queries `Editions.current_accent/0`. Reads `conn.assigns[:org]`: assigns `:accent` = `org.accent_color` when present, else the Aponte default (`Application.get_env(:aponte, :default_accent, "#9AA0A8")`). Controllers may still override per page (comprar already re-assigns the edition's accent). Must run **after** LoadOrg: remove it from `:browser`, add `plug Plugs.Accent` explicitly in each scope after the loader (and standalone in Aponte-level scopes).
+**`AponteWeb.Plugs.Accent`** (changed): no longer queries `Editions.current_accent/0`. Reads `conn.assigns[:org]`: assigns `:accent` = `org.accent_color` when present, else the Aponte default (`Application.get_env(:aponte, :default_accent, "#BF7262")`). Controllers may still override per page (comprar already re-assigns the edition's accent). Must run **after** LoadOrg: remove it from `:browser`, add `plug Plugs.Accent` explicitly in each scope after the loader (and standalone in Aponte-level scopes).
 
 **`AponteWeb.Plugs.RedirectLegacyHost`** (`lib/aponte_web/plugs/redirect_legacy_host.ex`): endpoint plug placed before `AponteWeb.Router`. Config `config :aponte, :legacy_host_redirects, %{"sesh-lab.fly.dev" => "aponte.live"}` (prod only; empty map disables). On host match: 301 to `https://<target><request_path><?query>`, halt. This is the whole old-domain strategy: one app serves both hostnames during the window; remove config + plug when the old domain dies.
 

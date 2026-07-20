@@ -2,7 +2,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
   use AponteWeb, :live_view
 
   alias Phoenix.LiveView.JS
-  alias Aponte.{Clock, Editions, Merch, Notifications}
+  alias Aponte.{Clock, Editions, Merch, Notifications, Orgs}
   alias Aponte.Editions.Edition
 
   @max_logo 2_000_000
@@ -28,9 +28,11 @@ defmodule AponteWeb.Admin.EditionFormLive do
   end
 
   def handle_event("save", %{"edition" => params}, %{assigns: %{live_action: :new}} = socket) do
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
     params = params |> to_utc() |> put_logo(socket, params["number"])
 
-    case Editions.create_edition(params) do
+    case Editions.create_edition(org, params) do
       {:ok, edition} ->
         {:noreply,
          socket
@@ -127,8 +129,11 @@ defmodule AponteWeb.Admin.EditionFormLive do
   end
 
   defp assign_featured_merch(socket, %Edition{id: id}) do
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
     assign(socket,
-      all_merch: Merch.list_active_items(),
+      all_merch: Merch.list_active_items(org.id),
       featured_ids: Editions.featured_merch_ids(id)
     )
   end

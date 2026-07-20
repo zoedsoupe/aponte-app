@@ -14,41 +14,43 @@ defmodule Aponte.Merch do
 
   alias Aponte.Repo
   alias Aponte.Merch.{Item, Unit}
+  alias Aponte.Orgs.Org
   alias Aponte.Tickets
   alias Aponte.Tickets.{Order, OrderItem}
 
   # ── Catalogo ──────────────────────────────────────────────────────────────
 
-  @spec list_items() :: [Item.t()]
-  def list_items do
+  @spec list_items(Ecto.UUID.t()) :: [Item.t()]
+  def list_items(org_id) do
     Item
+    |> where(org_id: ^org_id)
     |> order_by([m], asc: m.position, asc: m.inserted_at)
     |> Repo.all()
   end
 
   @doc "Itens vendidos online em /loja (ativos), ordenados por position."
-  @spec list_active_items() :: [Item.t()]
-  def list_active_items do
+  @spec list_active_items(Ecto.UUID.t()) :: [Item.t()]
+  def list_active_items(org_id) do
     Item
-    |> where([m], m.is_active and m.kind == :online)
+    |> where([m], m.org_id == ^org_id and m.is_active and m.kind == :online)
     |> order_by([m], asc: m.position, asc: m.inserted_at)
     |> Repo.all()
   end
 
   @doc "Itens vendidos no balcão da festa (ativos), ordenados por position."
-  @spec list_counter_items() :: [Item.t()]
-  def list_counter_items do
+  @spec list_counter_items(Ecto.UUID.t()) :: [Item.t()]
+  def list_counter_items(org_id) do
     Item
-    |> where([m], m.is_active and m.kind == :counter)
+    |> where([m], m.org_id == ^org_id and m.is_active and m.kind == :counter)
     |> order_by([m], asc: m.position, asc: m.inserted_at)
     |> Repo.all()
   end
 
   @doc "Itens de balcão ativos por id (pra montar a venda no POS)."
-  @spec get_counter_items([Ecto.UUID.t()]) :: [Item.t()]
-  def get_counter_items(ids) do
+  @spec get_counter_items(Ecto.UUID.t(), [Ecto.UUID.t()]) :: [Item.t()]
+  def get_counter_items(org_id, ids) do
     Item
-    |> where([m], m.is_active and m.kind == :counter and m.id in ^ids)
+    |> where([m], m.org_id == ^org_id and m.is_active and m.kind == :counter and m.id in ^ids)
     |> Repo.all()
   end
 
@@ -78,11 +80,20 @@ defmodule Aponte.Merch do
   @spec change_item(Item.t(), map()) :: Ecto.Changeset.t()
   def change_item(%Item{} = item, attrs \\ %{}), do: Item.changeset(item, attrs)
 
-  @spec create_item(map()) :: {:ok, Item.t()} | {:error, Ecto.Changeset.t()}
-  def create_item(attrs) do
+  @spec create_item(Org.t(), map()) :: {:ok, Item.t()} | {:error, Ecto.Changeset.t()}
+  def create_item(%Org{} = org, attrs) do
+    attrs = put_org_id(attrs, org)
+
     %Item{}
     |> Item.changeset(attrs)
     |> Repo.insert()
+  end
+
+  # org_id comes from the org argument, never from user params.
+  defp put_org_id(attrs, %Org{id: id}) do
+    if Enum.any?(Map.keys(attrs), &is_binary/1),
+      do: Map.put(attrs, "org_id", id),
+      else: Map.put(attrs, :org_id, id)
   end
 
   @spec update_item(Item.t(), map()) :: {:ok, Item.t()} | {:error, Ecto.Changeset.t()}

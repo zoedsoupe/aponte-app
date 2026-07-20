@@ -8,17 +8,16 @@ defmodule Aponte.MerchTest do
   alias Aponte.Merch.{Item, Unit}
   alias Aponte.Tickets.{Order, Ticket}
 
-  defp merch_item(attrs \\ %{}) do
-    defaults = %{org_id: org_fixture().id, name: "Poster", price_cents: 2000, stock: 10}
-    {:ok, item} = Merch.create_item(Map.merge(defaults, attrs))
+  defp merch_item(org, attrs \\ %{}) do
+    defaults = %{name: "Poster", price_cents: 2000, stock: 10}
+    {:ok, item} = Merch.create_item(org, Map.merge(defaults, attrs))
     item
   end
 
   describe "catalog" do
     test "create_item valid -> active, available == stock" do
       assert {:ok, %Item{} = item} =
-               Merch.create_item(%{
-                 org_id: org_fixture().id,
+               Merch.create_item(org_fixture(), %{
                  name: "Poster",
                  price_cents: 2000,
                  stock: 10
@@ -31,8 +30,7 @@ defmodule Aponte.MerchTest do
 
     test "rejects blank name" do
       assert {:error, %Ecto.Changeset{}} =
-               Merch.create_item(%{
-                 org_id: org_fixture().id,
+               Merch.create_item(org_fixture(), %{
                  name: "",
                  price_cents: 2000,
                  stock: 10
@@ -41,8 +39,7 @@ defmodule Aponte.MerchTest do
 
     test "rejects negative price" do
       assert {:error, %Ecto.Changeset{}} =
-               Merch.create_item(%{
-                 org_id: org_fixture().id,
+               Merch.create_item(org_fixture(), %{
                  name: "Poster",
                  price_cents: -1,
                  stock: 10
@@ -51,8 +48,7 @@ defmodule Aponte.MerchTest do
 
     test "rejects negative stock" do
       assert {:error, %Ecto.Changeset{}} =
-               Merch.create_item(%{
-                 org_id: org_fixture().id,
+               Merch.create_item(org_fixture(), %{
                  name: "Poster",
                  price_cents: 2000,
                  stock: -1
@@ -60,7 +56,7 @@ defmodule Aponte.MerchTest do
     end
 
     test "toggle_active flips is_active" do
-      item = merch_item()
+      item = merch_item(org_fixture())
       assert {:ok, off} = Merch.toggle_active(item)
       refute off.is_active
       assert {:ok, on} = Merch.toggle_active(off)
@@ -68,17 +64,18 @@ defmodule Aponte.MerchTest do
     end
 
     test "list_active_items excludes inactive" do
-      active = merch_item(%{name: "Ativo"})
-      inactive = merch_item(%{name: "Inativo"})
+      org = org_fixture()
+      active = merch_item(org, %{name: "Ativo"})
+      inactive = merch_item(org, %{name: "Inativo"})
       {:ok, _} = Merch.toggle_active(inactive)
 
-      ids = Merch.list_active_items() |> Enum.map(& &1.id)
+      ids = Merch.list_active_items(org.id) |> Enum.map(& &1.id)
       assert active.id in ids
       refute inactive.id in ids
     end
 
     test "editing stock propagates the delta to available" do
-      item = merch_item(%{stock: 10})
+      item = merch_item(org_fixture(), %{stock: 10})
       # Simulate 3 sold: available 7.
       {1, _} = Repo.update_all(from(m in Item, where: m.id == ^item.id), set: [available: 7])
       item = Merch.get_item!(item.id)
@@ -89,7 +86,7 @@ defmodule Aponte.MerchTest do
     end
 
     test "update_item does not let a raw available param override server-derived value" do
-      item = merch_item(%{stock: 10})
+      item = merch_item(org_fixture(), %{stock: 10})
       {1, _} = Repo.update_all(from(m in Item, where: m.id == ^item.id), set: [available: 7])
       item = Merch.get_item!(item.id)
 
@@ -101,11 +98,12 @@ defmodule Aponte.MerchTest do
 
   describe "mint on confirm" do
     test "confirming an order with a merch line mints one Unit per quantity and decrements available" do
-      edition = edition_fixture()
-      item = merch_item(%{stock: 10, price_cents: 2000})
+      org = org_fixture()
+      edition = edition_fixture(%{org_id: org.id})
+      item = merch_item(org, %{stock: 10, price_cents: 2000})
 
       {:ok, order} =
-        Tickets.create_order(%{
+        Tickets.create_order(org, %{
           edition_id: edition.id,
           customer_name: "Fulano",
           customer_instagram: "fulano",
@@ -126,11 +124,12 @@ defmodule Aponte.MerchTest do
     end
 
     test "mixed order mints both tickets and units in one tx" do
-      {edition, lot} = edition_with_lot(%{}, %{capacity: 5, price_cents: 1500})
-      item = merch_item(%{stock: 10, price_cents: 2000})
+      org = org_fixture()
+      {edition, lot} = edition_with_lot(%{org_id: org.id}, %{capacity: 5, price_cents: 1500})
+      item = merch_item(org, %{stock: 10, price_cents: 2000})
 
       {:ok, order} =
-        Tickets.create_order(%{
+        Tickets.create_order(org, %{
           edition_id: edition.id,
           customer_name: "Fulano",
           customer_instagram: "fulano",
@@ -149,12 +148,13 @@ defmodule Aponte.MerchTest do
     end
 
     test "pure-merch order confirms without touching any TicketType.available" do
-      edition = edition_fixture()
+      org = org_fixture()
+      edition = edition_fixture(%{org_id: org.id})
       lot = ticket_type_fixture(edition, %{capacity: 5})
-      item = merch_item(%{stock: 10})
+      item = merch_item(org, %{stock: 10})
 
       {:ok, order} =
-        Tickets.create_order(%{
+        Tickets.create_order(org, %{
           edition_id: edition.id,
           customer_name: "Fulano",
           customer_instagram: "fulano",
@@ -168,11 +168,12 @@ defmodule Aponte.MerchTest do
     end
 
     test "injected colliding code_fun retries then succeeds" do
-      edition = edition_fixture()
-      item = merch_item(%{stock: 10})
+      org = org_fixture()
+      edition = edition_fixture(%{org_id: org.id})
+      item = merch_item(org, %{stock: 10})
 
       {:ok, order} =
-        Tickets.create_order(%{
+        Tickets.create_order(org, %{
           edition_id: edition.id,
           customer_name: "Fulano",
           customer_instagram: "fulano",
@@ -190,11 +191,12 @@ defmodule Aponte.MerchTest do
 
   describe "stock at confirm" do
     test "confirming when available < requested rolls back, no units minted" do
-      edition = edition_fixture()
-      item = merch_item(%{stock: 10})
+      org = org_fixture()
+      edition = edition_fixture(%{org_id: org.id})
+      item = merch_item(org, %{stock: 10})
 
       {:ok, order} =
-        Tickets.create_order(%{
+        Tickets.create_order(org, %{
           edition_id: edition.id,
           customer_name: "Fulano",
           customer_instagram: "fulano",
@@ -212,11 +214,12 @@ defmodule Aponte.MerchTest do
     end
 
     test "cancel of a confirmed merch order restores available and deletes units" do
-      edition = edition_fixture()
-      item = merch_item(%{stock: 10})
+      org = org_fixture()
+      edition = edition_fixture(%{org_id: org.id})
+      item = merch_item(org, %{stock: 10})
 
       {:ok, order} =
-        Tickets.create_order(%{
+        Tickets.create_order(org, %{
           edition_id: edition.id,
           customer_name: "Fulano",
           customer_instagram: "fulano",
@@ -235,11 +238,12 @@ defmodule Aponte.MerchTest do
 
   describe "redeem_unit/1" do
     setup do
-      edition = edition_fixture()
-      item = merch_item(%{stock: 10})
+      org = org_fixture()
+      edition = edition_fixture(%{org_id: org.id})
+      item = merch_item(org, %{stock: 10})
 
       {:ok, order} =
-        Tickets.create_order(%{
+        Tickets.create_order(org, %{
           edition_id: edition.id,
           customer_name: "Fulano",
           customer_instagram: "fulano",
@@ -285,11 +289,12 @@ defmodule Aponte.MerchTest do
 
   describe "stats integrity" do
     test "stats/1 and stats_by_type/1 count only ticket quantities while revenue includes merch" do
-      {edition, lot} = edition_with_lot(%{}, %{capacity: 10, price_cents: 1500})
-      item = merch_item(%{stock: 10, price_cents: 2000})
+      org = org_fixture()
+      {edition, lot} = edition_with_lot(%{org_id: org.id}, %{capacity: 10, price_cents: 1500})
+      item = merch_item(org, %{stock: 10, price_cents: 2000})
 
       {:ok, order} =
-        Tickets.create_order(%{
+        Tickets.create_order(org, %{
           edition_id: edition.id,
           customer_name: "Fulano",
           customer_instagram: "fulano",
@@ -315,7 +320,7 @@ defmodule Aponte.MerchTest do
 
     test "XOR CHECK rejects a raw order_items insert with both FKs set" do
       {edition, lot} = edition_with_lot()
-      item = merch_item()
+      item = merch_item(org_fixture())
       order = insert_order(edition)
       now = Aponte.Clock.now_utc() |> DateTime.to_naive()
 

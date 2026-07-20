@@ -24,7 +24,7 @@ defmodule Aponte.Notifications.PushSubscription do
 
   def changeset(sub, attrs) do
     sub
-    |> cast(attrs, ~w(endpoint p256dh auth user_agent audience topics)a)
+    |> cast(attrs, ~w(org_id endpoint p256dh auth user_agent audience topics)a)
     |> validate_required(~w(endpoint p256dh auth audience)a)
     |> validate_subset(:topics, @topics)
     |> unique_constraint(:endpoint)

@@ -1,11 +1,18 @@
 defmodule AponteWeb.PageController do
   use AponteWeb, :controller
 
-  alias Aponte.{Editions, Merch}
+  alias Aponte.{Editions, Merch, Orgs}
   alias AponteWeb.SEO
 
   def index(conn, _params) do
-    edition = Editions.current_edition()
+    # TODO(phase-4): org comes from assigns (LoadOrg plug)
+    org =
+      case Orgs.get_org_by_slug("sesh") do
+        {:ok, org} -> org
+        {:error, :not_found} -> nil
+      end
+
+    edition = org && Editions.current_edition(org.id)
     logo = edition && SEO.abs_url(Editions.logo_url(edition.logo_path))
 
     conn
@@ -19,7 +26,7 @@ defmodule AponteWeb.PageController do
     |> assign(:jsonld, SEO.music_event_jsonld(edition, logo))
     |> render(:index,
       edition: edition,
-      has_merch?: Merch.list_active_items() != [],
+      has_merch?: org != nil and Merch.list_active_items(org.id) != [],
       page_title: edition && edition.name
     )
   end

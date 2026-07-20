@@ -7,8 +7,10 @@ import Config
 # Run `mix help test` for more information.
 config :aponte, Aponte.Repo,
   database: Path.expand("../sesh_lab_test.db", __DIR__),
-  pool_size: 5,
-  pool: Ecto.Adapters.SQL.Sandbox
+  pool_size: 1,
+  pool: Ecto.Adapters.SQL.Sandbox,
+  busy_timeout: 10_000,
+  journal_mode: :wal
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.

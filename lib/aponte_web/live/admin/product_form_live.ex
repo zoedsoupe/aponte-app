@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.ProductFormLive do
   use AponteWeb, :live_view
 
-  alias Aponte.Merch
+  alias Aponte.{Merch, Orgs}
   alias Aponte.Merch.Item
 
   @max_image 2_000_000
@@ -25,7 +25,10 @@ defmodule AponteWeb.Admin.ProductFormLive do
   end
 
   def handle_event("save", %{"item" => params}, %{assigns: %{live_action: :new}} = socket) do
-    case Merch.create_item(put_image(params, socket)) do
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
+    case Merch.create_item(org, put_image(params, socket)) do
       {:ok, _item} ->
         {:noreply,
          socket

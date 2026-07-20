@@ -6,9 +6,9 @@ defmodule Aponte.BarTest do
   alias Aponte.{Bar, Merch}
   alias Aponte.Merch.Item
 
-  defp counter_item(attrs) do
-    base = %{org_id: org_fixture().id, kind: :counter, price_cents: 500}
-    {:ok, item} = Merch.create_item(Map.merge(base, attrs))
+  defp counter_item(org, attrs) do
+    base = %{kind: :counter, price_cents: 500}
+    {:ok, item} = Merch.create_item(org, Map.merge(base, attrs))
     item
   end
 
@@ -16,8 +16,9 @@ defmodule Aponte.BarTest do
 
   describe "record_sale/3" do
     test "cash sale: totals, snapshots line, decrements tracked stock" do
-      water = counter_item(%{name: "Água", price_cents: 500, track_stock: true, stock: 5})
-      ed = edition_fixture()
+      org = org_fixture()
+      water = counter_item(org, %{name: "Água", price_cents: 500, track_stock: true, stock: 5})
+      ed = edition_fixture(%{org_id: org.id})
 
       assert {:ok, sale} = Bar.record_sale(ed.id, :cash, %{water.id => "3"})
       assert sale.payment_method == :cash
@@ -33,7 +34,7 @@ defmodule Aponte.BarTest do
     end
 
     test "untracked item sells beyond any count, stock untouched" do
-      cig = counter_item(%{name: "Cigarro", price_cents: 1500, track_stock: false})
+      cig = counter_item(org_fixture(), %{name: "Cigarro", price_cents: 1500, track_stock: false})
 
       assert {:ok, sale} = Bar.record_sale(nil, :pix, %{cig.id => 99})
       assert sale.total_cents == 99 * 1500
@@ -41,14 +42,14 @@ defmodule Aponte.BarTest do
     end
 
     test "tracked item over available is rejected, no partial commit" do
-      water = counter_item(%{name: "Água", track_stock: true, stock: 2})
+      water = counter_item(org_fixture(), %{name: "Água", track_stock: true, stock: 2})
 
       assert {:error, {:sold_out, "Água"}} = Bar.record_sale(nil, :cash, %{water.id => "3"})
       assert reload(water).available == 2
     end
 
     test "empty cart (all zero) is rejected" do
-      water = counter_item(%{name: "Água", track_stock: true, stock: 2})
+      water = counter_item(org_fixture(), %{name: "Água", track_stock: true, stock: 2})
       assert {:error, :empty_cart} = Bar.record_sale(nil, :cash, %{water.id => "0"})
     end
 
@@ -59,9 +60,10 @@ defmodule Aponte.BarTest do
 
   describe "stats/1" do
     test "splits cash/pix, counts sales, ranks top items" do
-      ed = edition_fixture()
-      water = counter_item(%{name: "Água", price_cents: 500, track_stock: false})
-      beer = counter_item(%{name: "Cerveja", price_cents: 1000, track_stock: false})
+      org = org_fixture()
+      ed = edition_fixture(%{org_id: org.id})
+      water = counter_item(org, %{name: "Água", price_cents: 500, track_stock: false})
+      beer = counter_item(org, %{name: "Cerveja", price_cents: 1000, track_stock: false})
 
       {:ok, _} = Bar.record_sale(ed.id, :cash, %{water.id => 2, beer.id => 1})
       {:ok, _} = Bar.record_sale(ed.id, :pix, %{beer.id => 3})

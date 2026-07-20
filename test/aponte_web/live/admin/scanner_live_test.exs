@@ -11,8 +11,11 @@ defmodule AponteWeb.Admin.ScannerLiveTest do
     cfg = Application.fetch_env!(:aponte, :admin_auth)
     auth = "Basic " <> Base.encode64("#{cfg[:username]}:#{cfg[:password]}")
 
-    {edition, lot} = edition_with_lot()
-    {:ok, order} = Tickets.create_order(order_attrs(edition, lot))
+    # Phase-3: admin routes resolve the tenant via the "sesh" org (seeded by
+    # the orgs migration) until phase 4.
+    {:ok, org} = Aponte.Orgs.get_org_by_slug("sesh")
+    {edition, lot} = edition_with_lot(%{org_id: org.id})
+    {:ok, order} = Tickets.create_order(org, order_attrs(edition, lot))
     {:ok, _} = Tickets.confirm_order(order.id)
     [ticket] = Repo.all(Ticket)
 

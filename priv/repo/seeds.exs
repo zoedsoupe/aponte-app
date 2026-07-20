@@ -16,11 +16,11 @@ org = Repo.get_by!(Org, slug: "sesh")
 upsert = fn attrs ->
   number = attrs.number
 
-  if Repo.exists?(from(e in Edition, where: e.number == ^number)) do
+  if Repo.exists?(from(e in Edition, where: e.number == ^number and e.org_id == ^org.id)) do
     IO.puts("· edição ##{number} já existe — pulando")
     nil
   else
-    {:ok, ed} = Editions.create_edition(Map.put(attrs, :org_id, org.id))
+    {:ok, ed} = Editions.create_edition(org, attrs)
     IO.puts("✓ criada edição ##{number}: #{ed.name} (#{ed.accent_color})")
     ed
   end

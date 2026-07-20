@@ -27,7 +27,7 @@ defmodule Aponte.DjApplications.DjApplication do
 
   def changeset(application, attrs) do
     application
-    |> cast(attrs, @castable)
+    |> cast(attrs, @castable ++ [:org_id])
     |> update_change(:whatsapp, &normalize_whatsapp/1)
     |> update_change(:instagram, &normalize_handle/1)
     |> validate_required(@required)

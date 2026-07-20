@@ -17,6 +17,9 @@ defmodule Aponte.Fixtures do
     |> Repo.insert!()
   end
 
+  @doc "Recarrega a org dona da edição (fixturada via org_id)."
+  def org_for(%Edition{org_id: org_id}), do: Aponte.Orgs.get_org!(org_id)
+
   def edition_fixture(attrs \\ %{}) do
     n = System.unique_integer([:positive])
     {org_id, attrs} = Map.pop(attrs, :org_id)

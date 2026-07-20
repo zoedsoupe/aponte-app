@@ -13,6 +13,7 @@ defmodule Aponte.Notifications do
 
   alias Aponte.{Clock, Repo}
   alias Aponte.Editions.{Edition, TicketType}
+  alias Aponte.Orgs.Org
   alias Aponte.Tickets.Order
   alias Aponte.Notifications.PushSubscription
 
@@ -75,7 +76,7 @@ defmodule Aponte.Notifications do
 
   @spec notify_admin_new_order(Order.t()) :: :ok
   def notify_admin_new_order(%Order{} = order) do
-    order = preload_items(order)
+    order = preload_for_notify(order)
 
     payload = %{
       "t" => "new_order",
@@ -83,7 +84,7 @@ defmodule Aponte.Notifications do
       "n" => first_name(order.customer_name),
       "v" => format_money(order.total_cents),
       "q" => Enum.sum(Enum.map(order.items || [], & &1.quantity)),
-      "url" => "/admin/pedidos/#{order.id}"
+      "url" => admin_order_url(order)
     }
 
     fanout(payload, audience: :admin, urgency: "high", topic: "order-" <> short_id(order.id))
@@ -120,6 +121,8 @@ defmodule Aponte.Notifications do
   @spec notify_customer_order_update(Order.t()) :: :ok
   def notify_customer_order_update(%Order{client_endpoint: endpoint, status: status} = order)
       when is_binary(endpoint) do
+    order = preload_for_notify(order)
+
     with %PushSubscription{topics: topics} = sub <-
            Repo.get_by(PushSubscription, endpoint: endpoint, audience: :client),
          true <- "order_status" in (topics || []) do
@@ -127,7 +130,7 @@ defmodule Aponte.Notifications do
         "t" => "order_status",
         "id" => order.id,
         "s" => to_string(status),
-        "url" => "/compra/#{order.id}"
+        "url" => order_url(order)
       }
 
       Task.start(fn ->
@@ -158,16 +161,29 @@ defmodule Aponte.Notifications do
 
   def notify_coupon_expiring(_), do: :ok
 
-  @doc "Anuncia uma edição recém-publicada a todo cliente opt-in em `editions`."
+  @doc "Anuncia uma edição recém-publicada aos clientes da org opt-in em `editions`."
   @spec announce_edition(Edition.t()) :: :ok
   def announce_edition(%Edition{} = edition) do
-    broadcast_to_topic("editions", %{
+    payload = %{
       "t" => "edition",
       "title" => "#{edition.name} anunciada",
       "body" => "#{Clock.format(edition.starts_at, :date)} — #{edition.venue}",
       "url" => "/"
-    })
+    }
+
+    PushSubscription
+    |> where([s], s.audience == :client)
+    |> for_org(edition.org_id)
+    |> Repo.all()
+    |> Enum.filter(&("editions" in (&1.topics || [])))
+    |> Enum.each(fn sub -> Task.start(fn -> push_one(sub, payload, urgency: "low") end) end)
+
+    :ok
   end
+
+  # Edition org is always set in practice; nil covers Aponte-wide (org-less) subs.
+  defp for_org(query, nil), do: where(query, [s], is_nil(s.org_id))
+  defp for_org(query, org_id), do: where(query, [s], s.org_id == ^org_id)
 
   @doc "Announces a newly-created public coupon to every `coupons`-opted client."
   @spec announce_coupon(%{
@@ -235,10 +251,17 @@ defmodule Aponte.Notifications do
     end
   end
 
-  defp preload_items(%Order{items: %Ecto.Association.NotLoaded{}} = o),
-    do: Repo.preload(o, :items)
+  defp preload_for_notify(%Order{} = order), do: Repo.preload(order, [:items, :org])
 
-  defp preload_items(o), do: o
+  # Org-aware URLs; the bare fallback keeps ad-hoc callers (backfill-ish
+  # structs, tests) that never persisted the order working.
+  defp order_url(%Order{org: %Org{slug: slug}} = order), do: "/#{slug}/compra/#{order.id}"
+  defp order_url(%Order{} = order), do: "/compra/#{order.id}"
+
+  defp admin_order_url(%Order{org: %Org{slug: slug}} = order),
+    do: "/admin/#{slug}/pedidos/#{order.id}"
+
+  defp admin_order_url(%Order{} = order), do: "/admin/pedidos/#{order.id}"
 
   defp first_name(nil), do: ""
 

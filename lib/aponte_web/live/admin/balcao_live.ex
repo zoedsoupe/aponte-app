@@ -10,17 +10,21 @@ defmodule AponteWeb.Admin.BalcaoLive do
   """
   use AponteWeb, :live_view
 
-  alias Aponte.{Bar, Clock, Editions, Merch}
+  alias Aponte.{Bar, Clock, Editions, Merch, Orgs}
   alias Aponte.Payments.Pix
 
   @impl true
   def mount(_params, _session, socket) do
+    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
+    {:ok, org} = Orgs.get_org_by_slug("sesh")
+
     {:ok,
      socket
      |> assign(
        mode: :sell,
-       items: Merch.list_counter_items(),
-       edition: Editions.current_edition(),
+       org: org,
+       items: Merch.list_counter_items(org.id),
+       edition: Editions.current_edition(org.id),
        cart: %{},
        pix: nil,
        sale: nil,
@@ -91,19 +95,20 @@ defmodule AponteWeb.Admin.BalcaoLive do
 
   defp checkout(socket, method) do
     edition_id = socket.assigns.edition && socket.assigns.edition.id
+    org_id = socket.assigns.org.id
 
     case Bar.record_sale(edition_id, method, socket.assigns.cart) do
       {:ok, sale} ->
         socket
         |> assign(cart: %{}, pix: nil, sale: %{total: sale.total_cents, method: method})
-        |> assign(items: Merch.list_counter_items())
+        |> assign(items: Merch.list_counter_items(org_id))
 
       {:error, :empty_cart} ->
         put_flash(socket, :error, "Carrinho vazio.")
 
       {:error, {:sold_out, name}} when is_binary(name) ->
         socket
-        |> assign(pix: nil, items: Merch.list_counter_items())
+        |> assign(pix: nil, items: Merch.list_counter_items(org_id))
         |> put_flash(:error, "#{name} esgotou.")
 
       {:error, _} ->

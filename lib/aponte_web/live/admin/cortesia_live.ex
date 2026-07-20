@@ -23,6 +23,7 @@ defmodule AponteWeb.Admin.CortesiaLive do
     case parse_quantity(params["quantity"]) do
       {:ok, qty} ->
         input = %{
+          org_id: socket.assigns.edition.org_id,
           edition_id: socket.assigns.edition.id,
           ticket_type_id: params["ticket_type_id"],
           customer_name: params["customer_name"],
