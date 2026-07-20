@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash}>
+<Layouts.app flash={@flash} org={@org}>
   <section class="stack-5">
     <header class="stack-1">
       <h1 class="text-xl text-mono">Meus ingressos</h1>
@@ -7,9 +7,38 @@
       </p>
     </header>
 
-    <div class="stack-2" data-order-history></div>
+    <%!-- phase 6: orders.js builds /compra/ links from data-org-slug --%>
+    <div class="stack-2" data-order-history data-org-slug={@org.slug}></div>
 
-    <form class="stack-2" data-order-import>
+    <.form :let={_f} for={%{}} action={~p"/#{@org.slug}/meus-ingressos"} class="stack-2">
+      <label class="text-xs text-dim" for="lookup-phone">
+        Perdeu o link do pedido? Busca pelo telefone + código do pedido.
+      </label>
+      <input
+        id="lookup-phone"
+        type="tel"
+        name="phone"
+        required
+        inputmode="numeric"
+        placeholder="telefone (DDD + número)"
+        class="input text-mono text-sm"
+        autocomplete="off"
+      />
+      <input
+        id="lookup-code"
+        type="text"
+        name="code"
+        required
+        placeholder="código do pedido"
+        class="input text-mono text-sm"
+        autocapitalize="off"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button type="submit" class="btn btn--ghost btn--block">Buscar pedido</button>
+    </.form>
+
+    <form class="stack-2" data-order-import data-org-slug={@org.slug}>
       <label class="text-xs text-dim" for="order-import-input">
         Comprou pelo Instagram ou abriu o link em outro app? Cole aqui o link
         do seu pedido pra salvá-lo neste aparelho.
@@ -27,6 +56,6 @@
       <button type="submit" class="btn btn--ghost btn--block">Salvar pedido</button>
     </form>
 
-    <a href={~p"/"} class="btn btn--ghost btn--block">Voltar</a>
+    <a href={~p"/#{@org.slug}"} class="btn btn--ghost btn--block">Voltar</a>
   </section>
 </Layouts.app>

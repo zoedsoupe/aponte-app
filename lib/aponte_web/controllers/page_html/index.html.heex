@@ -1,88 +1,26 @@
 <Layouts.app flash={@flash}>
-  <section :if={@edition} class="flyer stack-5">
-    <header class="flyer-head stack-2">
-      <.sesh_logo src={edition_logo(@edition)} class="sesh-logo--hero" />
-      <p class="text-xs text-mono text-dim">{"SESH ##{@edition.number}"}</p>
-      <h1
-        :if={@edition.name not in ["SESH ##{@edition.number}", "SESH #{@edition.number}"]}
-        class="flyer-title"
-      >
-        {@edition.name}
-      </h1>
-    </header>
-
-    <p class="date-duo">
-      <span class="date-duo-time text-mono">{edition_time(@edition.starts_at)}</span>
-      <span class="date-duo-date text-mono">{edition_day(@edition.starts_at)}</span>
-    </p>
-
-    <% lineup = lineup_lines(@edition.lineup) %>
-    <section :if={lineup != []} class="stack-1">
-      <h2 class="text-sm text-muted">Lineup</h2>
-      <ul class="lineup stack-1">
-        <li :for={name <- lineup} class="text-base text-mono">{name}</li>
-      </ul>
-    </section>
-
-    <section :if={@edition.venue} class="stack-1">
-      <h2 class="text-sm text-muted">Onde</h2>
-      <p class="text-base">{@edition.venue}</p>
-      <a
-        :if={@edition.venue_address}
-        href={"https://www.google.com/maps/search/?api=1&query=#{URI.encode_www_form("#{@edition.venue} #{@edition.venue_address}")}"}
-        target="_blank"
-        rel="noopener"
-        class="text-xs text-dim"
-      >
-        {@edition.venue_address}
-      </a>
-    </section>
-
-    <p class="text-sm text-muted">
-      Os DJs da cena têm que começar de algum lugar! Manda teu set e toca com a gente.
-    </p>
-
-    <a href={~p"/tocar"} class="btn btn--ghost btn--block">Quero tocar!</a>
-
-    <div class="cta-dock">
-      <a href={~p"/comprar"} class="btn btn--blob btn--block">Garantir ingresso →</a>
-      <a
-        href="https://www.instagram.com/coletivo.sesh/"
-        target="_blank"
-        rel="noopener"
-        class="btn btn--accent btn--block"
-      >
-        @coletivo.sesh
-      </a>
-    </div>
-  </section>
-
-  <section :if={is_nil(@edition)} class="teaser stack-5">
+  <section class="stack-6">
     <header class="stack-3">
-      <.sesh_logo class="sesh-logo--hero" />
-      <p class="text-base text-dim">Próxima edição em breve.</p>
+      <img src={~p"/images/aponte-logo.jpg"} alt="Aponte" class="aponte-logo aponte-logo--hero" />
+      <p class="text-base text-dim">o que tá rolando em Campos</p>
     </header>
 
-    <p class="text-sm text-muted">
-      Ativa os avisos pra ser a primeira a saber quando os ingressos abrirem.
-    </p>
+    <ul :if={@orgs != []} class="stack-3">
+      <li :for={{org, edition} <- @orgs}>
+        <a
+          href={~p"/#{org.slug}"}
+          class="card card--link stack-1"
+          style={"--accent: #{org.accent_color}"}
+        >
+          <span class="text-lg">{org.name}</span>
+          <span :if={edition} class="text-xs text-dim text-mono">
+            {edition.name} - {edition_day(edition.starts_at)} {edition_time(edition.starts_at)}
+          </span>
+          <span :if={is_nil(edition)} class="text-xs text-dim">edição em breve</span>
+        </a>
+      </li>
+    </ul>
 
-    <a :if={@has_merch?} href={~p"/loja"} class="btn btn--primary btn--block btn--blob">
-      Garantir produto
-    </a>
-    <a
-      href={~p"/avisos"}
-      class={["btn btn--block", if(@has_merch?, do: "btn--ghost", else: "btn--blob")]}
-    >
-      Quero ser avisade
-    </a>
-    <a
-      href="https://www.instagram.com/coletivo.sesh/"
-      target="_blank"
-      rel="noopener"
-      class="btn btn--ghost btn--block"
-    >
-      @coletivo.sesh
-    </a>
+    <p :if={@orgs == []} class="text-sm text-dim">Nenhum rolê no ar ainda. Volta logo.</p>
   </section>
 </Layouts.app>

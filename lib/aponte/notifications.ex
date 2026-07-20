@@ -24,7 +24,8 @@ defmodule Aponte.Notifications do
     %PushSubscription{}
     |> PushSubscription.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:p256dh, :auth, :user_agent, :audience, :topics, :updated_at]},
+      on_conflict:
+        {:replace, [:org_id, :p256dh, :auth, :user_agent, :audience, :topics, :updated_at]},
       conflict_target: :endpoint,
       returning: true
     )

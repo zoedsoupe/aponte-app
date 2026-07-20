@@ -2,7 +2,7 @@ defmodule AponteWeb.SEO do
   @moduledoc "Defaults + builders for meta/OG/Twitter/JSON-LD. Pure core."
 
   @site_name "Aponte"
-  @default_desc "SESH — festas e ingressos. Lineup, local e ingressos da proxima edicao."
+  @default_desc "Aponte: os rolês de Campos dos Goytacazes num lugar só. Festa, expo e ingresso direto com quem faz o rolê, sem taxa."
 
   @type meta :: %{
           title: String.t(),

@@ -7,21 +7,31 @@ defmodule AponteWeb.Layouts do
   embed_templates "layouts/*"
 
   attr :flash, :map, default: %{}
+  attr :org, :map, default: nil, doc: "loaded org on org-scoped pages; nil on the Aponte shell"
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
     <div class="shell">
       <header class="site-header">
-        <a href={~p"/"} class="brand">
-          <.sesh_logo />
-        </a>
-        <nav class="site-nav row gap-3 align-center">
-          <a href={~p"/loja"}>Loja</a>
-          <a href={~p"/meus-ingressos"}>Ingressos</a>
-          <a href={~p"/sobre"}>Sobre</a>
-          <a href={~p"/avisos"}>Avisos</a>
-        </nav>
+        <%= if @org do %>
+          <a href={~p"/#{@org.slug}"} class="brand">
+            <.sesh_logo />
+          </a>
+          <nav class="site-nav row gap-3 align-center">
+            <a href={~p"/#{@org.slug}/loja"}>Loja</a>
+            <a href={~p"/#{@org.slug}/meus-ingressos"}>Ingressos</a>
+            <a href={~p"/#{@org.slug}/avisos"}>Avisos</a>
+          </nav>
+        <% else %>
+          <a href={~p"/"} class="brand row gap-2 align-center">
+            <img src={~p"/images/aponte-logo.jpg"} alt="Aponte" class="brand-logo" />
+            <span class="brand-name">Aponte</span>
+          </a>
+          <nav class="site-nav row gap-3 align-center">
+            <a href={~p"/sobre"}>Sobre</a>
+          </nav>
+        <% end %>
       </header>
 
       <main class="site-main">

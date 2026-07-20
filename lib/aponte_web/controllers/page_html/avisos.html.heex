@@ -1,5 +1,9 @@
-<Layouts.app flash={@flash}>
-  <section class="stack-5">
+<Layouts.app flash={@flash} org={@org}>
+  <section
+    class="stack-5"
+    data-push-vapid-url={~p"/#{@org.slug}/push/vapid-key"}
+    data-push-sub-url={~p"/#{@org.slug}/push/subscribe"}
+  >
     <header class="stack-1">
       <h1 class="text-xl text-mono">Avisos</h1>
       <p class="text-xs text-dim">
@@ -60,6 +64,6 @@
       </div>
     </details>
 
-    <a href={~p"/"} class="btn btn--ghost btn--block">Voltar</a>
+    <a href={~p"/#{@org.slug}"} class="btn btn--ghost btn--block">Voltar</a>
   </section>
 </Layouts.app>

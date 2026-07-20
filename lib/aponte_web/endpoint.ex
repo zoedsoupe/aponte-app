@@ -15,19 +15,8 @@ defmodule AponteWeb.Endpoint do
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]
 
-  # User-uploaded edition logos. Dev: priv/static/uploads. Prod: /data/uploads
-  # via config/prod.exs. Must precede the "/" Plug.Static below so /uploads/*
-  # bypasses :only on the priv/static plug.
-  plug Plug.Static,
-    at: "/uploads",
-    from:
-      Application.compile_env(
-        :aponte,
-        :uploads_dir,
-        {:aponte, "priv/static/uploads"}
-      ),
-    gzip: false,
-    only: ~w(editions merch)
+  # User uploads are served by AponteWeb.UploadController (long-cache
+  # headers Plug.Static cannot set).
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -65,5 +54,7 @@ defmodule AponteWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  # 301s requests on legacy hosts (config :aponte, :legacy_host_redirects).
+  plug AponteWeb.Plugs.RedirectLegacyHost
   plug AponteWeb.Router
 end

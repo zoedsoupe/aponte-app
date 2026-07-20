@@ -1,0 +1,24 @@
+<Layouts.app flash={@flash} org={@org}>
+  <section class="stack-5">
+    <header class="stack-1">
+      <h1 class="text-xl text-mono">Meus ingressos</h1>
+    </header>
+
+    <div :if={@order} class="card stack-2">
+      <div class="row space-between align-center">
+        <span class="text-base">{Order.masked_name(@order.customer_name)}</span>
+        <.status_badge status={@order.status} />
+      </div>
+      <p class="text-xs text-dim">{status_message(@order.status)}</p>
+      <a href={~p"/#{@org.slug}/compra/#{@order.id}"} class="btn btn--primary btn--block">
+        Ver pedido
+      </a>
+    </div>
+
+    <p :if={is_nil(@order)} class="text-sm text-dim">
+      Nada encontrado. Confere o telefone e o código do pedido e tenta de novo.
+    </p>
+
+    <a href={~p"/#{@org.slug}/meus-ingressos"} class="btn btn--ghost btn--block">Voltar</a>
+  </section>
+</Layouts.app>

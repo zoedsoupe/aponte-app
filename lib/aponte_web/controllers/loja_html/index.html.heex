@@ -1,10 +1,16 @@
-<Layouts.app flash={@flash}>
-  <.form :let={f} for={@changeset} action={~p"/loja"} class="stack-5 store-form" id="loja-form">
+<Layouts.app flash={@flash} org={@org}>
+  <.form
+    :let={f}
+    for={@changeset}
+    action={~p"/#{@org.slug}/loja"}
+    class="stack-5 store-form"
+    id="loja-form"
+  >
     <input type="hidden" name="order[client_endpoint]" data-client-endpoint />
 
     <header class="stack-1">
       <h1 class="text-xl text-mono">Loja</h1>
-      <p class="text-xs text-dim">Produtos da SESH. Escolha, finalize e pague no PIX.</p>
+      <p class="text-xs text-dim">Produtos da {@org.name}. Escolha, finalize e pague no PIX.</p>
     </header>
 
     <p :if={@merch == []} class="text-sm text-dim">

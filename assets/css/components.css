@@ -109,7 +109,7 @@ body:has(.sesh-logo--hero) .brand {
   min-width: 0;
 }
 
-/* chamative nav: accent, uppercase mono, neon glow on hover */
+/* chamative nav: accent, uppercase mono */
 .site-nav a {
   color: var(--accent-soft);
   font-family: var(--font-mono);
@@ -117,14 +117,11 @@ body:has(.sesh-logo--hero) .brand {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
-  transition:
-    color var(--motion-fast, 120ms) ease,
-    text-shadow var(--motion-fast, 120ms) ease;
+  transition: color var(--motion-fast, 120ms) ease;
 }
 .site-nav a:hover,
 .site-nav a:focus-visible {
   color: var(--accent);
-  text-shadow: 0 0 8px var(--accent);
 }
 
 @media (min-width: 640px) {
@@ -285,7 +282,7 @@ body:has(.sesh-logo--hero) .brand {
   border-radius: 999px;
   border: 1px solid transparent;
   color: var(--accent-soft);
-  border-color: var(--accent-glow);
+  border-color: var(--accent);
   background: rgba(247, 147, 217, 0.06);
 }
 
@@ -431,11 +428,10 @@ body:has(.sesh-logo--hero) .brand {
 }
 
 /* accent-outline CTA: alto o bastante pra recrutar (DJs, contato) sem roubar o
-   blob primário. Glow neon (tema Y2K), preenche no hover. */
+   blob primário. Preenche no hover. */
 .btn--accent {
   border-color: var(--accent);
   color: var(--accent);
-  box-shadow: 0 0 12px var(--accent-glow);
 }
 .btn--accent:hover,
 .btn--accent:focus-visible {
@@ -550,8 +546,7 @@ body:has(.sesh-logo--hero) .brand {
 
 .input:focus {
   border-color: var(--accent);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  outline: 3px solid var(--accent);
 }
 
 .input--textarea {
@@ -637,8 +632,7 @@ select.input {
   padding: var(--s-3);
   border: 1.5px solid var(--accent);
   border-radius: var(--radius-sm);
-  background: var(--accent-glow);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 .lot-req-label {
   font-family: var(--font-mono);
@@ -999,7 +993,7 @@ select.input {
   /* avisos box = rosa (accent), não verde */
   color: var(--accent);
   border-color: var(--accent);
-  background: var(--accent-glow);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .push-prompt .row {
@@ -1156,14 +1150,12 @@ details[open] summary {
   text-transform: uppercase;
   transition:
     background var(--motion-fast, 120ms) ease,
-    color var(--motion-fast, 120ms) ease,
-    box-shadow var(--motion-fast, 120ms) ease;
+    color var(--motion-fast, 120ms) ease;
 }
 .admin-action:hover,
 .admin-action:focus-visible {
   background: var(--accent);
   color: #05070a;
-  box-shadow: 0 0 12px var(--accent);
 }
 .admin-action--primary {
   background: var(--accent);
@@ -1289,7 +1281,7 @@ details[open] summary {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   Y2K cyber-rave skin (Fase 6). Structure first; polish is iterative.
+   Aponte paper skin. Structure first; polish is iterative.
    ════════════════════════════════════════════════════════════════════════ */
 
 /* grain texture over everything (feTurbulence data-URI, ~5% opacity) */
@@ -1359,7 +1351,7 @@ body::after {
   z-index: -1;
 }
 
-/* date in two neon colors: 21H (cyan) / 27JUN. (green) */
+/* date in two palette colors: 21H (mauve) / 27JUN. (green) */
 .date-duo {
   display: flex;
   gap: var(--s-3);
@@ -1532,4 +1524,43 @@ body::after {
 }
 .sesh-logo--custom {
   margin-inline-end: auto;
+}
+
+/* ── Aponte platform brand (org-less pages): raster watercolor hand ──────── */
+.aponte-logo {
+  display: block;
+  height: auto;
+  border-radius: var(--radius-lg);
+}
+.aponte-logo--hero {
+  width: min(12rem, 55vw);
+  /* left-aligned like the sesh hero */
+  margin-inline: 0;
+}
+/* Páginas com o logo Aponte no hero (home, /sobre) não repetem no header. */
+body:has(.aponte-logo--hero) .brand {
+  display: none;
+}
+
+/* org vitrine gallery: thumb grid, click opens the web variant */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-2);
+}
+.gallery-grid a {
+  display: block;
+}
+.gallery-grid img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+/* whole-card link (Aponte home org cards) */
+.card--link {
+  display: block;
+  color: var(--fg);
 }

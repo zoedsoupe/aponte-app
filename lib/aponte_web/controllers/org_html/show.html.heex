@@ -1,0 +1,110 @@
+<Layouts.app flash={@flash} org={@org}>
+  <section :if={@edition} class="flyer stack-5">
+    <header class="flyer-head stack-2">
+      <%!-- ponytail: the fallback brand mark is the SESH vector for any org;
+           OrgForm (phase 5) adds per-org logo_path — swap the fallback then. --%>
+      <.sesh_logo src={edition_logo(@edition)} class="sesh-logo--hero" />
+      <p class="text-xs text-mono text-dim">{"#{@org.name} ##{@edition.number}"}</p>
+      <h1
+        :if={
+          @edition.name not in [
+            "#{@org.name} ##{@edition.number}",
+            "#{@org.name} #{@edition.number}"
+          ]
+        }
+        class="flyer-title"
+      >
+        {@edition.name}
+      </h1>
+    </header>
+
+    <p class="date-duo">
+      <span class="date-duo-time text-mono">{edition_time(@edition.starts_at)}</span>
+      <span class="date-duo-date text-mono">{edition_day(@edition.starts_at)}</span>
+    </p>
+
+    <% lineup = lineup_lines(@edition.lineup) %>
+    <section :if={lineup != []} class="stack-1">
+      <h2 class="text-sm text-muted">Lineup</h2>
+      <ul class="lineup stack-1">
+        <li :for={name <- lineup} class="text-base text-mono">{name}</li>
+      </ul>
+    </section>
+
+    <section :if={@edition.venue} class="stack-1">
+      <h2 class="text-sm text-muted">Onde</h2>
+      <p class="text-base">{@edition.venue}</p>
+      <a
+        :if={@edition.venue_address}
+        href={"https://www.google.com/maps/search/?api=1&query=#{URI.encode_www_form("#{@edition.venue} #{@edition.venue_address}")}"}
+        target="_blank"
+        rel="noopener"
+        class="text-xs text-dim"
+      >
+        {@edition.venue_address}
+      </a>
+    </section>
+
+    <p class="text-sm text-muted">
+      Os DJs da cena têm que começar de algum lugar! Manda teu set e toca com a gente.
+    </p>
+
+    <a href={~p"/#{@org.slug}/tocar"} class="btn btn--ghost btn--block">Quero tocar!</a>
+
+    <div class="cta-dock">
+      <a href={~p"/#{@org.slug}/comprar"} class="btn btn--blob btn--block">Garantir ingresso →</a>
+      <a
+        :if={@org.instagram}
+        href={AponteWeb.Instagram.profile_url(@org.instagram)}
+        target="_blank"
+        rel="noopener"
+        class="btn btn--accent btn--block"
+      >
+        {instagram_handle(@org.instagram)}
+      </a>
+    </div>
+  </section>
+
+  <section :if={is_nil(@edition)} class="teaser stack-5">
+    <header class="stack-3">
+      <.sesh_logo class="sesh-logo--hero" />
+      <p class="text-base text-dim">Próxima edição em breve.</p>
+    </header>
+
+    <a href={~p"/#{@org.slug}/avisos"} class="btn btn--blob btn--block">Quero ser avisade</a>
+    <a
+      :if={@org.instagram}
+      href={AponteWeb.Instagram.profile_url(@org.instagram)}
+      target="_blank"
+      rel="noopener"
+      class="btn btn--ghost btn--block"
+    >
+      {instagram_handle(@org.instagram)}
+    </a>
+  </section>
+
+  <section :if={@images != []} class="stack-3">
+    <h2 class="text-sm text-muted">Galeria</h2>
+    <ul class="gallery-grid">
+      <li :for={img <- @images}>
+        <a href={image_url(@org, img.path)} target="_blank" rel="noopener">
+          <img src={image_url(@org, img.thumb_path)} alt="" loading="lazy" />
+        </a>
+      </li>
+    </ul>
+  </section>
+
+  <section :if={about_paragraphs(@org.about) != []} class="stack-2">
+    <h2 class="text-sm text-muted">Sobre</h2>
+    <p :for={paragraph <- about_paragraphs(@org.about)} class="text-base">{paragraph}</p>
+  </section>
+
+  <section :if={@org.social_links != []} class="stack-2">
+    <h2 class="text-sm text-muted">Links</h2>
+    <ul class="stack-1">
+      <li :for={link <- @org.social_links}>
+        <a href={link["url"]} target="_blank" rel="noopener" class="text-sm">{link["label"]}</a>
+      </li>
+    </ul>
+  </section>
+</Layouts.app>

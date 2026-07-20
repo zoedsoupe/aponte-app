@@ -1,23 +1,23 @@
 {
   "name": "Aponte",
   "short_name": "Aponte",
-  "description": "rolê experimental de música eletrônica",
+  "description": "o que tá rolando em Campos, num lugar só",
   "lang": "pt-br",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#05070A",
-  "theme_color": "#05070A",
+  "background_color": "#FEF8DA",
+  "theme_color": "#BF7262",
   "icons": [
     {
-      "src": "/images/sesh-192.png",
+      "src": "/images/aponte-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/images/sesh-512.png",
+      "src": "/images/aponte-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

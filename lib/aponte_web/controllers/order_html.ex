@@ -3,7 +3,7 @@ defmodule AponteWeb.OrderHTML do
   use AponteWeb, :html
 
   alias Aponte.Merch.Unit
-  alias Aponte.Tickets.Ticket
+  alias Aponte.Tickets.{Order, Ticket}
 
   embed_templates "order_html/*"
 

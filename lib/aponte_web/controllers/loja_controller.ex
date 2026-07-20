@@ -2,25 +2,25 @@ defmodule AponteWeb.LojaController do
   @moduledoc """
   Loja de merch standalone. Vende produtos direto, sem ingresso e sem edicao,
   a qualquer hora. Pedido criado tem edition_id nil (pure-merch) e cai no fluxo
-  PIX existente (/compra/:id). Sem cupom na v1.
+  PIX existente (/:org_slug/compra/:id). Sem cupom na v1.
 
   Pedidos da loja nao aparecem no painel por edicao (edition_id nil); ficam no
   historico global /admin/buscar e no detalhe /admin/pedidos/:id.
   """
   use AponteWeb, :controller
 
-  alias Aponte.{Merch, Orgs, Tickets}
+  alias Aponte.{Merch, Tickets}
   alias Aponte.Tickets.Order
 
   def index(conn, _params) do
-    # TODO(phase-4): org comes from assigns (LoadOrg plug)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = conn.assigns.org
 
     conn
     |> assign(:storefront, true)
-    |> assign(:seo_description, "Produtos da SESH. Posters, adesivos e mais.")
+    |> assign(:seo_description, "Produtos da #{org.name}.")
     |> assign(:seo_type, "website")
     |> render(:index,
+      org: org,
       merch: Merch.list_active_items(org.id),
       changeset: Order.changeset(%Order{}, %{}),
       items: %{},
@@ -29,15 +29,13 @@ defmodule AponteWeb.LojaController do
   end
 
   def create(conn, params) do
-    # TODO(phase-4): org comes from assigns (LoadOrg plug)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
-
+    org = conn.assigns.org
     order_params = Map.get(params, "order", %{})
     merch_params = Map.get(params, "merch", %{})
 
     case Tickets.create_order(org, build_attrs(order_params, merch_params)) do
       {:ok, order} ->
-        redirect(conn, to: ~p"/compra/#{order.id}")
+        redirect(conn, to: ~p"/#{org.slug}/compra/#{order.id}")
 
       {:error, :empty_cart} ->
         render_error(conn, org, order_params, merch_params, "Escolha pelo menos um produto.")
@@ -51,9 +49,10 @@ defmodule AponteWeb.LojaController do
       {:error, %Ecto.Changeset{} = cs} ->
         conn
         |> assign(:storefront, true)
-        |> assign(:seo_description, "Produtos da SESH. Posters, adesivos e mais.")
+        |> assign(:seo_description, "Produtos da #{org.name}.")
         |> assign(:seo_type, "website")
         |> render(:index,
+          org: org,
           merch: Merch.list_active_items(org.id),
           changeset: %{cs | action: :insert},
           items: merch_params,
@@ -86,10 +85,11 @@ defmodule AponteWeb.LojaController do
   defp render_error(conn, org, order_params, merch_params, msg) do
     conn
     |> assign(:storefront, true)
-    |> assign(:seo_description, "Produtos da SESH. Posters, adesivos e mais.")
+    |> assign(:seo_description, "Produtos da #{org.name}.")
     |> assign(:seo_type, "website")
     |> put_flash(:error, msg)
     |> render(:index,
+      org: org,
       merch: Merch.list_active_items(org.id),
       changeset: Order.changeset(%Order{}, order_params),
       items: merch_params,

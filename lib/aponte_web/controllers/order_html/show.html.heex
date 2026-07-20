@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash}>
+<Layouts.app flash={@flash} org={@org}>
   <meta :if={@order.status == :pending} http-equiv="refresh" content="30" />
   <div hidden data-order-record data-id={@order.id} data-label={order_label(@order)}></div>
 
@@ -87,12 +87,12 @@
         </button>
       </div>
       <p class="text-base text-dim">
-        A SESH foi notificada. Assim que cair, seus ingressos aparecem aqui.
+        A {@org.name} foi notificada. Assim que cair, seus ingressos aparecem aqui.
       </p>
     </section>
 
     <div data-push-prompt></div>
 
-    <a href={~p"/"} class="btn btn--ghost btn--block">Voltar</a>
+    <a href={~p"/#{@org.slug}"} class="btn btn--ghost btn--block">Voltar</a>
   </section>
 </Layouts.app>

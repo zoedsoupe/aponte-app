@@ -1,28 +1,27 @@
-<Layouts.app flash={@flash}>
+<Layouts.app flash={@flash} org={@org}>
   <section :if={@submitted} class="stack-3">
     <header class="stack-1">
       <h1 class="text-xl text-mono">Recebido!</h1>
-      <p class="text-sm text-dim">Tua inscrição chegou. A SESH te chama se rolar.</p>
+      <p class="text-sm text-dim">Tua inscrição chegou. A {@org.name} te chama se rolar.</p>
     </header>
-    <a href={~p"/"} class="btn btn--ghost btn--block">Voltar</a>
+    <a href={~p"/#{@org.slug}"} class="btn btn--ghost btn--block">Voltar</a>
   </section>
 
   <section :if={not @open? and not @submitted} class="stack-3">
     <header class="stack-1">
       <h1 class="text-xl text-mono">Inscrições fechadas</h1>
       <p class="text-sm text-dim">
-        No momento não estamos recebendo inscrições. Fica de olho no
-        @coletivo.sesh no Instagram pra próxima chamada.
+        No momento não estamos recebendo inscrições. Fica de olho nas redes da {@org.name} pra próxima chamada.
       </p>
     </header>
-    <a href={~p"/"} class="btn btn--ghost btn--block">Voltar</a>
+    <a href={~p"/#{@org.slug}"} class="btn btn--ghost btn--block">Voltar</a>
   </section>
 
   <.form
     :let={f}
     :if={@open? and not @submitted}
     for={@changeset}
-    action={~p"/tocar"}
+    action={~p"/#{@org.slug}/tocar"}
     class="stack-5"
     id="dj-form"
   >

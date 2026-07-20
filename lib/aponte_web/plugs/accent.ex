@@ -1,26 +1,28 @@
 defmodule AponteWeb.Plugs.Accent do
   @moduledoc """
-  Assina `@accent` com a cor da edição publicada para que TODA página (pública
-  e admin, dead view e LiveView) se re-tematize via a CSS var `--accent`.
+  Assina `@accent` com a cor da org carregada (`assigns[:org].accent_color`),
+  caindo no accent padrão da Aponte (`config :aponte, :default_accent`) em
+  páginas sem org. A CSS var `--accent` re-tematiza a página via o style
+  inline no <html>.
 
-  Sem edição publicada → não assina nada e o `tokens.css` cai no rosa padrão.
-  Controllers podem sobrescrever `@accent` depois (ex: a página de compra usa o
-  accent da edição específica do pedido).
+  Deve rodar DEPOIS do LoadOrg (não fica mais no :browser). Controllers podem
+  sobrescrever `@accent` depois (ex: a página de compra usa o accent da edição
+  específica do pedido).
   """
+
+  @behaviour Plug
 
   import Plug.Conn
 
-  alias Aponte.{Editions, Orgs}
-
+  @impl true
   def init(opts), do: opts
 
+  @impl true
   def call(conn, _opts) do
-    # TODO(phase-4): org comes from assigns (LoadOrg plug)
-    with {:ok, org} <- Orgs.get_org_by_slug("sesh"),
-         color when is_binary(color) <- Editions.current_accent(org.id) do
-      assign(conn, :accent, color)
-    else
-      _ -> conn
-    end
+    assign(conn, :accent, accent(conn.assigns[:org]))
   end
+
+  defp accent(%{accent_color: color}) when is_binary(color), do: color
+
+  defp accent(_), do: Application.get_env(:aponte, :default_accent, "#BF7262")
 end

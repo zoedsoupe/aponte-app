@@ -32,6 +32,7 @@ defmodule AponteWeb.PushController do
 
   def subscribe(conn, %{"subscription" => sub} = params) do
     attrs = %{
+      org_id: org_id(conn),
       endpoint: sub["endpoint"],
       p256dh: get_in(sub, ["keys", "p256dh"]),
       auth: get_in(sub, ["keys", "auth"]),
@@ -73,6 +74,15 @@ defmodule AponteWeb.PushController do
 
   defp normalize_topics(topics) when is_list(topics), do: topics
   defp normalize_topics(_), do: ["order_status"]
+
+  # Present under the org-scoped push scope (Plugs.LoadOrg); nil on the
+  # Aponte-wide scope.
+  defp org_id(conn) do
+    case conn.assigns[:org] do
+      %{id: id} -> id
+      _ -> nil
+    end
+  end
 
   defp user_agent(conn) do
     conn |> get_req_header("user-agent") |> List.first()

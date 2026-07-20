@@ -1,5 +1,11 @@
-<Layouts.app flash={@flash}>
-  <.form :let={f} for={@changeset} action={~p"/comprar"} class="stack-5" id="order-form">
+<Layouts.app flash={@flash} org={@org}>
+  <.form
+    :let={f}
+    for={@changeset}
+    action={~p"/#{@org.slug}/comprar"}
+    class="stack-5"
+    id="order-form"
+  >
     <input type="hidden" name="order[client_endpoint]" data-client-endpoint />
 
     <header class="stack-1">
@@ -54,7 +60,7 @@
         placeholder="seu.usuario"
       />
       <p class="text-xs text-dim">
-        É por aí que a SESH te chama caso precise falar do seu ingresso.
+        É por aí que a {@org.name} te chama caso precise falar do seu ingresso.
       </p>
 
       <.input

@@ -1,7 +1,7 @@
 defmodule AponteWeb.DjController do
   use AponteWeb, :controller
 
-  alias Aponte.{DjApplications, Orgs}
+  alias Aponte.DjApplications
   alias Aponte.DjApplications.DjApplication
 
   # Tempo mínimo (s) entre carregar o form e enviar. Humano não preenche
@@ -11,6 +11,7 @@ defmodule AponteWeb.DjController do
 
   def new(conn, params) do
     render(conn, :new,
+      org: conn.assigns.org,
       changeset: DjApplications.change(%DjApplication{}),
       submitted: params["ok"] == "1",
       form_ts: sign_ts(conn),
@@ -34,17 +35,17 @@ defmodule AponteWeb.DjController do
   end
 
   defp persist(conn, attrs) do
-    # TODO(phase-4): org comes from assigns (LoadOrg plug)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = conn.assigns.org
 
     case DjApplications.create(org, attrs) do
       {:ok, _application} ->
-        redirect(conn, to: ~p"/tocar?ok=1")
+        redirect(conn, to: ~p"/#{org.slug}/tocar?ok=1")
 
       {:error, %Ecto.Changeset{} = cs} ->
         conn
         |> put_flash(:error, "Confere os campos e tenta de novo.")
         |> render(:new,
+          org: org,
           changeset: %{cs | action: :insert},
           submitted: false,
           form_ts: sign_ts(conn),
@@ -55,7 +56,7 @@ defmodule AponteWeb.DjController do
   end
 
   # Sucesso silencioso: bot acha que passou, nada persiste.
-  defp silent_ok(conn), do: redirect(conn, to: ~p"/tocar?ok=1")
+  defp silent_ok(conn), do: redirect(conn, to: ~p"/#{conn.assigns.org.slug}/tocar?ok=1")
 
   defp honeypot_filled?(params) do
     case params["site"] do

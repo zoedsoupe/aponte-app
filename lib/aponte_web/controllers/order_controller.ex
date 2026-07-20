@@ -1,114 +1,140 @@
 defmodule AponteWeb.OrderController do
   use AponteWeb, :controller
 
-  alias Aponte.{Clock, Coupons, Editions, Merch, Orgs, Tickets}
+  alias Aponte.{Clock, Coupons, Editions, Merch, Tickets}
   alias Aponte.Editions.{Edition, TicketType}
   alias Aponte.Tickets.Order
   alias Aponte.Payments.Pix
 
   def new(conn, _params) do
-    # TODO(phase-4): org comes from assigns (LoadOrg plug)
-    with {:ok, org} <- Orgs.get_org_by_slug("sesh"),
-         %Edition{} = edition <- Editions.current_edition(org.id) do
-      render_form(conn, edition, Order.changeset(%Order{}, %{}), %{})
-    else
+    org = conn.assigns.org
+
+    case Editions.current_edition(org.id) do
+      %Edition{} = edition ->
+        render_form(conn, edition, Order.changeset(%Order{}, %{}), %{})
+
       _ ->
         conn
         |> put_flash(:error, "Nenhuma edição com ingressos à venda agora.")
-        |> redirect(to: ~p"/")
+        |> redirect(to: ~p"/#{org.slug}")
     end
   end
 
   def create(conn, params) do
+    org = conn.assigns.org
     order_params = Map.get(params, "order", %{})
     items_params = Map.get(params, "items", %{})
     merch_params = Map.get(params, "merch", %{})
 
-    # TODO(phase-4): org comes from assigns (LoadOrg plug)
-    with {:ok, org} <- Orgs.get_org_by_slug("sesh"),
-         %Edition{} = edition <- Editions.current_edition(org.id) do
-      case Tickets.create_order(
-             org,
-             build_attrs(edition, order_params, items_params, merch_params)
-           ) do
-        {:ok, order} ->
-          redirect(conn, to: ~p"/compra/#{order.id}")
+    case Editions.current_edition(org.id) do
+      %Edition{} = edition ->
+        case Tickets.create_order(
+               org,
+               build_attrs(edition, order_params, items_params, merch_params)
+             ) do
+          {:ok, order} ->
+            redirect(conn, to: ~p"/#{org.slug}/compra/#{order.id}")
 
-        {:error, {:sold_out, type_id}} ->
-          type = Editions.get_ticket_type!(type_id)
+          {:error, {:sold_out, type_id}} ->
+            type = Editions.get_ticket_type!(type_id)
 
-          conn
-          |> put_flash(:error, "Ingressos esgotados para #{type.name}.")
-          |> render_form(reload(edition), changeset(order_params), items_params)
+            conn
+            |> put_flash(:error, "Ingressos esgotados para #{type.name}.")
+            |> render_form(reload(edition), changeset(order_params), items_params)
 
-        {:error, {:not_on_sale, _id}} ->
-          conn
-          |> put_flash(:error, "Esse lote não está mais à venda.")
-          |> render_form(reload(edition), changeset(order_params), items_params)
+          {:error, {:not_on_sale, _id}} ->
+            conn
+            |> put_flash(:error, "Esse lote não está mais à venda.")
+            |> render_form(reload(edition), changeset(order_params), items_params)
 
-        {:error, :empty_cart} ->
-          conn
-          |> put_flash(:error, "Escolha pelo menos um ingresso.")
-          |> render_form(reload(edition), changeset(order_params), items_params)
+          {:error, :empty_cart} ->
+            conn
+            |> put_flash(:error, "Escolha pelo menos um ingresso.")
+            |> render_form(reload(edition), changeset(order_params), items_params)
 
-        {:error, {:unknown_merch_item, _id}} ->
-          conn
-          |> put_flash(:error, "Produto indisponível.")
-          |> render_form(reload(edition), changeset(order_params), items_params)
+          {:error, {:unknown_merch_item, _id}} ->
+            conn
+            |> put_flash(:error, "Produto indisponível.")
+            |> render_form(reload(edition), changeset(order_params), items_params)
 
-        {:error, {:merch_unavailable, _id}} ->
-          conn
-          |> put_flash(:error, "Produto indisponível.")
-          |> render_form(reload(edition), changeset(order_params), items_params)
+          {:error, {:merch_unavailable, _id}} ->
+            conn
+            |> put_flash(:error, "Produto indisponível.")
+            |> render_form(reload(edition), changeset(order_params), items_params)
 
-        {:error, {:merch_sold_out, _id}} ->
-          conn
-          |> put_flash(:error, "Produto esgotado.")
-          |> render_form(reload(edition), changeset(order_params), items_params)
+          {:error, {:merch_sold_out, _id}} ->
+            conn
+            |> put_flash(:error, "Produto esgotado.")
+            |> render_form(reload(edition), changeset(order_params), items_params)
 
-        {:error, {:coupon, reason}} ->
-          conn
-          |> put_flash(:error, coupon_error(reason))
-          |> render_form(reload(edition), changeset(order_params), items_params)
+          {:error, {:coupon, reason}} ->
+            conn
+            |> put_flash(:error, coupon_error(reason))
+            |> render_form(reload(edition), changeset(order_params), items_params)
 
-        {:error, %Ecto.Changeset{} = cs} ->
-          render_form(conn, reload(edition), %{cs | action: :insert}, items_params)
+          {:error, %Ecto.Changeset{} = cs} ->
+            render_form(conn, reload(edition), %{cs | action: :insert}, items_params)
 
-        {:error, _} ->
-          conn
-          |> put_flash(:error, "Não foi possível registrar o pedido.")
-          |> render_form(reload(edition), changeset(order_params), items_params)
-      end
-    else
+          {:error, _} ->
+            conn
+            |> put_flash(:error, "Não foi possível registrar o pedido.")
+            |> render_form(reload(edition), changeset(order_params), items_params)
+        end
+
       _ ->
         conn
         |> put_flash(:error, "Nenhuma edição com ingressos à venda agora.")
-        |> redirect(to: ~p"/")
+        |> redirect(to: ~p"/#{org.slug}")
     end
   end
 
   def show(conn, %{"id" => id}) do
+    org = conn.assigns.org
     order = Tickets.get_order!(id)
-    edition = order.edition_id && Editions.get_edition!(order.edition_id)
 
-    conn
-    |> assign(:accent, edition && edition.accent_color)
-    |> assign(:no_index, true)
-    |> render(:show,
-      order: order,
-      edition: edition,
-      pix: pix_payload(order),
-      earned: Coupons.earned_for_order(order.id),
-      page_title: "Ingresso"
-    )
+    # Orders are capability URLs, but the tenant boundary still holds: an
+    # order only renders under its own org's slug.
+    if order.org_id == org.id do
+      edition = order.edition_id && Editions.get_edition!(order.edition_id)
+
+      conn
+      |> assign(:accent, edition && edition.accent_color)
+      |> assign(:no_index, true)
+      |> render(:show,
+        org: org,
+        order: order,
+        edition: edition,
+        pix: pix_payload(order),
+        earned: Coupons.earned_for_order(order.id),
+        page_title: "Ingresso"
+      )
+    else
+      not_found(conn)
+    end
   end
 
   # Static shell — the list is rendered client-side from localStorage
-  # (assets/js/orders.js). No DB query, no PII server-side.
+  # (assets/js/orders.js). The lookup form posts to :lookup.
   def history(conn, _params) do
     conn
     |> assign(:no_index, true)
-    |> render(:history, page_title: "Meus ingressos")
+    |> render(:history, org: conn.assigns.org, page_title: "Meus ingressos")
+  end
+
+  # Buyer self-lookup: phone + order code. A miss reveals nothing about which
+  # field failed (generic "nada encontrado").
+  def lookup(conn, params) do
+    org = conn.assigns.org
+
+    order =
+      case Tickets.lookup_order(org.id, params["phone"] || "", params["code"] || "") do
+        {:ok, order} -> order
+        {:error, :not_found} -> nil
+      end
+
+    conn
+    |> assign(:no_index, true)
+    |> render(:lookup, org: org, order: order, page_title: "Meus ingressos")
   end
 
   # ── helpers ─────────────────────────────────────────────────────────────────
@@ -121,6 +147,7 @@ defmodule AponteWeb.OrderController do
     conn
     |> assign(:accent, edition.accent_color)
     |> render(:new,
+      org: conn.assigns.org,
       edition: edition,
       changeset: changeset,
       lots: lots_on_sale(edition),
@@ -157,6 +184,15 @@ defmodule AponteWeb.OrderController do
 
   defp normalize_items_param(items) when is_map(items), do: items
   defp normalize_items_param(_), do: %{}
+
+  defp not_found(conn) do
+    conn
+    |> put_status(:not_found)
+    |> put_root_layout(false)
+    |> put_view(AponteWeb.ErrorHTML)
+    |> render("404.html")
+    |> halt()
+  end
 
   defp coupon_error(:not_found), do: "Cupom não encontrado."
   defp coupon_error(:expired), do: "Esse cupom expirou."

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <meta name="theme-color" content="#05070A" />
+    <meta name="theme-color" content="#FEF8DA" />
     <link rel="manifest" href={~p"/manifest.webmanifest"} />
     <link rel="icon" href={~p"/images/favicon.svg"} type="image/svg+xml" />
     <link rel="icon" href={~p"/favicon.ico"} sizes="any" />
@@ -23,7 +23,7 @@
       type="font/woff2"
       crossorigin
     />
-    <.live_title default="SESH LAB.">
+    <.live_title default="Aponte">
       {assigns[:page_title]}
     </.live_title>
     <% seo = AponteWeb.SEO.build(assigns, unverified_url(@conn, @conn.request_path)) %>

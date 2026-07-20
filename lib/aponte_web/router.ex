@@ -8,16 +8,30 @@ defmodule AponteWeb.Router do
     plug :put_root_layout, html: {AponteWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    # Tematiza toda página com o accent da edição publicada (CSS var --accent).
-    plug AponteWeb.Plugs.Accent
   end
 
   pipeline :admin do
     plug AponteWeb.Plugs.BasicAuth
   end
 
+  # Loads the tenant org into assigns[:org] (404 on miss), then themes the
+  # page with the org accent. Accent MUST run after the loader.
+  pipeline :load_org do
+    plug AponteWeb.Plugs.LoadOrg
+    plug AponteWeb.Plugs.Accent
+  end
+
+  # JSON-404 variant of the loader for the :client_api scopes.
+  pipeline :load_org_api do
+    plug :load_org_api_json
+  end
+
   pipeline :dj_rate_limit do
     plug AponteWeb.Plugs.RateLimit, max: 5, window_ms: 3_600_000, bucket: "tocar"
+  end
+
+  pipeline :lookup_rate_limit do
+    plug AponteWeb.Plugs.RateLimit, max: 10, window_ms: 3_600_000, bucket: "meus-ingressos"
   end
 
   pipeline :admin_api do
@@ -33,39 +47,38 @@ defmodule AponteWeb.Router do
     plug :protect_from_forgery
   end
 
+  defp load_org_api_json(conn, _opts), do: AponteWeb.Plugs.LoadOrg.load_org_api(conn, [])
+
+  # User uploads — outside :browser (no session/CSRF for plain GETs).
   scope "/", AponteWeb do
-    pipe_through :browser
+    get "/uploads/*path", UploadController, :show
+  end
+
+  # Aponte-level pages (brand shell, platform default accent).
+  scope "/", AponteWeb do
+    pipe_through [:browser, AponteWeb.Plugs.Accent]
 
     get "/", PageController, :index
-    get "/comprar", OrderController, :new
-    post "/comprar", OrderController, :create
-    get "/compra/:id", OrderController, :show
-    get "/meus-ingressos", OrderController, :history
-    get "/loja", LojaController, :index
-    post "/loja", LojaController, :create
     get "/sobre", PageController, :sobre
-    get "/avisos", PageController, :avisos
-    get "/tocar", DjController, :new
     get "/robots.txt", SeoController, :robots
     get "/sitemap.xml", SeoController, :sitemap
   end
 
+  # TEMPORARY: pre-multi-org global paths 301 to their /sesh/... equivalents.
+  # Removal trigger: 30 days after the domain cutover (SPEC_APONTE_V1 sec. 6).
   scope "/", AponteWeb do
-    pipe_through [:browser, :dj_rate_limit]
+    pipe_through :browser
 
-    post "/tocar", DjController, :create
+    get "/comprar", LegacyRedirectController, :comprar
+    get "/compra/:id", LegacyRedirectController, :compra
+    get "/meus-ingressos", LegacyRedirectController, :meus_ingressos
+    get "/loja", LegacyRedirectController, :loja
+    get "/avisos", LegacyRedirectController, :avisos
+    get "/tocar", LegacyRedirectController, :tocar
   end
 
-  scope "/", AponteWeb do
-    pipe_through :client_api
-
-    get "/push/vapid-key", PushController, :vapid_key
-    get "/push/subscribe", PushController, :show
-    post "/push/subscribe", PushController, :subscribe
-    patch "/push/subscribe", PushController, :update
-    delete "/push/subscribe", PushController, :unsubscribe
-  end
-
+  # Admin — literal /admin scopes MUST come before any /:org_slug scope, or
+  # "admin" is swallowed as an org slug (LoadOrg 404s it as reserved).
   scope "/admin", AponteWeb do
     pipe_through [:browser, :admin]
 
@@ -97,5 +110,56 @@ defmodule AponteWeb.Router do
     get "/push/vapid-key", Admin.PushController, :vapid_key
     post "/push/subscribe", Admin.PushController, :subscribe
     delete "/push/subscribe", Admin.PushController, :unsubscribe
+  end
+
+  # Org-scoped public pages. Literal routes above MUST come first: anything
+  # under /:org_slug would otherwise swallow them (reserved slugs are the
+  # second net, not the first).
+  scope "/:org_slug", AponteWeb do
+    pipe_through [:browser, :load_org]
+
+    get "/", OrgController, :show
+    get "/comprar", OrderController, :new
+    post "/comprar", OrderController, :create
+    get "/compra/:id", OrderController, :show
+    get "/meus-ingressos", OrderController, :history
+    get "/loja", LojaController, :index
+    post "/loja", LojaController, :create
+    get "/avisos", PageController, :avisos
+    get "/tocar", DjController, :new
+  end
+
+  scope "/:org_slug", AponteWeb do
+    pipe_through [:browser, :load_org, :lookup_rate_limit]
+
+    post "/meus-ingressos", OrderController, :lookup
+  end
+
+  scope "/:org_slug", AponteWeb do
+    pipe_through [:browser, :load_org, :dj_rate_limit]
+
+    post "/tocar", DjController, :create
+  end
+
+  # Customer push, org-scoped: subscribe stamps org_id from the loaded org.
+  scope "/:org_slug", AponteWeb do
+    pipe_through [:client_api, :load_org_api]
+
+    get "/push/vapid-key", PushController, :vapid_key
+    get "/push/subscribe", PushController, :show
+    post "/push/subscribe", PushController, :subscribe
+    patch "/push/subscribe", PushController, :update
+    delete "/push/subscribe", PushController, :unsubscribe
+  end
+
+  # Customer push, Aponte-wide (org_id nil).
+  scope "/", AponteWeb do
+    pipe_through :client_api
+
+    get "/push/vapid-key", PushController, :vapid_key
+    get "/push/subscribe", PushController, :show
+    post "/push/subscribe", PushController, :subscribe
+    patch "/push/subscribe", PushController, :update
+    delete "/push/subscribe", PushController, :unsubscribe
   end
 end
