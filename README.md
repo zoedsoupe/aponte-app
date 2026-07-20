@@ -1,43 +1,51 @@
-# SESH LAB
+# Aponte
 
-Site do coletivo SESH: a landing estilo flyer da próxima edição mais a venda de
-ingresso digital, com PIX manual e validação de QR na porta. A primeira edição
-já rolou e deu certo, então isto aqui virou a casa oficial do rolê.
+App da Aponte Produtora: agregador de eventos de Campos, onde cada evento tem
+página própria com identidade própria, venda de ingresso com PIX direto na
+chave do produtor e validação de QR na porta.
 
-A SESH é um rolê experimental pra formar comunidade em torno de música
-eletrônica em todos os formatos. Um espaço acessível pra quem quer curtir e pros
-DJs novos que precisam de lugar pra se lançar. Baguncinha no início, os DJs
-trocando ideia sobre produção, e muita música estranha até as 5h da manhã.
+Este repo nasceu como `sesh_lab` (o site do coletivo SESH) e está virando o
+Aponte. O escopo aprovado da transição está em `SPEC_APONTE.md` e a spec
+técnica do refactor em `SPEC_APONTE_V1.md`.
 
 ## Por que existe
 
-Coletivo pequeno não precisa de Sympla cobrando taxa, nem de gateway de
+Produtor pequeno não precisa de Sympla cobrando 10% de taxa, nem de gateway de
 pagamento, nem de planilha no grupo pra saber quem pagou. Precisa de:
 
-- uma página que pareça o flyer da edição e carregue rápido no celular na fila da porta;
-- vender ingresso recebendo PIX direto na chave do coletivo (confirmação manual via Instagram, sem API de pagamento);
-- emitir ingresso ao portador com QR pra validar na entrada — câmera ou código curto digitado na mão como fallback;
-- um canal pros DJs novos mandarem set ("Quero tocar!") e pro público pedir aviso de nova edição.
+- uma página por evento que pareça o flyer da edição e carregue rápido no
+  celular na fila da porta;
+- vender ingresso recebendo PIX direto na chave do produtor (confirmação
+  manual, sem API de pagamento);
+- emitir ingresso ao portador com QR pra validar na entrada, com código curto
+  digitado na mão como fallback;
+- vitrine do rolê: fotos, sobre, links, e um canal pro público pedir aviso de
+  nova edição.
 
-Tudo isso roda numa VM única e barata. Sem dependência externa que possa cair
-(ou cobrar) no meio do evento.
+O dinheiro do ingresso nunca passa pela Aponte. A Aponte cobra uma taxa flat
+pela ferramenta, não pela venda.
+
+Tudo roda numa VM única e barata. Sem dependência externa que possa cair (ou
+cobrar) no meio do evento.
+
+## Domínio
+
+orgs (eventos/coletivos) -> edições -> lotes -> pedidos -> ingressos emitidos
+-> validação na porta. Cada org tem slug próprio (`/sesh`, `/arena`), tema por
+accent color, galeria de fotos e chave pix própria.
+
+Copy em pt-BR, sem nomes pessoais no site, sem emoji.
 
 ## Stack
 
 - Phoenix 1.8 + LiveView 1.1
 - SQLite via `ecto_sqlite3` (um arquivo, um volume, fim)
-- esbuild puro pra JS e CSS — sem Tailwind, sem Node em runtime, sem CDN
+- esbuild puro pra JS e CSS: sem Tailwind, sem Node em runtime, sem CDN
 - PWA com service worker manual, manifest e ícones
 - PIX EMV BR Code gerado na unha (`lib/sesh_lab/payments/pix.ex`)
 - Web Push VAPID manual, RFC completo (`lib/sesh_lab/notifications/web_push/`)
+- Imagens da vitrine processadas com libvips (pacote `image`)
 - Bandit como servidor
-
-Domínio do app: edições → lotes → pedidos → ingressos emitidos → validação na
-porta. Whitelabel do `cozinha_radioativa` — mesma infra, domínio e estética
-novos.
-
-Estética: Y2K cyber-rave. Caixas wireframe, blobs rosa, tipografia pixel,
-textura grain. Copy em pt-BR, sem nomes pessoais no site, sem emoji.
 
 ## Dev local
 
@@ -54,6 +62,6 @@ mix phx.server
 
 ## Deploy
 
-Fly.io, máquina única com volume pra SQLite (`fly.toml`). Migrações rodam no boot
-via `Ecto.Migrator`. Em dia de evento, sobe `min_machines_running = 1` — cold
-start no meio da fila da porta não rola.
+Fly.io, máquina única com volume pra SQLite e uploads (`fly.toml`). Migrações
+rodam no boot via `Ecto.Migrator`. Em dia de evento, sobe
+`min_machines_running = 1`: cold start no meio da fila da porta não rola.
