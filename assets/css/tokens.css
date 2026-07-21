@@ -22,8 +22,9 @@
   --accent-yellow: #edcf63;
   --accent-green: #b6c7a8;
   --accent-mauve: #967577;
-  /* darker accent for small accent-colored text on cream (palette §2.1 note) */
-  --accent-soft: #a85a4b;
+  /* softer accent for links/quiet emphasis: derived so it follows the org
+     theme instead of pinning the platform terracotta */
+  --accent-soft: color-mix(in srgb, var(--accent), var(--ink) 25%);
 
   --cyan: var(--accent-mauve);
   --green: color-mix(in srgb, var(--accent-green), var(--ink) 40%);
@@ -49,13 +50,20 @@
   --radius-sm: 4px;
   --radius: 8px;
   --radius-lg: 14px;
+  /* sheets / large floating surfaces */
+  --radius-xl: 22px;
+  --radius-full: 999px;
 
+  /* Archivo: warm grotesque, one family two voices. Body = weight axis at
+     natural width; display = width axis pushed expanded, used with restraint
+     (org names, edition titles, big dates). Mono kept for utility only:
+     codes, pix keys, stepper numbers, scanner. */
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display:
+    "Archivo Expanded", "Archivo", ui-sans-serif, system-ui, sans-serif;
   --font-mono:
     "JetBrains Mono", ui-monospace, "IBM Plex Mono", Menlo, monospace;
-  /* pixel/bitmap — headings/CTA only, never small body or codes */
-  --font-pixel: "VT323", "JetBrains Mono", monospace;
 
   --text-xs: 0.875rem;
   --text-sm: 1rem;
@@ -65,6 +73,30 @@
   --text-2xl: 2rem;
 
   --shadow-1: 0 1px 2px color-mix(in srgb, var(--ink) 18%, transparent);
+  /* raised: floating CTA, prints, hover lift — soft, ink-tinted, low opacity */
+  --shadow-2:
+    0 2px 6px color-mix(in srgb, var(--ink) 14%, transparent),
+    0 10px 28px color-mix(in srgb, var(--ink) 10%, transparent);
+  /* pop: sheets and overlays */
+  --shadow-3:
+    0 4px 12px color-mix(in srgb, var(--ink) 16%, transparent),
+    0 18px 48px color-mix(in srgb, var(--ink) 14%, transparent);
+
+  /* frosted chrome (tab bar, sticky header) */
+  --blur-bar: 18px;
+
+  /* iOS safe areas */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  /* tab bar content height (safe area is added on top by the bar itself) */
+  --tab-bar-h: 3.5rem;
+
+  /* motion: durations only take effect under no-preference (see media block
+     below); easings are inert constants */
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
 
   --container: 26rem;
 
@@ -76,11 +108,19 @@
 
 /* ── self-hosted fonts (esbuild externalizes /fonts/*) ───────────────────── */
 @font-face {
-  font-family: "VT323";
+  font-family: "Archivo";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/vt323-400.woff2") format("woff2");
+  src: url("/fonts/archivo-var.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Archivo Expanded";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url("/fonts/archivo-expanded-var.woff2") format("woff2");
 }
 @font-face {
   font-family: "JetBrains Mono";
@@ -101,6 +141,11 @@
   :root {
     --motion-fast: 120ms;
     --motion: 200ms;
+    /* named motion scale; usages pass a 0ms fallback so reduced-motion
+       collapses every transition/animation to instant */
+    --dur-fast: 140ms;
+    --dur: 260ms;
+    --dur-slow: 440ms;
   }
 }
 
@@ -131,8 +176,8 @@
 }
 
 html {
-  color-scheme: light;
-  /* app-native: never show horizontal scroll from layout overflow */
+  /* color-scheme comes from the inline theme style on <html> (Layouts.theme_style):
+     dark orgs get dark native controls, the cream shell stays light */
   overflow-x: hidden;
 }
 

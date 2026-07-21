@@ -8,12 +8,13 @@ defmodule AponteWeb.Layouts do
 
   @doc false
   # Inline CSS-var overrides on <html>. Plugs.Accent always assigns @theme;
-  # the @accent fallback covers render paths that skip the plug.
+  # the @accent fallback covers render paths that skip the plug. color-scheme
+  # follows the page bg luminance so dark orgs get dark native form controls.
   def theme_style(assigns) do
     case assigns[:theme] do
       %{bg: bg, ink: ink, accent: accent}
       when is_binary(bg) and is_binary(ink) and is_binary(accent) ->
-        "--bg: #{bg}; --ink: #{ink}; --accent: #{accent}"
+        "--bg: #{bg}; --ink: #{ink}; --accent: #{accent}; color-scheme: #{color_scheme(bg)}"
 
       _ ->
         case assigns[:accent] do
@@ -23,37 +24,52 @@ defmodule AponteWeb.Layouts do
     end
   end
 
+  defp color_scheme(bg), do: if(dark_color?(bg), do: "dark", else: "light")
+
+  # Perceived luminance (Rec. 601) of a #RRGGBB hex color; < 128 reads as dark.
+  # Anything unparseable falls back to light (the platform default).
+  defp dark_color?("#" <> <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>>) do
+    with {rv, ""} <- Integer.parse(r, 16),
+         {gv, ""} <- Integer.parse(g, 16),
+         {bv, ""} <- Integer.parse(b, 16) do
+      0.299 * rv + 0.587 * gv + 0.114 * bv < 128
+    else
+      _ -> false
+    end
+  end
+
+  defp dark_color?(_), do: false
+
   attr :flash, :map, default: %{}
   attr :org, :map, default: nil, doc: "loaded org on org-scoped pages; nil on the Aponte shell"
+
+  attr :current_path, :string,
+    default: nil,
+    doc: "conn.request_path, for the tab bar active state"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
     <div class="shell">
-      <header class="site-header">
-        <%= if @org do %>
-          <a href={~p"/#{@org.slug}"} class="brand">
-            <.sesh_logo />
-          </a>
-          <nav class="site-nav row gap-3 align-center">
-            <a href={~p"/#{@org.slug}/loja"}>Loja</a>
-            <a href={~p"/#{@org.slug}/meus-ingressos"}>Ingressos</a>
-            <a href={~p"/#{@org.slug}/avisos"}>Avisos</a>
-          </nav>
-        <% else %>
-          <a href={~p"/"} class="brand row gap-2 align-center">
-            <img src={~p"/images/aponte-logo.jpg"} alt="Aponte" class="brand-logo" />
-            <span class="brand-name">Aponte</span>
-          </a>
-          <nav class="site-nav row gap-3 align-center">
-            <a href={~p"/sobre"}>Sobre</a>
-          </nav>
-        <% end %>
+      <%!-- org pages carry zero Aponte branding and no top bar: navigation is
+           the tab bar (bottom on mobile, slim top bar on desktop). The header
+           belongs to the Aponte shell only. --%>
+      <header :if={is_nil(@org)} class="site-header">
+        <a href={~p"/"} class="brand row gap-2 align-center">
+          <img src={~p"/images/aponte-logo.jpg"} alt="Aponte" class="brand-logo" />
+          <span class="brand-name">Aponte</span>
+        </a>
+        <nav class="site-nav row gap-3 align-center">
+          <a href={~p"/sobre"}>Sobre</a>
+        </nav>
       </header>
 
       <main class="site-main">
         {render_slot(@inner_block)}
       </main>
+
+      <.tab_bar :if={@org} org={@org} current_path={@current_path} />
 
       <.flash_group flash={@flash} />
     </div>
@@ -73,7 +89,6 @@ defmodule AponteWeb.Layouts do
     <div class="shell shell--admin">
       <header class="site-header">
         <a href={~p"/admin"} class="brand row gap-2 align-center">
-          <.sesh_logo class="sesh-logo--sm" />
           <span class="text-mono text-xs text-dim">
             {if @org, do: "/admin/#{@org.slug}", else: "/admin"}
           </span>

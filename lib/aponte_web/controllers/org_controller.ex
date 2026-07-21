@@ -12,7 +12,6 @@ defmodule AponteWeb.OrgController do
   def show(conn, _params) do
     org = conn.assigns.org
     edition = Editions.current_edition(org.id)
-    images = Orgs.list_images(org.id)
     {upcoming, past} = split_editions(Editions.list_editions(org.id))
     image_url = edition && SEO.abs_url(Editions.logo_url(edition.logo_path))
 
@@ -24,12 +23,46 @@ defmodule AponteWeb.OrgController do
     |> render(:show,
       org: org,
       edition: edition,
-      images: images,
       upcoming_editions: upcoming,
       past_editions: past,
       page_title: org.name
     )
   end
+
+  def about(conn, params) do
+    org = conn.assigns.org
+
+    conn
+    |> assign(:seo_description, seo_description(org))
+    |> render(
+      :about,
+      [org: org, page_title: "Sobre - #{org.name}"] ++ dj_assigns(conn, org, params)
+    )
+  end
+
+  def gallery(conn, _params) do
+    org = conn.assigns.org
+
+    render(conn, :gallery,
+      org: org,
+      images: Orgs.list_images(org.id),
+      page_title: "Galeria - #{org.name}"
+    )
+  end
+
+  # The DJ application section on the sobre page is bespoke to SESH
+  # (custom-pages model): only that org gets the form assigns; every other
+  # org's sobre page renders without them.
+  defp dj_assigns(conn, %{slug: "sesh"}, params) do
+    [
+      dj_changeset: Aponte.DjApplications.change(%Aponte.DjApplications.DjApplication{}),
+      dj_submitted: params["ok"] == "1",
+      dj_form_ts: AponteWeb.DjController.sign_form_ts(conn),
+      dj_open?: Aponte.Settings.dj_applications_open?()
+    ]
+  end
+
+  defp dj_assigns(_conn, _org, _params), do: []
 
   # Upcoming (starts_at >= now, soonest first) vs past (most recent first).
   defp split_editions(editions) do

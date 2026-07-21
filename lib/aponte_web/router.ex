@@ -119,6 +119,8 @@ defmodule AponteWeb.Router do
     pipe_through [:browser, :load_org]
 
     get "/", OrgController, :show
+    get "/sobre", OrgController, :about
+    get "/galeria", OrgController, :gallery
     get "/comprar", OrderController, :new
     post "/comprar", OrderController, :create
     get "/compra/:id", OrderController, :show

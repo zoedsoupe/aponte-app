@@ -128,8 +128,8 @@ defmodule AponteWeb.Admin.OrgFormLiveTest do
     test "updates the org and keeps the slug immutable", %{conn: conn, auth: auth} do
       {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/perfil")
 
-      # The slug renders disabled (not submittable) on edit.
-      assert has_element?(view, ~s|input[disabled][value="sesh"]|)
+      # The slug field is not rendered at all on edit (immutable, no noise).
+      refute has_element?(view, ~s|input[name="org[slug]"]|)
 
       html =
         view

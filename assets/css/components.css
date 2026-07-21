@@ -86,7 +86,9 @@ body:has(.sesh-logo--hero) .brand {
 
 .brand-name {
   letter-spacing: 0.04em;
-  color: var(--accent);
+  font-weight: 600;
+  /* the wordmark inherits the page ink; --accent is for CTAs/links/active */
+  color: var(--fg);
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -109,13 +111,14 @@ body:has(.sesh-logo--hero) .brand {
   min-width: 0;
 }
 
-/* chamative nav: accent, uppercase mono */
+/* chamative nav: accent, small caps feel via tracking */
 .site-nav a {
   color: var(--accent-soft);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: var(--text-xs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
   transition: color var(--motion-fast, 120ms) ease;
 }
@@ -1301,14 +1304,16 @@ body::after {
   }
 }
 
-/* pixel/bitmap headings — VT323 only ≥1.25rem (illegible small) */
+/* display type — Archivo Expanded, wide cut, medium weight. Used with
+   restraint: headings, the blob CTA, big dates. Never small body. */
 .text-xl,
 .text-2xl,
 .flyer-title,
 .scan-result-inner .text-xl {
-  font-family: var(--font-pixel);
-  font-weight: 400;
-  letter-spacing: 0.02em;
+  font-family: var(--font-display);
+  font-stretch: 118%;
+  font-weight: 560;
+  letter-spacing: 0.01em;
 }
 
 /* wirebox — white-stroke frame, no fill, square corners (the default container) */
@@ -1324,10 +1329,11 @@ body::after {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg);
-  font-family: var(--font-pixel);
+  font-family: var(--font-display);
+  font-stretch: 112%;
   font-size: var(--text-lg);
   border-radius: 12px;
-  font-weight: 400;
+  font-weight: 560;
 }
 .btn--blob:hover {
   filter: brightness(1.08);
@@ -1351,20 +1357,18 @@ body::after {
   z-index: -1;
 }
 
-/* date in two palette colors: 21H (mauve) / 27JUN. (green) */
+/* edition date/time: one voice, one color (the org ink). The display cut is
+   loud enough; --accent stays reserved for CTAs/links/active states. */
 .date-duo {
   display: flex;
   gap: var(--s-3);
   align-items: baseline;
-  font-family: var(--font-pixel);
+  font-family: var(--font-display);
+  font-stretch: 122%;
+  font-weight: 580;
   font-size: var(--text-2xl);
   line-height: 1;
-}
-.date-duo-time {
-  color: var(--cyan);
-}
-.date-duo-date {
-  color: var(--green);
+  color: var(--fg);
 }
 
 /* landing flyer */
@@ -1483,7 +1487,8 @@ body::after {
 .scan-result-mark {
   font-size: 5rem;
   line-height: 1;
-  font-family: var(--font-pixel);
+  font-family: var(--font-display);
+  font-stretch: 120%;
 }
 
 /* ── SESH official logo (inline SVG; SESH=currentColor, LAB=gradient) ─────── */
@@ -1563,4 +1568,369 @@ body:has(.aponte-logo--hero) .brand {
 .card--link {
   display: block;
   color: var(--fg);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Aponte design system — chrome (tab bar, floating CTA) + vitrine.
+   Everything derives from --bg/--ink/--accent so the same markup serves the
+   cream platform shell and dark orgs. Motion uses the named scale
+   (--dur-*, --ease-spring) with 0ms fallbacks for prefers-reduced-motion.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── bottom tab bar (mobile chrome; desktop hides it) ───────────────────── */
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  padding: var(--s-1) var(--safe-right) calc(var(--s-1) + var(--safe-bottom))
+    var(--safe-left);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(var(--blur-bar));
+  -webkit-backdrop-filter: blur(var(--blur-bar));
+  border-top: 1px solid var(--border);
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--tab-bar-h);
+  padding-top: var(--s-1);
+  color: var(--fg-muted);
+  /* 5 tabs must fit narrow screens: small label, no shrink past content */
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: color var(--motion-fast, 120ms) ease;
+}
+
+.tab-item svg {
+  width: 23px;
+  height: 23px;
+}
+
+.tab-item:hover,
+.tab-item:focus-visible {
+  color: var(--fg);
+}
+
+.tab-item.is-active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* desktop: the same tab bar docks as a slim frosted top bar (org pages have
+   no site-header at all — this is the only nav system) */
+@media (min-width: 960px) {
+  .tab-bar {
+    top: 0;
+    bottom: auto;
+    justify-content: center;
+    gap: var(--s-2);
+    padding: 0 var(--safe-right) 0 var(--safe-left);
+    border-top: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab-item {
+    flex: 0 1 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 0 var(--s-4);
+    font-size: var(--text-xs);
+  }
+
+  .tab-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* content clears the fixed top bar (the shell card has its own margin) */
+  body:has(.tab-bar) .shell {
+    margin-top: calc(var(--tab-bar-h) + var(--s-4));
+  }
+}
+
+/* mobile: content and legacy fixed/sticky UI clear the bottom tab bar */
+@media (max-width: 959px) {
+  /* reserve space so content never ends under the bar */
+  body:has(.tab-bar) .shell {
+    padding-bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-7));
+  }
+
+  body:has(.tab-bar) .btn--float,
+  body:has(.tab-bar) .cta-dock {
+    bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3));
+  }
+
+  body:has(.tab-bar) .store-finish-bar {
+    padding-bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3));
+  }
+
+  body:has(.tab-bar) .flash-group {
+    bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3));
+  }
+}
+
+/* ── floating CTA (mobile: floats above the tab bar; desktop: hidden) ────── */
+.floating-cta {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3));
+  transform: translateX(-50%);
+  z-index: 55;
+  width: calc(100% - var(--s-5) * 2);
+  max-width: 24rem;
+  transition:
+    transform var(--dur, 0ms) var(--ease-spring),
+    opacity var(--dur, 0ms) var(--ease-out);
+}
+
+.floating-cta-btn {
+  box-shadow: var(--shadow-2);
+}
+
+/* hidden state: ducks below the tab bar (scroll_fx.js toggles the class) */
+.floating-cta.is-hidden {
+  transform: translateX(-50%) translateY(calc(100% + var(--tab-bar-h) + var(--s-4)));
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (min-width: 960px) {
+  .floating-cta {
+    display: none;
+  }
+}
+
+/* ── hand motif: the watercolor pointing hand as a tilted print ──────────── */
+.hand-print {
+  /* the finger aims down-right (toward the floating CTA) on mobile... */
+  --hand-aim: 148deg;
+  --hand-tilt: -3deg;
+  width: 9.5rem;
+  padding: var(--s-2);
+  background: #fbf3d4; /* paper of the original scan — constant across themes */
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+  transform: rotate(var(--hand-tilt));
+  overflow: hidden;
+}
+
+.hand-print img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  transform: rotate(var(--hand-aim)) scale(1.32);
+}
+
+@media (min-width: 960px) {
+  .hand-print {
+    /* ...and points right, into the content column, on desktop */
+    --hand-aim: 100deg;
+    width: 12rem;
+  }
+}
+
+/* ── vitrine (org page): editions only. Org identity leads — zero Aponte
+   branding; no top bar on this page (see Layouts.app header={false}). ─────── */
+.vitrine {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.vitrine-eyebrow {
+  color: var(--fg-muted);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.vitrine-edition-title {
+  font-family: var(--font-display);
+  font-stretch: 122%;
+  font-weight: 580;
+  font-size: var(--text-2xl);
+  letter-spacing: 0.01em;
+}
+
+/* edition/org artwork: big but grounded, left-aligned like every logo */
+.vitrine-edition-logo {
+  height: 6rem;
+}
+.vitrine-edition-logo.sesh-logo--custom {
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  margin-inline-end: auto;
+}
+
+/* small uppercase section label (replaces text-sm text-muted headings here) */
+.section-label {
+  color: var(--fg-muted);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* docked CTA: desktop only — mobile has the floating one */
+.vitrine-cta-docked {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .vitrine-cta-docked {
+    display: inline-flex;
+  }
+}
+
+.about-text {
+  max-width: 68ch;
+}
+
+/* org logo mark (sobre page identity) */
+.org-logo {
+  height: 4rem;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+
+/* inset grouped list (iOS settings rows): editions, links */
+.inset-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.inset-list li + li {
+  border-top: 1px solid var(--border);
+}
+
+.inset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: 3.25rem;
+  padding: var(--s-2) var(--s-4);
+  color: var(--fg);
+}
+
+a.inset-row {
+  transition: background var(--motion-fast, 120ms) ease;
+}
+
+a.inset-row:hover {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+.inset-row--static {
+  margin: 0;
+}
+
+.inset-chev {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* gallery page: multi-column grid everywhere, hover lift where hover exists */
+.gallery-page-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-2);
+}
+
+.gallery-page-grid a {
+  display: block;
+}
+
+.gallery-page-grid img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+
+@media (min-width: 640px) {
+  .gallery-page-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 960px) {
+  .gallery-page-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--s-3);
+  }
+
+  .gallery-page-grid img {
+    transition:
+      transform var(--dur, 0ms) var(--ease-spring),
+      box-shadow var(--dur, 0ms) var(--ease-out);
+  }
+}
+
+/* hover states only where hover exists */
+@media (hover: hover) and (min-width: 960px) {
+  .gallery-page-grid a:hover img {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-2);
+  }
+}
+
+/* desktop vitrine: hero edition composed as art column + info column;
+   upcoming/past as two side-by-side columns below */
+@media (min-width: 960px) {
+  body:has(.vitrine) .shell {
+    max-width: 62rem;
+  }
+
+  .vitrine-edition {
+    display: grid;
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    column-gap: var(--s-7);
+    align-items: start;
+  }
+
+  .vitrine-edition-body {
+    min-width: 0;
+  }
+
+  .vitrine-edition-logo {
+    height: 8rem;
+  }
+
+  .vitrine-editions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-6);
+    align-items: start;
+  }
+
+  /* the stack utility's margin would offset the second column in the grid */
+  .vitrine-editions > * + * {
+    margin-top: 0;
+  }
+}
+
+@media (min-width: 1280px) {
+  body:has(.vitrine) .shell {
+    max-width: 68rem;
+  }
 }

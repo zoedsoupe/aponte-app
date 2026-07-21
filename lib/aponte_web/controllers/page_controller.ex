@@ -14,10 +14,9 @@ defmodule AponteWeb.PageController do
     render(conn, :sobre, page_title: "Sobre")
   end
 
-  # Notification config panel. Stateless shell — the toggle/topics reflect the
-  # device's own subscription, managed client-side (assets/js/client_push.js).
-  # The data-push-* URLs point at this org's push endpoints (read by phase 6).
+  # The notification panel moved to a section of the org's sobre page
+  # (/:slug/sobre#avisos); the push POST endpoints stay org-scoped as they are.
   def avisos(conn, _params) do
-    render(conn, :avisos, org: conn.assigns.org, page_title: "Avisos")
+    redirect(conn, to: ~p"/#{conn.assigns.org.slug}/sobre" <> "#avisos")
   end
 end

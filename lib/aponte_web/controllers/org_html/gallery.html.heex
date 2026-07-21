@@ -1,0 +1,15 @@
+<Layouts.app flash={@flash} org={@org} current_path={@conn.request_path}>
+  <section class="stack-3">
+    <h1 class="text-xl">Galeria</h1>
+
+    <ul :if={@images != []} class="gallery-page-grid">
+      <li :for={img <- @images}>
+        <a href={image_url(@org, img.path)} target="_blank" rel="noopener">
+          <img src={image_url(@org, img.thumb_path)} alt="" loading="lazy" />
+        </a>
+      </li>
+    </ul>
+
+    <p :if={@images == []} class="text-sm text-dim">Nenhuma foto por aqui ainda.</p>
+  </section>
+</Layouts.app>

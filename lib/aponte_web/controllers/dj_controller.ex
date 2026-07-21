@@ -2,23 +2,32 @@ defmodule AponteWeb.DjController do
   use AponteWeb, :controller
 
   alias Aponte.DjApplications
-  alias Aponte.DjApplications.DjApplication
 
   # Tempo mínimo (s) entre carregar o form e enviar. Humano não preenche
   # 5 campos em < 3s; bot que faz POST direto não espera.
   @min_fill_seconds 3
   @ts_salt "dj_form"
 
-  def new(conn, params) do
-    render(conn, :new,
-      org: conn.assigns.org,
-      changeset: DjApplications.change(%DjApplication{}),
-      submitted: params["ok"] == "1",
-      form_ts: sign_ts(conn),
-      open?: Aponte.Settings.dj_applications_open?(),
-      page_title: "Quer tocar?"
-    )
+  def new(conn, _params) do
+    # The DJ form is bespoke to SESH and lives as a section of the org's sobre
+    # page (custom-pages model). SESH gets redirected to it; other orgs 404.
+    if conn.assigns.org.slug == "sesh" do
+      redirect(conn, to: ~p"/#{conn.assigns.org.slug}/sobre" <> "#tocar")
+    else
+      conn
+      |> put_status(:not_found)
+      |> put_root_layout(false)
+      |> put_view(AponteWeb.ErrorHTML)
+      |> render("404.html")
+      |> halt()
+    end
   end
+
+  @doc """
+  Signed form-load timestamp consumed by `create/2` (anti-bot pacing). The
+  sobre page renders the form, so it signs through here to share the salt.
+  """
+  def sign_form_ts(conn), do: sign_ts(conn)
 
   def create(conn, params) do
     cond do
@@ -39,24 +48,29 @@ defmodule AponteWeb.DjController do
 
     case DjApplications.create(org, attrs) do
       {:ok, _application} ->
-        redirect(conn, to: ~p"/#{org.slug}/tocar?ok=1")
+        redirect(conn, to: ~p"/#{org.slug}/sobre?ok=1" <> "#tocar")
 
       {:error, %Ecto.Changeset{} = cs} ->
+        # The form lives in the sobre page now — re-render it there with the
+        # errored changeset so the user keeps their input.
         conn
         |> put_flash(:error, "Confere os campos e tenta de novo.")
-        |> render(:new,
+        |> put_view(AponteWeb.OrgHTML)
+        |> render(:about,
           org: org,
-          changeset: %{cs | action: :insert},
-          submitted: false,
-          form_ts: sign_ts(conn),
-          open?: Aponte.Settings.dj_applications_open?(),
-          page_title: "Quer tocar?"
+          page_title: "Sobre - #{org.name}",
+          dj_changeset: %{cs | action: :insert},
+          dj_submitted: false,
+          dj_form_ts: sign_ts(conn),
+          dj_open?: Aponte.Settings.dj_applications_open?()
         )
     end
   end
 
   # Sucesso silencioso: bot acha que passou, nada persiste.
-  defp silent_ok(conn), do: redirect(conn, to: ~p"/#{conn.assigns.org.slug}/tocar?ok=1")
+  defp silent_ok(conn) do
+    redirect(conn, to: ~p"/#{conn.assigns.org.slug}/sobre?ok=1" <> "#tocar")
+  end
 
   defp honeypot_filled?(params) do
     case params["site"] do

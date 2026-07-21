@@ -81,6 +81,8 @@ defmodule AponteWeb do
       import Phoenix.HTML
       # Core UI components
       import AponteWeb.CoreComponents
+      # Aponte design system (tab bar, floating CTA, hand motif)
+      import AponteWeb.AponteComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

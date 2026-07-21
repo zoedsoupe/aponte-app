@@ -50,14 +50,17 @@ defmodule AponteWeb.PublicPagesTest do
   end
 
   test "static public pages render", %{conn: conn} do
-    assert conn |> get(~p"/sesh/tocar") |> html_response(200) =~ "Quer tocar"
-    assert conn |> get(~p"/sesh/avisos") |> html_response(200) =~ "avisos"
+    assert conn |> get(~p"/sesh/sobre") |> html_response(200) =~ "Avisos"
     assert conn |> get(~p"/sesh/meus-ingressos") |> html_response(200) =~ "Meus ingressos"
   end
 
+  test "/sesh/avisos redirects to the sobre page avisos section", %{conn: conn} do
+    assert redirected_to(get(conn, ~p"/sesh/avisos")) == "/sesh/sobre#avisos"
+  end
+
   describe "client JS seams" do
-    test "avisos renders the org-scoped push endpoint data attributes", %{conn: conn} do
-      html = conn |> get(~p"/sesh/avisos") |> html_response(200)
+    test "sobre renders the org-scoped push endpoint data attributes", %{conn: conn} do
+      html = conn |> get(~p"/sesh/sobre") |> html_response(200)
       assert html =~ ~s(data-push-vapid-url="/sesh/push/vapid-key")
       assert html =~ ~s(data-push-sub-url="/sesh/push/subscribe")
     end

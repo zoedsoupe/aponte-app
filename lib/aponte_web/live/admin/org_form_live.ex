@@ -233,6 +233,7 @@ defmodule AponteWeb.Admin.OrgFormLive do
         >
           <.input field={@form[:name]} label="Nome" required />
 
+          <%!-- slug is immutable: only asked on create, never rendered on edit --%>
           <.input
             :if={@live_action == :new}
             field={@form[:slug]}
@@ -240,11 +241,6 @@ defmodule AponteWeb.Admin.OrgFormLive do
             required
             autocomplete="off"
           />
-          <div :if={@live_action == :edit} class="field stack-1">
-            <span class="field-label">Slug</span>
-            <input type="text" value={@record.slug} disabled class="field-input" />
-            <p class="text-xs text-dim">O slug não pode ser alterado.</p>
-          </div>
 
           <.input
             field={@form[:about]}

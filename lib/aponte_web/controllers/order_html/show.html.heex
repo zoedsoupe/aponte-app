@@ -1,4 +1,4 @@
-<Layouts.app flash={@flash} org={@org}>
+<Layouts.app flash={@flash} org={@org} current_path={@conn.request_path}>
   <meta :if={@order.status == :pending} http-equiv="refresh" content="30" />
   <div hidden data-order-record data-id={@order.id} data-label={order_label(@order)}></div>
 

@@ -234,7 +234,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
           multipart
         >
           <.input field={@form[:number]} type="number" label="Número" required inputmode="numeric" />
-          <.input field={@form[:name]} label="Nome (vazio = “SESH #N”)" />
+          <.input field={@form[:name]} label={"Nome (vazio = “#{@org.name} #N”)"} />
 
           <label class="field stack-1">
             <span class="field-label">Data e hora (horário de Brasília)</span>
@@ -252,7 +252,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
           <.input
             field={@form[:lineup]}
             type="textarea"
-            label="Lineup (um nome por linha)"
+            label="Descrição (uma linha por item)"
             rows="4"
           />
 

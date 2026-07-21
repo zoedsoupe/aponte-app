@@ -1,0 +1,222 @@
+<Layouts.app flash={@flash} org={@org} current_path={@conn.request_path}>
+  <div class="stack-6">
+    <section class="stack-3">
+      <img :if={logo_url(@org)} src={logo_url(@org)} alt={@org.name} class="org-logo" />
+      <h1 class="text-xl">Sobre</h1>
+      <p :for={paragraph <- about_paragraphs(@org.about)} class="about-text text-base">
+        {paragraph}
+      </p>
+      <p :if={about_paragraphs(@org.about) == []} class="text-sm text-dim">
+        Esse coletivo ainda não escreveu sobre si.
+      </p>
+    </section>
+
+    <section :if={@org.instagram || @org.social_links != []} class="stack-2">
+      <h2 class="section-label">Links</h2>
+      <ul class="inset-list">
+        <li :if={@org.instagram}>
+          <a
+            href={AponteWeb.Instagram.profile_url(@org.instagram)}
+            target="_blank"
+            rel="noopener"
+            class="inset-row"
+          >
+            <span class="text-base">{instagram_handle(@org.instagram)}</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="inset-chev"
+              aria-hidden="true"
+            >
+              <path d="M7 17 17 7" />
+              <path d="M9 7h8v8" />
+            </svg>
+          </a>
+        </li>
+        <li :for={link <- @org.social_links}>
+          <a href={link["url"]} target="_blank" rel="noopener" class="inset-row">
+            <span class="text-sm">{link["label"]}</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="inset-chev"
+              aria-hidden="true"
+            >
+              <path d="M7 17 17 7" />
+              <path d="M9 7h8v8" />
+            </svg>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <%!-- notification prefs (moved from the standalone /avisos page; the
+         data-push-* attributes are read by assets/js/client_push.js) --%>
+    <section
+      id="avisos"
+      class="stack-5"
+      data-push-vapid-url={~p"/#{@org.slug}/push/vapid-key"}
+      data-push-sub-url={~p"/#{@org.slug}/push/subscribe"}
+    >
+      <header class="stack-1">
+        <h2 class="text-xl">Avisos</h2>
+        <p class="text-xs text-dim">
+          Receba uma notificação quando seu pedido for confirmado ou quando uma nova
+          edição abrir. Tudo neste aparelho.
+        </p>
+      </header>
+
+      <section class="stack-3">
+        <button
+          type="button"
+          class="btn btn--primary btn--block"
+          data-client-push-toggle
+        >
+          Ativar avisos
+        </button>
+
+        <div class="stack-2">
+          <label class="field field--inline">
+            <input type="checkbox" class="checkbox" data-topic="order_status" checked />
+            <span class="field-label">Status do meu pedido</span>
+          </label>
+          <label class="field field--inline">
+            <input type="checkbox" class="checkbox" data-topic="editions" />
+            <span class="field-label">Novas edições</span>
+          </label>
+          <label class="field field--inline">
+            <input type="checkbox" class="checkbox" data-topic="coupons" />
+            <span class="field-label">Cupons (novidades e expiração)</span>
+          </label>
+          <p class="text-xs text-dim">
+            Ative os avisos primeiro para escolher o que receber.
+          </p>
+        </div>
+      </section>
+
+      <details class="stack-2">
+        <summary class="text-sm text-muted">Como instalar o app e ativar notificações</summary>
+
+        <div class="stack-3">
+          <div class="stack-1">
+            <p class="text-sm">No iPhone (Safari)</p>
+            <p class="text-xs text-dim">
+              Toque no botão compartilhar e escolha "adicionar à tela de início".
+              Abra pelo ícone na tela inicial e ative os avisos por aqui.
+            </p>
+          </div>
+          <div class="stack-1">
+            <p class="text-sm">No Android (Chrome)</p>
+            <p class="text-xs text-dim">
+              Toque no menu (⋮) e escolha "instalar app" ou "adicionar à tela inicial".
+              Abra pelo ícone instalado e ative os avisos.
+            </p>
+          </div>
+          <p class="text-xs text-dim">
+            Se já tiver bloqueado, libere as notificações nas configurações do navegador.
+          </p>
+        </div>
+      </details>
+    </section>
+
+    <%!-- bespoke SESH section (custom-pages model): the DJ application form
+         lives here for this org only — no generic mechanism, other orgs
+         never render it. POSTs still go to /:slug/tocar (DjController). --%>
+    <section :if={@org.slug == "sesh"} id="tocar" class="stack-5">
+      <div :if={@dj_submitted} class="stack-3">
+        <header class="stack-1">
+          <h2 class="text-xl">Recebido!</h2>
+          <p class="text-sm text-dim">Tua inscrição chegou. A {@org.name} te chama se rolar.</p>
+        </header>
+      </div>
+
+      <div :if={not @dj_open? and not @dj_submitted} class="stack-3">
+        <header class="stack-1">
+          <h2 class="text-xl">Inscrições fechadas</h2>
+          <p class="text-sm text-dim">
+            No momento não estamos recebendo inscrições. Fica de olho nas redes da {@org.name} pra próxima chamada.
+          </p>
+        </header>
+      </div>
+
+      <.form
+        :let={f}
+        :if={@dj_open? and not @dj_submitted}
+        for={@dj_changeset}
+        action={~p"/#{@org.slug}/tocar"}
+        class="stack-5"
+        id="dj-form"
+      >
+        <input type="hidden" name="ts" value={@dj_form_ts} />
+
+        <header class="stack-2">
+          <h2 class="text-xl">Quer tocar?</h2>
+          <p class="text-sm text-muted">
+            Os DJs da cena têm que começar em algum lugar. Equipamento de som à
+            disposição, cobertura fotográfica e filmagem pra portfólio.
+          </p>
+          <p class="text-xs text-dim">Manda teu set. A gente escuta tudo.</p>
+        </header>
+
+        <div :if={Phoenix.Flash.get(@flash, :error)} class="alert alert--error" role="alert">
+          <p class="text-sm">{Phoenix.Flash.get(@flash, :error)}</p>
+        </div>
+
+        <%!-- honeypot: bot preenche, humano não vê (off-screen, não display:none) --%>
+        <div style="position:absolute;left:-9999px" aria-hidden="true">
+          <label>
+            Não preencha este campo
+            <input type="text" name="site" tabindex="-1" autocomplete="off" />
+          </label>
+        </div>
+
+        <.input field={f[:name]} label="Nome / nome artístico" required autocomplete="name" />
+
+        <.input
+          field={f[:whatsapp]}
+          type="tel"
+          label="WhatsApp (DDD + número)"
+          required
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="22999998888"
+        />
+
+        <.input
+          field={f[:instagram]}
+          type="text"
+          label="Instagram (sem o @)"
+          required
+          autocomplete="off"
+          placeholder="seu.usuario"
+        />
+
+        <.input
+          field={f[:musical_styles]}
+          type="textarea"
+          label="Estilos que você toca"
+          rows="2"
+          required
+        />
+
+        <.input
+          field={f[:about]}
+          type="textarea"
+          label="Sobre você (+ link do set, se tiver)"
+          rows="3"
+          required
+        />
+
+        <.button type="submit" variant={:primary} class="btn--block">Enviar inscrição</.button>
+      </.form>
+    </section>
+  </div>
+</Layouts.app>
