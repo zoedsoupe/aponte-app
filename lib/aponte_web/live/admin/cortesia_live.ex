@@ -96,9 +96,9 @@ defmodule AponteWeb.Admin.CortesiaLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section class="stack-5">
-        <h1 class="text-xl text-mono">Cortesia — {@edition.name}</h1>
+        <.admin_header title="Cortesia" eyebrow={@edition.name} />
         <p class="text-xs text-dim">
           Emite ingressos confirmados num lote de cortesia, sem consumir capacidade paga.
         </p>
@@ -114,29 +114,39 @@ defmodule AponteWeb.Admin.CortesiaLive do
           :if={@comp_lotes != []}
           for={@form}
           phx-submit="emit"
-          class="stack-3"
+          class="stack-5"
           id="cortesia-form"
         >
-          <.input field={@form[:customer_name]} label="Nome" autocomplete="off" />
-          <.input field={@form[:customer_instagram]} label="Instagram (sem @)" autocomplete="off" />
-          <.input
-            field={@form[:quantity]}
-            type="number"
-            label="Quantidade"
-            min="1"
-            inputmode="numeric"
-          />
-          <.input
-            field={@form[:ticket_type_id]}
-            type="select"
-            label="Lote de cortesia"
-            options={Enum.map(@comp_lotes, &{&1.name, &1.id})}
-          />
-          <.button type="submit" class="btn--block">Emitir cortesia</.button>
+          <.form_section title="Convidade">
+            <.input field={@form[:customer_name]} label="Nome" autocomplete="off" />
+            <.input field={@form[:customer_instagram]} label="Instagram (sem @)" autocomplete="off" />
+          </.form_section>
+
+          <.form_section title="Ingressos">
+            <div class="field-row">
+              <.input
+                field={@form[:quantity]}
+                type="number"
+                label="Quantidade"
+                min="1"
+                inputmode="numeric"
+              />
+              <.input
+                field={@form[:ticket_type_id]}
+                type="select"
+                label="Lote de cortesia"
+                options={Enum.map(@comp_lotes, &{&1.name, &1.id})}
+              />
+            </div>
+          </.form_section>
+
+          <.form_bar>
+            <.button type="submit" class="btn--block">Emitir cortesia</.button>
+          </.form_bar>
         </.form>
 
         <div :if={@emitted} class="card stack-2">
-          <h2 class="text-sm text-muted">Emitido</h2>
+          <h2 class="section-label">Emitido</h2>
           <a href={@emitted.url} target="_blank" rel="noopener" class="text-accent text-mono text-sm">
             {@emitted.url}
           </a>
@@ -145,6 +155,13 @@ defmodule AponteWeb.Admin.CortesiaLive do
               <code class="text-mono">{code}</code>
             </li>
           </ul>
+          <button
+            type="button"
+            onclick={"navigator.clipboard.writeText('#{@emitted.url}')"}
+            class="btn btn--ghost btn--sm btn--block"
+          >
+            Copiar link
+          </button>
         </div>
       </section>
     </Layouts.admin>

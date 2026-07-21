@@ -27,6 +27,8 @@ defmodule AponteWeb.Admin.BalcaoLive do
        pix: nil,
        sale: nil,
        result: nil,
+       # loads scanner.js (redeem mode reads QR with the same hook as the door)
+       scanner: true,
        page_title: "Balcão"
      )}
   end
@@ -178,12 +180,9 @@ defmodule AponteWeb.Admin.BalcaoLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section class="stack-4">
-        <header class="stack-1">
-          <h1 class="text-xl text-mono">Balcão</h1>
-          <p :if={@edition} class="text-xs text-dim">{@edition.name}</p>
-        </header>
+        <.admin_header title="Balcão" eyebrow={@edition && @edition.name} />
 
         <div class="tabs" role="tablist">
           <button
@@ -360,7 +359,7 @@ defmodule AponteWeb.Admin.BalcaoLive do
             autocomplete="off"
             autocapitalize="characters"
             placeholder="XXXX-XXXX"
-            class="field-input text-mono"
+            class="input text-mono"
           />
         </label>
         <.button type="submit" variant={:ghost} class="btn--block">Resgatar código</.button>

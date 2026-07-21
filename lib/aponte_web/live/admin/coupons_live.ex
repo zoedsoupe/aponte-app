@@ -28,65 +28,92 @@ defmodule AponteWeb.Admin.CouponsLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section class="stack-5">
-        <h1 class="text-xl text-mono">Cupons</h1>
+        <.admin_header title="Cupons" eyebrow={@org.name} />
 
         <section class="stack-3">
-          <div class="row space-between align-baseline">
-            <h2 class="text-sm text-muted">Regras automáticas</h2>
-            <a href={~p"/admin/#{@org.slug}/cupons/regras/nova"} class="text-xs text-accent">
+          <div class="admin-section-head">
+            <div class="stack-1">
+              <h2 class="section-label">Regras automáticas</h2>
+              <p class="text-xs text-dim">
+                Emitem um cupom pro cliente quando o pedido atinge o valor mínimo.
+              </p>
+            </div>
+            <a href={~p"/admin/#{@org.slug}/cupons/regras/nova"} class="admin-action">
               + Nova regra
             </a>
           </div>
-          <p class="text-xs text-dim">
-            Emitem um cupom pro cliente quando o pedido atinge o valor mínimo.
-          </p>
 
-          <p :if={@rules == []} class="text-xs text-dim">Nenhuma regra ainda.</p>
-          <ul class="stack-2">
-            <li :for={r <- @rules} class="card">
-              <a
-                href={~p"/admin/#{@org.slug}/cupons/regras/#{r.id}"}
-                class="row space-between align-center"
-              >
-                <div class="stack-1">
-                  <span class="text-sm">{r.name}</span>
-                  <span class="text-xs text-dim text-mono">
-                    min {AponteWeb.CoreComponents.money(r.min_order_cents)} → {discount(r)} - {r.expires_in_days}d
-                  </span>
-                </div>
-                <span :if={not r.is_active} class="badge badge--expired">Inativa</span>
-              </a>
-            </li>
-          </ul>
+          <p :if={@rules == []} class="text-sm text-dim">Nenhuma regra ainda.</p>
+          <table :if={@rules != []} class="data-table">
+            <thead>
+              <tr>
+                <th>Regra</th>
+                <th>Pedido mínimo</th>
+                <th>Desconto</th>
+                <th>Validade</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={r <- @rules}>
+                <td class="td-title">
+                  <a href={~p"/admin/#{@org.slug}/cupons/regras/#{r.id}"}>{r.name}</a>
+                </td>
+                <td data-label="Mínimo" class="td-num">
+                  {AponteWeb.CoreComponents.money(r.min_order_cents)}
+                </td>
+                <td data-label="Desconto">{discount(r)}</td>
+                <td data-label="Validade" class="text-dim">{r.expires_in_days} dias</td>
+                <td data-label="Status">
+                  <span :if={r.is_active} class="badge badge--published">Ativa</span>
+                  <span :if={not r.is_active} class="badge badge--expired">Inativa</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </section>
 
         <section class="stack-3">
-          <div class="row space-between align-baseline">
-            <h2 class="text-sm text-muted">Cupons públicos</h2>
-            <a href={~p"/admin/#{@org.slug}/cupons/novo"} class="text-xs text-accent">
+          <div class="admin-section-head">
+            <div class="stack-1">
+              <h2 class="section-label">Cupons públicos</h2>
+              <p class="text-xs text-dim">
+                Código que qualquer cliente usa. inscritos recebem aviso ao criar.
+              </p>
+            </div>
+            <a href={~p"/admin/#{@org.slug}/cupons/novo"} class="admin-action admin-action--primary">
               + Novo cupom
             </a>
           </div>
-          <p class="text-xs text-dim">
-            Código que qualquer cliente usa. inscritos recebem aviso ao criar.
-          </p>
 
-          <p :if={@coupons == []} class="text-xs text-dim">Nenhum cupom público ainda.</p>
-          <ul class="stack-2">
-            <li :for={c <- @coupons} class="card">
-              <a href={~p"/admin/#{@org.slug}/cupons/#{c.id}"} class="row space-between align-center">
-                <div class="stack-1">
-                  <span class="text-sm text-mono">{c.code}</span>
-                  <span class="text-xs text-dim">
-                    {discount(c)} - {expiry(c.expires_at)} - {uses(c)}
-                  </span>
-                </div>
-                <span :if={not c.is_active} class="badge badge--expired">Inativo</span>
-              </a>
-            </li>
-          </ul>
+          <p :if={@coupons == []} class="text-sm text-dim">Nenhum cupom público ainda.</p>
+          <table :if={@coupons != []} class="data-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Desconto</th>
+                <th>Expira</th>
+                <th>Usos</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={c <- @coupons}>
+                <td class="td-title text-mono">
+                  <a href={~p"/admin/#{@org.slug}/cupons/#{c.id}"}>{c.code}</a>
+                </td>
+                <td data-label="Desconto">{discount(c)}</td>
+                <td data-label="Expira" class="text-dim">{expiry(c.expires_at)}</td>
+                <td data-label="Usos" class="td-num">{uses(c)}</td>
+                <td data-label="Status">
+                  <span :if={c.is_active} class="badge badge--published">Ativo</span>
+                  <span :if={not c.is_active} class="badge badge--expired">Inativo</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </section>
       </section>
     </Layouts.admin>

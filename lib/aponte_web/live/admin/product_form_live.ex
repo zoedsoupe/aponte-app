@@ -142,51 +142,55 @@ defmodule AponteWeb.Admin.ProductFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Produtos" back_to={~p"/admin/#{@org.slug}/produtos"}>
       <section class="stack-5">
-        <h1 class="text-xl text-mono">
-          {if @live_action == :new, do: "Novo produto", else: @item.name}
-        </h1>
+        <.admin_header
+          title={if @live_action == :new, do: "Novo produto", else: @item.name}
+          eyebrow="Produto"
+        />
 
         <.form
           for={@form}
           phx-change="validate"
           phx-submit="save"
           id="product-form"
-          class="stack-3"
+          class="stack-5"
           multipart
         >
-          <.input field={@form[:name]} label="Nome" required />
-          <.input
-            field={@form[:kind]}
-            type="select"
-            label="Tipo"
-            options={[{"Loja (online)", :online}, {"Balcão (festa)", :counter}]}
-          />
-          <.input field={@form[:description]} type="textarea" label="Descrição" rows="2" />
-          <div class="row gap-3">
+          <.form_section title="Produto">
+            <.input field={@form[:name]} label="Nome" required />
             <.input
-              field={@form[:price_cents]}
-              type="number"
-              label="Preço (centavos)"
-              required
-              inputmode="numeric"
+              field={@form[:kind]}
+              type="select"
+              label="Tipo"
+              options={[{"Loja (online)", :online}, {"Balcão (festa)", :counter}]}
             />
-            <.input field={@form[:stock]} type="number" label="Estoque total" inputmode="numeric" />
-            <.input field={@form[:position]} type="number" label="Ordem" inputmode="numeric" />
-          </div>
-          <.input field={@form[:track_stock]} type="checkbox" label="Controlar estoque" />
-          <p class="text-xs text-dim">
-            Balcão sem controle de estoque vende livre (deixe desmarcado). Loja sempre controla.
-          </p>
-          <p :if={@live_action == :edit} class="text-xs text-dim">
-            Disponível agora: {@item.available}. Mudar o estoque ajusta o disponível pelo mesmo delta.
-          </p>
-          <.input field={@form[:is_active]} type="checkbox" label="A venda" />
+            <.input field={@form[:description]} type="textarea" label="Descrição" rows="2" />
+          </.form_section>
 
-          <div class="field stack-2">
-            <span class="field-label">Imagem (opcional)</span>
+          <.form_section
+            title="Preço e estoque"
+            hint="Balcão sem controle de estoque vende livre (deixe desmarcado). Loja sempre controla."
+          >
+            <div class="field-row">
+              <.input
+                field={@form[:price_cents]}
+                type="number"
+                label="Preço (centavos)"
+                required
+                inputmode="numeric"
+              />
+              <.input field={@form[:stock]} type="number" label="Estoque total" inputmode="numeric" />
+              <.input field={@form[:position]} type="number" label="Ordem" inputmode="numeric" />
+            </div>
+            <.input field={@form[:track_stock]} type="checkbox" label="Controlar estoque" />
+            <p :if={@live_action == :edit} class="text-xs text-dim">
+              Disponível agora: {@item.available}. Mudar o estoque ajusta o disponível pelo mesmo delta.
+            </p>
+            <.input field={@form[:is_active]} type="checkbox" label="A venda" />
+          </.form_section>
 
+          <.form_section title="Imagem" hint="Opcional. Aparece na loja e no /comprar.">
             <div :if={@item.image_path} class="photo-preview">
               <img src={Merch.image_url(@item.image_path)} alt="imagem do produto" width="120" />
               <button
@@ -227,11 +231,13 @@ defmodule AponteWeb.Admin.ProductFormLive do
             <p :for={err <- upload_errors(@uploads.image)} class="field-error">
               {upload_error_msg(err)}
             </p>
-          </div>
+          </.form_section>
 
-          <.button type="submit" class="btn--block">
-            {if @live_action == :new, do: "Criar produto", else: "Salvar"}
-          </.button>
+          <.form_bar>
+            <.button type="submit" class="btn--block">
+              {if @live_action == :new, do: "Criar produto", else: "Salvar"}
+            </.button>
+          </.form_bar>
         </.form>
 
         <.button

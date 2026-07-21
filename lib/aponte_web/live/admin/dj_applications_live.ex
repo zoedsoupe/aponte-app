@@ -33,48 +33,59 @@ defmodule AponteWeb.Admin.DjApplicationsLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section class="stack-5">
-        <header class="stack-1">
-          <h1 class="text-xl text-mono">Quer tocar?</h1>
-          <p class="text-xs text-dim">{length(@applications)} inscrição(ões)</p>
-          <div class="row space-between align-baseline">
-            <p class="text-xs text-dim">
-              Inscrições: {if @open?, do: "abertas", else: "fechadas"}
-            </p>
+        <.admin_header title="Quer tocar?" eyebrow={"#{length(@applications)} inscrição(ões)"}>
+          <:actions>
+            <span class="text-xs text-dim">
+              Inscrições {if @open?, do: "abertas", else: "fechadas"}
+            </span>
             <button type="button" phx-click="toggle_open" class="btn btn--ghost btn--sm">
               {if @open?, do: "Fechar", else: "Abrir"}
             </button>
-          </div>
-        </header>
+          </:actions>
+        </.admin_header>
 
         <p :if={@applications == []} class="text-sm text-dim">Nenhuma inscrição ainda.</p>
 
-        <ul class="stack-3">
-          <li :for={a <- @applications} class="card stack-2">
-            <div class="row space-between align-baseline">
-              <h2 class="text-base">{a.name}</h2>
-              <span class="text-xs text-dim text-mono">{Clock.format(a.inserted_at, :date)}</span>
-            </div>
-
-            <p class="text-sm">{a.musical_styles}</p>
-            <p class="text-sm text-dim">{a.about}</p>
-
-            <div class="row gap-3 text-xs">
-              <a href={wa_url(a.whatsapp)} target="_blank" rel="noopener" class="text-accent">
-                Whatsapp
-              </a>
-              <a
-                href={Instagram.profile_url(a.instagram)}
-                target="_blank"
-                rel="noopener"
-                class="text-accent"
-              >
-                @{a.instagram}
-              </a>
-            </div>
-          </li>
-        </ul>
+        <table :if={@applications != []} class="data-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Estilos</th>
+              <th>Sobre</th>
+              <th>Contato</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={a <- @applications}>
+              <td class="td-title">{a.name}</td>
+              <td data-label="Estilos">{a.musical_styles}</td>
+              <td data-label="Sobre" class="text-dim">
+                <span class="clamp-2">{a.about}</span>
+              </td>
+              <td data-label="Contato">
+                <div class="row gap-3">
+                  <a href={wa_url(a.whatsapp)} target="_blank" rel="noopener" class="text-accent">
+                    Whatsapp
+                  </a>
+                  <a
+                    href={Instagram.profile_url(a.instagram)}
+                    target="_blank"
+                    rel="noopener"
+                    class="text-accent"
+                  >
+                    @{a.instagram}
+                  </a>
+                </div>
+              </td>
+              <td data-label="Data" class="text-mono text-dim">
+                {Clock.format(a.inserted_at, :date)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </section>
     </Layouts.admin>
     """

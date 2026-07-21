@@ -135,6 +135,26 @@ defmodule AponteWeb.AponteComponents do
     """
   end
 
+  defp tab_icon(%{name: :scan} = assigns) do
+    ~H"""
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1" />
+      <path d="M13.5 13.5h2.7v2.7h-2.7z" />
+      <path d="M17.3 17.3H20V20h-2.7z" />
+    </svg>
+    """
+  end
+
   defp tab_icon(%{name: :info} = assigns) do
     ~H"""
     <svg
@@ -168,6 +188,88 @@ defmodule AponteWeb.AponteComponents do
       <circle cx="9.5" cy="10" r="1.5" />
       <path d="m5 17 4.5-4.5 3 3L17 11l2 2" />
     </svg>
+    """
+  end
+
+  @doc """
+  Admin tab bar: the daily-ops surfaces (Painel, Pedidos, Porta, Balcão).
+  Same chrome language as the public tab bar — bottom bar on mobile, slim
+  frosted top bar on desktop. Config pages (Perfil, Galeria) stay in the
+  admin header; the tab bar is for what a tenant touches every day.
+  """
+  attr :org, :map, required: true
+  attr :current_path, :string, default: nil
+
+  def admin_tab_bar(assigns) do
+    ~H"""
+    <nav class="tab-bar" aria-label="Administração">
+      <.tab_item
+        href={~p"/admin/#{@org.slug}"}
+        icon={:home}
+        label="Painel"
+        active={active_tab?(@current_path, ~p"/admin/#{@org.slug}", :exact)}
+      />
+      <.tab_item
+        href={~p"/admin/#{@org.slug}/buscar"}
+        icon={:ticket}
+        label="Pedidos"
+        active={
+          active_tab?(@current_path, ~p"/admin/#{@org.slug}/buscar", :prefix) or
+            active_tab?(@current_path, "/admin/#{@org.slug}/pedidos", :prefix)
+        }
+      />
+      <.tab_item
+        href={~p"/admin/#{@org.slug}/validar"}
+        icon={:scan}
+        label="Porta"
+        active={active_tab?(@current_path, ~p"/admin/#{@org.slug}/validar", :prefix)}
+      />
+      <.tab_item
+        href={~p"/admin/#{@org.slug}/balcao"}
+        icon={:bag}
+        label="Balcão"
+        active={active_tab?(@current_path, ~p"/admin/#{@org.slug}/balcao", :exact)}
+      />
+    </nav>
+    """
+  end
+
+  @doc """
+  Admin page header: display h1 with an optional eyebrow line and a
+  right-aligned actions slot (primary CTA, toggles). Sets the hierarchy
+  every admin page shares.
+  """
+  attr :title, :string, required: true
+  attr :eyebrow, :string, default: nil
+  slot :actions
+
+  def admin_header(assigns) do
+    ~H"""
+    <header class="admin-header">
+      <div class="stack-1">
+        <p :if={@eyebrow} class="eyebrow">{@eyebrow}</p>
+        <h1 class="text-xl">{@title}</h1>
+      </div>
+      <div :if={@actions != []} class="admin-header-actions">
+        {render_slot(@actions)}
+      </div>
+    </header>
+    """
+  end
+
+  @doc """
+  Dashboard stat card: mono value over a small uppercase label, on a
+  surface panel. Renders inside a `.stat-grid` container.
+  """
+  attr :label, :string, required: true
+  attr :value, :any, required: true
+
+  def stat_card(assigns) do
+    ~H"""
+    <div class="stat">
+      <span class="stat-value">{@value}</span>
+      <span class="stat-label">{@label}</span>
+    </div>
     """
   end
 

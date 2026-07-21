@@ -114,22 +114,22 @@ defmodule AponteWeb.Admin.ScannerLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section id="scanner" phx-hook="Scanner" data-scanner class="scanner stack-4">
-        <div class="row space-between align-baseline">
-          <span :if={@stats} class="text-mono text-sm">
-            validadas {@stats.validated} / vendidas {@stats.sold_confirmed}
-          </span>
-        </div>
-
         <p :if={is_nil(@edition)} class="text-sm text-dim">
           Nenhuma edição publicada. publique uma edição pra abrir a porta.
         </p>
 
         <%= if @edition do %>
           <header class="stack-1">
-            <h1 class="text-xl text-mono">Porta — {@edition.name}</h1>
+            <p class="eyebrow">Porta</p>
+            <h1 class="text-xl">{@edition.name}</h1>
           </header>
+
+          <%!-- contador ao vivo: glanceable, mono, broadcast door:<edition> --%>
+          <p :if={@stats} class="door-count">
+            validadas {@stats.validated} / vendidas {@stats.sold_confirmed}
+          </p>
 
           <div id="cam-wrap" phx-update="ignore" class="scanner-cam">
             <video data-scanner-video playsinline autoplay muted class="scanner-video"></video>
@@ -148,7 +148,7 @@ defmodule AponteWeb.Admin.ScannerLive do
                 autocomplete="off"
                 autocapitalize="characters"
                 placeholder="XXXX-XXXX"
-                class="field-input text-mono"
+                class="input text-mono"
               />
             </label>
             <.button type="submit" variant={:ghost} class="btn--block">Validar código</.button>

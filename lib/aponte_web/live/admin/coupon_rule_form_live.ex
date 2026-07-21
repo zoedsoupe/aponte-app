@@ -84,48 +84,64 @@ defmodule AponteWeb.Admin.CouponRuleFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Cupons" back_to={~p"/admin/#{@org.slug}/cupons"}>
+    <Layouts.admin
+      flash={@flash}
+      org={@org}
+      current_path={assigns[:admin_path]}
+      back="Cupons"
+      back_to={~p"/admin/#{@org.slug}/cupons"}
+    >
       <section class="stack-5">
-        <h1 class="text-xl text-mono">
-          {if @live_action == :new, do: "Nova regra de cupom", else: "Editar regra"}
-        </h1>
+        <.admin_header
+          title={if @live_action == :new, do: "Nova regra de cupom", else: "Editar regra"}
+          eyebrow="Regra automática"
+        />
         <p class="text-xs text-dim">
           Emite um cupom automático quando o pedido atinge o valor mínimo.
         </p>
 
-        <.form for={@form} phx-change="validate" phx-submit="save" class="stack-3" id="rule-form">
-          <.input field={@form[:name]} label="Nome (ex: pedido grande)" required />
-          <.input
-            field={@form[:min_order_cents]}
-            type="number"
-            label="Pedido mínimo (centavos)"
-            required
-            inputmode="numeric"
-          />
-          <.input
-            field={@form[:discount_kind]}
-            type="select"
-            label="Tipo de desconto"
-            options={[{"Porcentagem (%)", "percent"}, {"Valor fixo (centavos)", "fixed"}]}
-          />
-          <.input
-            field={@form[:discount_value]}
-            type="number"
-            label="Valor do desconto (% ou centavos)"
-            required
-            inputmode="numeric"
-          />
-          <.input
-            field={@form[:expires_in_days]}
-            type="number"
-            label="Validade do cupom (dias)"
-            inputmode="numeric"
-          />
-          <.input field={@form[:is_active]} type="checkbox" label="Ativa" />
+        <.form for={@form} phx-change="validate" phx-submit="save" class="stack-5" id="rule-form">
+          <.form_section title="Gatilho">
+            <.input field={@form[:name]} label="Nome (ex: pedido grande)" required />
+            <.input
+              field={@form[:min_order_cents]}
+              type="number"
+              label="Pedido mínimo (centavos)"
+              required
+              inputmode="numeric"
+            />
+          </.form_section>
 
-          <.button type="submit" class="btn--block">
-            {if @live_action == :new, do: "Criar", else: "Salvar"}
-          </.button>
+          <.form_section title="Cupom emitido">
+            <div class="field-row">
+              <.input
+                field={@form[:discount_kind]}
+                type="select"
+                label="Tipo de desconto"
+                options={[{"Porcentagem (%)", "percent"}, {"Valor fixo (centavos)", "fixed"}]}
+              />
+              <.input
+                field={@form[:discount_value]}
+                type="number"
+                label="Valor do desconto (% ou centavos)"
+                required
+                inputmode="numeric"
+              />
+            </div>
+            <.input
+              field={@form[:expires_in_days]}
+              type="number"
+              label="Validade do cupom (dias)"
+              inputmode="numeric"
+            />
+            <.input field={@form[:is_active]} type="checkbox" label="Ativa" />
+          </.form_section>
+
+          <.form_bar>
+            <.button type="submit" class="btn--block">
+              {if @live_action == :new, do: "Criar regra", else: "Salvar"}
+            </.button>
+          </.form_bar>
         </.form>
 
         <.button

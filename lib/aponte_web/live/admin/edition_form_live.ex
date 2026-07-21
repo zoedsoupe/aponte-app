@@ -216,187 +216,197 @@ defmodule AponteWeb.Admin.EditionFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section class="stack-5">
-        <div class="row space-between align-baseline">
-          <h1 class="text-xl text-mono">
-            {if @live_action == :new, do: "Nova edição", else: @edition.name}
-          </h1>
-          <.status_badge :if={@edition.id} status={@edition.status} />
-        </div>
+        <.admin_header
+          title={if @live_action == :new, do: "Nova edição", else: @edition.name}
+          eyebrow="Edição"
+        >
+          <:actions>
+            <.status_badge :if={@edition.id} status={@edition.status} />
+          </:actions>
+        </.admin_header>
 
         <.form
           for={@form}
           phx-change="validate"
           phx-submit="save"
           id="edition-form"
-          class="stack-3"
+          class="stack-5"
           multipart
         >
-          <.input field={@form[:number]} type="number" label="Número" required inputmode="numeric" />
-          <.input field={@form[:name]} label={"Nome (vazio = “#{@org.name} #N”)"} />
-
-          <label class="field stack-1">
-            <span class="field-label">Data e hora (horário de Brasília)</span>
-            <input
-              type="datetime-local"
-              name="edition[starts_at]"
-              value={@starts_at_local}
-              class="field-input"
-              required
-            />
-          </label>
-
-          <.input field={@form[:venue]} label="Local" required />
-          <.input field={@form[:venue_address]} label="Endereço" />
-          <.input
-            field={@form[:lineup]}
-            type="textarea"
-            label="Descrição (uma linha por item)"
-            rows="4"
-          />
-
-          <div class="field stack-1">
-            <span class="field-label">Cor de destaque</span>
-            <div class="row gap-3 align-center">
-              <input
-                type="color"
-                name="edition[accent_color]"
-                value={accent(@form)}
-                class="color-input"
-              />
-              <span class="text-mono text-xs">{accent(@form)}</span>
-              <span
-                class="swatch"
-                style={"background-color:#{accent(@form)};width:1.5rem;height:1.5rem;border-radius:4px;display:inline-block"}
-              >
-              </span>
+          <.form_section title="Edição">
+            <div class="field-row">
+              <.input field={@form[:number]} type="number" label="Número" required inputmode="numeric" />
+              <.input field={@form[:name]} label={"Nome (vazio = “#{@org.name} #N”)"} />
             </div>
-          </div>
 
-          <%!-- logo override (img, sem currentColor) --%>
-          <div class="field stack-2">
-            <span class="field-label">Logo da edição (opcional)</span>
+            <label class="field stack-1">
+              <span class="field-label">Data e hora (horário de Brasília)</span>
+              <input
+                type="datetime-local"
+                name="edition[starts_at]"
+                value={@starts_at_local}
+                class="input"
+                required
+              />
+            </label>
+          </.form_section>
 
-            <details :if={@edition.logo_path} class="product-detail">
-              <summary class="text-xs text-dim">Ver logo atual</summary>
-              <div class="photo-preview mt-3">
-                <img src={Editions.logo_url(@edition.logo_path)} alt="logo" width="120" />
+          <.form_section title="Local e descrição">
+            <.input field={@form[:venue]} label="Local" required />
+            <.input field={@form[:venue_address]} label="Endereço" />
+            <.input
+              field={@form[:lineup]}
+              type="textarea"
+              label="Descrição (uma linha por item)"
+              rows="4"
+            />
+          </.form_section>
+
+          <.form_section title="Identidade visual">
+            <div class="field stack-1">
+              <span class="field-label">Cor de destaque</span>
+              <div class="row gap-3 align-center">
+                <input
+                  type="color"
+                  name="edition[accent_color]"
+                  value={accent(@form)}
+                  class="color-input"
+                />
+                <span class="text-mono text-xs">{accent(@form)}</span>
+                <span class="swatch" style={"background-color:#{accent(@form)}"}></span>
+              </div>
+            </div>
+
+            <%!-- logo override (img, sem currentColor) --%>
+            <div class="field stack-2">
+              <span class="field-label">Logo da edição (opcional)</span>
+
+              <details :if={@edition.logo_path} class="product-detail">
+                <summary class="text-xs text-dim">Ver logo atual</summary>
+                <div class="photo-preview mt-3">
+                  <img src={Editions.logo_url(@edition.logo_path)} alt="logo" width="120" />
+                  <button
+                    type="button"
+                    phx-click="remove-logo"
+                    data-confirm="Remover logo atual?"
+                    class="btn btn--ghost btn--sm"
+                  >
+                    Remover
+                  </button>
+                </div>
+              </details>
+
+              <label class="dropzone" phx-drop-target={@uploads.logo.ref}>
+                <.live_file_input upload={@uploads.logo} class="dropzone-input" />
+                <span class="text-xs text-muted">
+                  {if @edition.logo_path, do: "trocar", else: "enviar"} (svg/png, até 2 MB)
+                </span>
+              </label>
+
+              <div :for={entry <- @uploads.logo.entries} class="upload-entry">
+                <span class="text-xs text-mono flex-1">{entry.client_name}</span>
+                <progress class="upload-progress" value={entry.progress} max="100">
+                  {entry.progress}%
+                </progress>
                 <button
                   type="button"
-                  phx-click="remove-logo"
-                  data-confirm="Remover logo atual?"
+                  phx-click="cancel-upload"
+                  phx-value-ref={entry.ref}
                   class="btn btn--ghost btn--sm"
                 >
-                  Remover
+                  Cancelar
                 </button>
+                <p :for={err <- upload_errors(@uploads.logo, entry)} class="field-error">
+                  {upload_error_message(err)}
+                </p>
               </div>
-            </details>
 
-            <label class="dropzone" phx-drop-target={@uploads.logo.ref}>
-              <.live_file_input upload={@uploads.logo} class="dropzone-input" />
-              <span class="text-xs text-muted">
-                {if @edition.logo_path, do: "trocar", else: "enviar"} (svg/png, até 2 MB)
-              </span>
-            </label>
-
-            <div :for={entry <- @uploads.logo.entries} class="upload-entry">
-              <span class="text-xs text-mono flex-1">{entry.client_name}</span>
-              <progress class="upload-progress" value={entry.progress} max="100">
-                {entry.progress}%
-              </progress>
-              <button
-                type="button"
-                phx-click="cancel-upload"
-                phx-value-ref={entry.ref}
-                class="btn btn--ghost btn--sm"
-              >
-                Cancelar
-              </button>
-              <p :for={err <- upload_errors(@uploads.logo, entry)} class="field-error">
+              <p :for={err <- upload_errors(@uploads.logo)} class="field-error">
                 {upload_error_message(err)}
               </p>
             </div>
-
-            <p :for={err <- upload_errors(@uploads.logo)} class="field-error">
-              {upload_error_message(err)}
-            </p>
-          </div>
+          </.form_section>
 
           <%!-- lotes inline (cast_assoc + sort/drop) --%>
-          <fieldset class="stack-3">
-            <legend class="text-sm text-muted">Lotes</legend>
+          <.form_section title="Lotes" hint="Cada lote é um tipo de ingresso com preço e capacidade próprios.">
+            <fieldset class="stack-3">
+              <legend class="sr-only">Lotes</legend>
 
-            <.inputs_for :let={lot} field={@form[:ticket_types]}>
-              <div class="card stack-2">
-                <input type="hidden" name="edition[ticket_types_sort][]" value={lot.index} />
+              <.inputs_for :let={lot} field={@form[:ticket_types]}>
+                <div class="card stack-2">
+                  <input type="hidden" name="edition[ticket_types_sort][]" value={lot.index} />
 
-                <.input field={lot[:name]} label="Nome (ex: Lote 1)" required />
-                <.input
-                  field={lot[:description]}
-                  type="textarea"
-                  label="Descrição / regras (ex: marque 2 amigos no post)"
-                  rows="2"
-                />
-                <div class="row gap-3">
+                  <.input field={lot[:name]} label="Nome (ex: Lote 1)" required />
                   <.input
-                    field={lot[:price_cents]}
-                    type="number"
-                    label="Preço (centavos)"
-                    required
-                    inputmode="numeric"
+                    field={lot[:description]}
+                    type="textarea"
+                    label="Descrição / regras (ex: marque 2 amigos no post)"
+                    rows="2"
                   />
-                  <.input
-                    field={lot[:capacity]}
-                    type="number"
-                    label="Capacidade"
-                    required
-                    inputmode="numeric"
-                  />
-                  <.input
-                    field={lot[:position]}
-                    type="number"
-                    label="Ordem"
-                    inputmode="numeric"
-                  />
+                  <div class="field-row">
+                    <.input
+                      field={lot[:price_cents]}
+                      type="number"
+                      label="Preço (centavos)"
+                      required
+                      inputmode="numeric"
+                    />
+                    <.input
+                      field={lot[:capacity]}
+                      type="number"
+                      label="Capacidade"
+                      required
+                      inputmode="numeric"
+                    />
+                    <.input
+                      field={lot[:position]}
+                      type="number"
+                      label="Ordem"
+                      inputmode="numeric"
+                    />
+                  </div>
+                  <.input field={lot[:is_active]} type="checkbox" label="À venda" />
+
+                  <button
+                    type="button"
+                    name="edition[ticket_types_drop][]"
+                    value={lot.index}
+                    phx-click={JS.dispatch("change")}
+                    class="btn btn--ghost btn--sm"
+                  >
+                    Remover lote
+                  </button>
                 </div>
-                <.input field={lot[:is_active]} type="checkbox" label="À venda" />
+              </.inputs_for>
 
-                <button
-                  type="button"
-                  name="edition[ticket_types_drop][]"
-                  value={lot.index}
-                  phx-click={JS.dispatch("change")}
-                  class="btn btn--ghost btn--sm"
-                >
-                  Remover lote
-                </button>
-              </div>
-            </.inputs_for>
+              <input type="hidden" name="edition[ticket_types_drop][]" />
 
-            <input type="hidden" name="edition[ticket_types_drop][]" />
+              <button
+                type="button"
+                name="edition[ticket_types_sort][]"
+                value="new"
+                phx-click={JS.dispatch("change")}
+                class="btn btn--ghost btn--block"
+              >
+                + Adicionar lote
+              </button>
+            </fieldset>
+          </.form_section>
 
-            <button
-              type="button"
-              name="edition[ticket_types_sort][]"
-              value="new"
-              phx-click={JS.dispatch("change")}
-              class="btn btn--ghost btn--block"
-            >
-              + Adicionar lote
-            </button>
-          </fieldset>
-
-          <.button type="submit" class="btn--block">
-            {if @live_action == :new, do: "Criar edição", else: "Salvar"}
-          </.button>
+          <.form_bar>
+            <.button type="submit" class="btn--block">
+              {if @live_action == :new, do: "Criar edição", else: "Salvar"}
+            </.button>
+          </.form_bar>
         </.form>
 
-        <section :if={@live_action == :edit and @all_merch != []} class="stack-3">
-          <h2 class="text-sm text-muted">Produtos em destaque no /comprar</h2>
-          <p class="text-xs text-dim">
-            Só estes aparecem no formulário de ingresso. A loja mostra todos.
-          </p>
+        <.form_section
+          :if={@live_action == :edit and @all_merch != []}
+          title="Produtos em destaque no /comprar"
+          hint="Só estes aparecem no formulário de ingresso. A loja mostra todos."
+        >
           <form phx-submit="save_featured" class="stack-2" id="featured-merch-form">
             <label :for={item <- @all_merch} class="field field--inline">
               <input
@@ -410,7 +420,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
             </label>
             <.button type="submit" variant={:ghost} class="btn--block">Salvar destaques</.button>
           </form>
-        </section>
+        </.form_section>
 
         <div :if={@edition.id} class="stack-2">
           <.button

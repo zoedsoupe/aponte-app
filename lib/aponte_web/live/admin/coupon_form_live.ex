@@ -105,59 +105,77 @@ defmodule AponteWeb.Admin.CouponFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Cupons" back_to={~p"/admin/#{@org.slug}/cupons"}>
+    <Layouts.admin
+      flash={@flash}
+      org={@org}
+      current_path={assigns[:admin_path]}
+      back="Cupons"
+      back_to={~p"/admin/#{@org.slug}/cupons"}
+    >
       <section class="stack-5">
-        <h1 class="text-xl text-mono">
-          {if @live_action == :new, do: "Novo cupom público", else: "Editar cupom"}
-        </h1>
+        <.admin_header
+          title={if @live_action == :new, do: "Novo cupom público", else: "Editar cupom"}
+          eyebrow="Cupom"
+        />
         <p class="text-xs text-dim">
           Cupom que qualquer cliente pode usar. ao criar (ativo), os inscritos recebem um aviso.
         </p>
 
-        <.form for={@form} phx-change="validate" phx-submit="save" class="stack-3" id="coupon-form">
-          <.input
-            field={@form[:code]}
-            label="Código (vazio = gerar automático)"
-            autocomplete="off"
-            placeholder="Ex: BLACKFRIDAY10"
-          />
-          <.input
-            field={@form[:discount_kind]}
-            type="select"
-            label="Tipo de desconto"
-            options={[{"Porcentagem (%)", "percent"}, {"Valor fixo (centavos)", "fixed"}]}
-          />
-          <.input
-            field={@form[:discount_value]}
-            type="number"
-            label="Valor do desconto (% ou centavos)"
-            required
-            inputmode="numeric"
-          />
-          <.input
-            name="coupon[expires_in_days]"
-            value={@expires_in_days}
-            type="number"
-            label="Validade (dias, vazio = sem expirar)"
-            inputmode="numeric"
-          />
-          <.input
-            field={@form[:min_order_cents]}
-            type="number"
-            label="Pedido mínimo (centavos, opcional)"
-            inputmode="numeric"
-          />
-          <.input
-            field={@form[:max_uses]}
-            type="number"
-            label="Limite de usos (vazio = ilimitado)"
-            inputmode="numeric"
-          />
-          <.input field={@form[:is_active]} type="checkbox" label="Ativo" />
+        <.form for={@form} phx-change="validate" phx-submit="save" class="stack-5" id="coupon-form">
+          <.form_section title="Desconto">
+            <.input
+              field={@form[:code]}
+              label="Código (vazio = gerar automático)"
+              autocomplete="off"
+              placeholder="Ex: BLACKFRIDAY10"
+            />
+            <div class="field-row">
+              <.input
+                field={@form[:discount_kind]}
+                type="select"
+                label="Tipo de desconto"
+                options={[{"Porcentagem (%)", "percent"}, {"Valor fixo (centavos)", "fixed"}]}
+              />
+              <.input
+                field={@form[:discount_value]}
+                type="number"
+                label="Valor do desconto (% ou centavos)"
+                required
+                inputmode="numeric"
+              />
+            </div>
+          </.form_section>
 
-          <.button type="submit" class="btn--block">
-            {if @live_action == :new, do: "Criar", else: "Salvar"}
-          </.button>
+          <.form_section title="Limites" hint="Tudo opcional: vazio significa sem limite.">
+            <.input
+              name="coupon[expires_in_days]"
+              value={@expires_in_days}
+              type="number"
+              label="Validade (dias, vazio = sem expirar)"
+              inputmode="numeric"
+            />
+            <div class="field-row">
+              <.input
+                field={@form[:min_order_cents]}
+                type="number"
+                label="Pedido mínimo (centavos)"
+                inputmode="numeric"
+              />
+              <.input
+                field={@form[:max_uses]}
+                type="number"
+                label="Limite de usos"
+                inputmode="numeric"
+              />
+            </div>
+            <.input field={@form[:is_active]} type="checkbox" label="Ativo" />
+          </.form_section>
+
+          <.form_bar>
+            <.button type="submit" class="btn--block">
+              {if @live_action == :new, do: "Criar cupom", else: "Salvar"}
+            </.button>
+          </.form_bar>
         </.form>
 
         <.button

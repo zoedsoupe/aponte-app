@@ -17,29 +17,38 @@ defmodule AponteWeb.Admin.OrgListLive do
     ~H"""
     <Layouts.admin flash={@flash}>
       <section class="stack-5">
-        <div class="row space-between align-baseline">
-          <h1 class="text-xl text-mono">Organizações</h1>
-          <a href={~p"/admin/organizacoes/nova"} class="admin-action admin-action--primary">
-            + Nova org
-          </a>
-        </div>
+        <.admin_header title="Organizações" eyebrow="Aponte">
+          <:actions>
+            <a href={~p"/admin/organizacoes/nova"} class="admin-action admin-action--primary">
+              + Nova org
+            </a>
+          </:actions>
+        </.admin_header>
 
         <p :if={@orgs == []} class="text-sm text-dim">Nenhuma organização ainda.</p>
 
-        <ul class="stack-2">
-          <li :for={org <- @orgs} class="card">
-            <a
-              href={~p"/admin/#{org.slug}"}
-              class="row space-between align-center"
-              id={"org-#{org.slug}"}
-            >
-              <div class="stack-1">
-                <span class="text-base text-accent">{org.name}</span>
+        <ul :if={@orgs != []} class="inset-list">
+          <li :for={org <- @orgs}>
+            <a href={~p"/admin/#{org.slug}"} class="inset-row" id={"org-#{org.slug}"}>
+              <span class="stack-1">
+                <span class="text-base">{org.name}</span>
                 <span class="text-xs text-dim text-mono">/{org.slug}</span>
-              </div>
-              <span class="row gap-2">
+              </span>
+              <span class="row gap-2 align-center">
                 <span class="chip">{org.status}</span>
                 <span class="chip">{org.tier}</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="inset-chev"
+                  aria-hidden="true"
+                >
+                  <path d="m9 5 7 7-7 7" />
+                </svg>
               </span>
             </a>
           </li>

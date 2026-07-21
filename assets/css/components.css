@@ -924,26 +924,36 @@ select.input {
 }
 
 /* ── Balcão POS ─────────────────────────────────────────────────────────── */
+/* segmented mode switch (Vender / Resgatar): big touch targets, one accent */
 .tabs {
   display: flex;
-  gap: var(--s-2);
+  gap: var(--s-1);
+  padding: var(--s-1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
 }
 
 .tab {
   flex: 1;
+  min-height: var(--tap);
   padding: var(--s-2) var(--s-3);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: none;
   border-radius: var(--radius);
   color: var(--fg-muted);
   cursor: pointer;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: var(--text-sm);
+  transition:
+    background var(--motion-fast, 120ms) ease,
+    color var(--motion-fast, 120ms) ease;
 }
 
 .tab--active {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
 }
 
 .pos-grid {
@@ -951,7 +961,7 @@ select.input {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
   gap: var(--s-2);
 }
 
@@ -960,10 +970,10 @@ select.input {
 .pos-item {
   display: flex;
   flex-direction: column;
-  min-height: 5.5rem;
+  min-height: 6.5rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
@@ -972,6 +982,7 @@ select.input {
   flex: 1;
   flex-direction: column;
   gap: 2px;
+  min-height: var(--tap);
   padding: var(--s-3);
   background: none;
   border: none;
@@ -994,6 +1005,16 @@ select.input {
   justify-content: space-between;
   background: var(--surface-2);
   border-top: 1px solid var(--border);
+}
+
+/* total dock: frosted panel (cta-dock language) pinned by .form-bar */
+.pos-bar {
+  padding: var(--s-3) var(--s-4);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  backdrop-filter: blur(var(--blur-bar));
+  -webkit-backdrop-filter: blur(var(--blur-bar));
 }
 
 /* bottom action sheet (PIX no balcão) */
@@ -1186,18 +1207,101 @@ details[open] summary {
   color: var(--fg-muted);
 }
 
-/* admin tweaks */
+/* ── admin chrome ─────────────────────────────────────────────────────────
+   The admin is a tool, not a vitrine: same design system, quieter chrome.
+   Daily-ops nav is the tab bar (shared with the public pages); the slim
+   in-shell top row carries the breadcrumb and config links. */
 
-/* admin: fontes maiores pra leitura rápida na correria do evento */
-.shell--admin .text-xs {
-  font-size: var(--text-sm);
+.admin-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--border);
 }
 
-.shell--admin .text-sm {
-  font-size: var(--text-base);
+.admin-top-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
 }
 
-/* CRUD quick-actions — chips chamativos (accent border, fill no hover) */
+.admin-top-nav a {
+  color: var(--accent-soft);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  transition: color var(--motion-fast, 120ms) ease;
+}
+
+.admin-top-nav a:hover,
+.admin-top-nav a:focus-visible {
+  color: var(--accent);
+}
+
+.admin-swatches {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.swatch {
+  width: 1rem;
+  height: 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  display: inline-block;
+}
+
+/* admin page header: display h1 + right-aligned actions */
+.admin-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+/* section head inside admin pages: label left, quiet action right */
+.admin-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+/* utility link row (Porta · Balcão · Cortesia … on the dashboard) */
+.admin-quicklinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.admin-quicklinks a {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-soft);
+  white-space: nowrap;
+}
+
+.admin-quicklinks a:hover,
+.admin-quicklinks a:focus-visible {
+  color: var(--accent);
+}
+
+/* CRUD quick-actions — accent-outline chips (fill on hover), sans voice */
 .admin-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1208,14 +1312,12 @@ details[open] summary {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
-  padding: var(--s-1) var(--s-3);
+  padding: 0 var(--s-3);
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   color: var(--accent);
-  font-family: var(--font-mono);
   font-size: var(--text-sm);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 500;
   transition:
     background var(--motion-fast, 120ms) ease,
     color var(--motion-fast, 120ms) ease;
@@ -1230,7 +1332,6 @@ details[open] summary {
 .admin-action--primary {
   background: var(--accent);
   color: var(--bg);
-  font-weight: 500;
 }
 
 .admin-action--primary:hover,
@@ -1471,45 +1572,213 @@ body::after {
   gap: var(--s-3);
 }
 
-/* ── dashboard stats ─────────────────────────────────────────────────────── */
-/* fixed-size cells: every square identical regardless of how the row wraps
-   (flex-grow stretched the last row → uneven). */
-.stats-grid {
+/* ── dashboard stat cards ────────────────────────────────────────────────── */
+.stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 5.75rem));
-  justify-content: center;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
   gap: var(--s-2);
 }
 
 .stat {
+  background: var(--surface);
   border: 1px solid var(--border);
-  padding: var(--s-2) var(--s-2);
-  text-align: center;
-  overflow-wrap: anywhere;
+  border-radius: var(--radius-lg);
+  padding: var(--s-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
-/* label fica pequeno mesmo com o bump de fonte do admin (senão "disponível"
-   estoura a célula) */
-.shell--admin .stat .text-xs {
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  overflow-wrap: anywhere;
+}
+
+.stat-label {
   font-size: var(--text-xs);
+  color: var(--fg-dim);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.stats-table {
+/* ── admin data tables ─────────────────────────────────────────────────────
+   Real tables on desktop (sticky header, row hover, right-aligned numbers),
+   labeled cards on mobile — one markup, CSS-driven. Cells that need a label
+   on mobile carry data-label; the leading cell (name/code) goes unlabeled. */
+.data-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
 }
 
-.stats-table th,
-.stats-table td {
-  padding: var(--s-1) var(--s-2);
-  text-align: center;
-  border-bottom: 1px solid var(--border);
+.data-table thead th:first-child {
+  border-top-left-radius: var(--radius-lg);
 }
 
-.stats-table td:first-child,
-.stats-table th:first-child {
+.data-table thead th:last-child {
+  border-top-right-radius: var(--radius-lg);
+}
+
+.data-table th {
   text-align: left;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table .td-title {
+  font-weight: 600;
+}
+
+.data-table .td-num {
+  text-align: right;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.data-table .td-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (min-width: 960px) {
+  /* sticky under the docked top tab bar */
+  .data-table thead th {
+    position: sticky;
+    top: var(--tab-bar-h);
+    z-index: 10;
+  }
+
+  /* table pages get room to breathe */
+  body:has(.data-table) .shell--admin {
+    max-width: 58rem;
+  }
+}
+
+@media (hover: hover) and (min-width: 960px) {
+  .data-table tbody tr {
+    transition: background var(--motion-fast, 120ms) ease;
+  }
+
+  .data-table tbody tr:hover {
+    background: var(--surface-2);
+  }
+}
+
+@media (min-width: 1280px) {
+  body:has(.data-table) .shell--admin {
+    max-width: 62rem;
+  }
+}
+
+@media (max-width: 959px) {
+  .data-table {
+    display: block;
+    border: none;
+    background: transparent;
+  }
+
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table tbody,
+  .data-table tbody tr,
+  .data-table td {
+    display: block;
+  }
+
+  .data-table tbody tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: var(--s-2) var(--s-3);
+    margin-bottom: var(--s-3);
+  }
+
+  .data-table td {
+    border-bottom: none;
+    padding: var(--s-1) 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s-3);
+  }
+
+  .data-table td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    color: var(--fg-dim);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .data-table .td-title {
+    font-size: var(--text-base);
+  }
+}
+
+/* side-by-side fields that stack on narrow screens (price/stock/order rows) */
+.field-row {
+  display: flex;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.field-row>.field {
+  flex: 1 1 7rem;
+  min-width: 0;
+}
+
+/* order page action zone: DM + confirmar, stacked on phones, split on desktop */
+.order-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.order-actions>* {
+  flex: 1;
+}
+
+@media (min-width: 640px) {
+  .order-actions {
+    flex-direction: row;
+  }
+}
+
+/* two-line clamp for long cell text (DJ application "sobre") */
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .chip--active {
@@ -1528,10 +1797,17 @@ body::after {
 
 /* ── door scanner ────────────────────────────────────────────────────────── */
 .scanner-cam {
-  border: 1px solid var(--fg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
   background: #000;
   aspect-ratio: 1;
   overflow: hidden;
+}
+
+/* live door count: glanceable from arm's length */
+.door-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
 }
 
 .scanner-video {
@@ -1644,6 +1920,16 @@ body:has(.aponte-logo--hero) .brand {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--s-2);
+}
+
+/* admin gallery list thumb */
+.gallery-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .gallery-grid a {

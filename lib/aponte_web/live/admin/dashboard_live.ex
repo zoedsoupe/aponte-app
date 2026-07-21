@@ -85,115 +85,101 @@ defmodule AponteWeb.Admin.DashboardLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org}>
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]}>
       <section class="stack-5">
-        <div class="row space-between align-baseline">
-          <h1 class="text-xl text-mono">Painel</h1>
-          <button
-            type="button"
-            data-push-toggle
-            data-push-vapid-url={~p"/admin/#{@org.slug}/push/vapid-key"}
-            data-push-sub-url={~p"/admin/#{@org.slug}/push/subscribe"}
-            class="text-xs text-muted underline-offset-2 hover:underline"
-          >
-            Avisos
-          </button>
+        <.admin_header title="Painel" eyebrow={@org.name}>
+          <:actions>
+            <button
+              type="button"
+              data-push-toggle
+              data-push-vapid-url={~p"/admin/#{@org.slug}/push/vapid-key"}
+              data-push-sub-url={~p"/admin/#{@org.slug}/push/subscribe"}
+              class="btn btn--ghost btn--sm"
+            >
+              Avisos
+            </button>
+            <a href={~p"/admin/#{@org.slug}/edicoes/nova"} class="admin-action admin-action--primary">
+              + Nova edição
+            </a>
+          </:actions>
+        </.admin_header>
+
+        <div :if={@editions == []} class="empty-cta stack-3">
+          <p class="text-sm text-dim">
+            Nenhuma edição ainda. O painel ganha vida quando você criar a primeira.
+          </p>
+          <div class="admin-actions">
+            <a href={~p"/admin/#{@org.slug}/edicoes/nova"} class="admin-action admin-action--primary">
+              Criar a primeira edição
+            </a>
+            <a href={~p"/admin/#{@org.slug}/produtos"} class="admin-action">Produtos</a>
+            <a href={~p"/admin/#{@org.slug}/cupons"} class="admin-action">Cupons</a>
+          </div>
         </div>
 
-        <nav class="admin-actions">
-          <a href={~p"/admin/#{@org.slug}/edicoes/nova"} class="admin-action admin-action--primary">
-            + Nova edição
-          </a>
-          <a href={~p"/admin/#{@org.slug}/buscar"} class="admin-action">Pedidos</a>
-          <a href={~p"/admin/#{@org.slug}/cupons"} class="admin-action">Cupons</a>
-          <a href={~p"/admin/#{@org.slug}/produtos"} class="admin-action">Produtos</a>
-        </nav>
-
-        <p :if={@editions == []} class="text-sm text-dim">
-          Nenhuma edição ainda.
-          <a href={~p"/admin/#{@org.slug}/edicoes/nova"} class="text-accent">Criar a primeira →</a>
-        </p>
-
-        <section :if={@editions != []} class="stack-2">
-          <label class="field-label text-xs text-muted">Edição</label>
-          <ul class="row gap-3 wrap">
-            <li :for={e <- @editions}>
-              <button
-                type="button"
-                phx-click="select_edition"
-                phx-value-id={e.id}
-                class={["chip", @edition && e.id == @edition.id && "chip--active"]}
-              >
-                {e.name} - {e.status}
-              </button>
-            </li>
-          </ul>
-        </section>
+        <%= if @editions != [] do %>
+          <section class="stack-2">
+            <h2 class="section-label">Edição</h2>
+            <ul class="row gap-2" style="flex-wrap: wrap;">
+              <li :for={e <- @editions}>
+                <button
+                  type="button"
+                  phx-click="select_edition"
+                  phx-value-id={e.id}
+                  class={["chip", @edition && e.id == @edition.id && "chip--active"]}
+                >
+                  {e.name} · {e.status}
+                </button>
+              </li>
+            </ul>
+          </section>
+        <% end %>
 
         <%= if @edition do %>
           <div class="stack-5" style={"--accent: #{@edition.accent_color}"}>
             <section class="stack-3">
-              <div class="row space-between align-baseline">
-                <h2 class="text-sm text-muted">{@edition.name}</h2>
-                <div class="row gap-3">
-                  <a href={~p"/admin/#{@org.slug}/validar/#{@edition.id}"} class="text-xs text-accent">
-                    Porta
-                  </a>
-                  <a href={~p"/admin/#{@org.slug}/balcao"} class="text-xs text-accent">Balcão</a>
-                  <a
-                    href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}/cortesia"}
-                    class="text-xs text-accent"
-                  >
-                    Cortesia
-                  </a>
-                  <a href={~p"/admin/#{@org.slug}/tocar"} class="text-xs text-accent">
-                    Aplicações DJ
-                  </a>
-                  <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}"} class="text-xs text-accent">
-                    Editar
-                  </a>
-                </div>
+              <div class="admin-section-head">
+                <h2 class="section-label">{@edition.name}</h2>
+                <nav class="admin-quicklinks">
+                  <a href={~p"/admin/#{@org.slug}/validar/#{@edition.id}"}>Porta</a>
+                  <a href={~p"/admin/#{@org.slug}/balcao"}>Balcão</a>
+                  <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}/cortesia"}>Cortesia</a>
+                  <a href={~p"/admin/#{@org.slug}/tocar"}>Aplicações DJ</a>
+                  <a href={~p"/admin/#{@org.slug}/cupons"}>Cupons</a>
+                  <a href={~p"/admin/#{@org.slug}/produtos"}>Produtos</a>
+                  <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}"}>Editar</a>
+                </nav>
               </div>
 
-              <div class="row space-between align-baseline">
-                <span class="text-xs text-muted">Receita confirmada</span>
-                <span class="text-mono text-xl text-accent">{money(@stats.revenue_cents)}</span>
+              <div class="stack-1">
+                <span class="section-label">Receita confirmada</span>
+                <span class="text-mono text-2xl text-accent">{money(@stats.revenue_cents)}</span>
               </div>
 
-              <div class="stats-grid">
-                <.stat label="Capacidade" value={@stats.capacity} />
-                <.stat label="Vendido" value={@stats.sold_confirmed} />
-                <.stat label="Pendente" value={@stats.held_pending} />
-                <.stat label="Disponível" value={@stats.available} />
-                <.stat label="Validados" value={@stats.validated} />
+              <div class="stat-grid">
+                <.stat_card label="Capacidade" value={@stats.capacity} />
+                <.stat_card label="Vendido" value={@stats.sold_confirmed} />
+                <.stat_card label="Pendente" value={@stats.held_pending} />
+                <.stat_card label="Disponível" value={@stats.available} />
+                <.stat_card label="Validados" value={@stats.validated} />
               </div>
             </section>
 
-            <section :if={@bar && @bar.count > 0} class="stack-3">
-              <div class="row space-between align-baseline">
-                <h2 class="text-sm text-muted">Balcão ({@bar.count} vendas)</h2>
-                <span class="text-mono text-xl text-accent">{money(@bar.total_cents)}</span>
-              </div>
-              <div class="stats-grid">
-                <.stat label="Dinheiro" value={money(@bar.cash_cents)} />
-                <.stat label="PIX" value={money(@bar.pix_cents)} />
-              </div>
-              <ul :if={@bar.top_items != []} class="stack-1">
-                <li :for={t <- @bar.top_items} class="row space-between text-xs text-dim">
-                  <span>{t.qty}× {t.name}</span>
-                  <span class="text-mono">{money(t.cents)}</span>
-                </li>
-              </ul>
-            </section>
-
+            <%!-- pendências primeiro: aprovar pagamento (via DM no pedido) é o
+                 fluxo principal do admin --%>
             <section class="stack-3">
-              <h2 class="text-sm text-muted">Pendentes ({length(@pending)})</h2>
-              <p :if={@pending == []} class="text-xs text-dim">Nenhum pedido pendente.</p>
+              <div class="admin-section-head">
+                <h2 class="section-label">Pendentes ({length(@pending)})</h2>
+                <a href={~p"/admin/#{@org.slug}/buscar"} class="text-xs text-accent">
+                  Todos os pedidos
+                </a>
+              </div>
+              <p :if={@pending == []} class="text-sm text-dim">Nenhum pedido pendente.</p>
               <ul class="stack-2">
                 <li :for={o <- @pending} class="card stack-2">
                   <a href={~p"/admin/#{@org.slug}/pedidos/#{o.id}"} class="stack-1 block">
                     <div class="row space-between">
-                      <span class="text-base text-accent text-cap">{o.customer_name}</span>
+                      <span class="text-base text-cap">{o.customer_name}</span>
                       <span class="text-mono text-sm">{money(o.total_cents)}</span>
                     </div>
                     <div class="row space-between text-xs text-dim">
@@ -220,12 +206,29 @@ defmodule AponteWeb.Admin.DashboardLive do
               </ul>
             </section>
 
-            <section :if={@edition.ticket_types != []} class="stack-2">
-              <h2 class="text-sm text-muted">Lotes</h2>
-              <table class="stats-table text-sm">
+            <section :if={@bar && @bar.count > 0} class="stack-3">
+              <div class="admin-section-head">
+                <h2 class="section-label">Balcão ({@bar.count} vendas)</h2>
+                <span class="text-mono text-lg text-accent">{money(@bar.total_cents)}</span>
+              </div>
+              <div class="stat-grid">
+                <.stat_card label="Dinheiro" value={money(@bar.cash_cents)} />
+                <.stat_card label="PIX" value={money(@bar.pix_cents)} />
+              </div>
+              <ul :if={@bar.top_items != []} class="stack-1">
+                <li :for={t <- @bar.top_items} class="row space-between text-xs text-dim">
+                  <span>{t.qty}× {t.name}</span>
+                  <span class="text-mono">{money(t.cents)}</span>
+                </li>
+              </ul>
+            </section>
+
+            <section :if={@edition.ticket_types != []} class="stack-3">
+              <h2 class="section-label">Lotes</h2>
+              <table class="data-table">
                 <thead>
-                  <tr class="text-xs text-dim">
-                    <th class="text-left">Lote</th>
+                  <tr>
+                    <th>Lote</th>
                     <th>Cap</th>
                     <th>Vend</th>
                     <th>Pend</th>
@@ -236,30 +239,29 @@ defmodule AponteWeb.Admin.DashboardLive do
                 <tbody>
                   <tr :for={type <- @edition.ticket_types}>
                     <% s = lote_stats(@by_type, type) %>
-                    <td class="text-left">{type.name}</td>
-                    <td class="text-mono">{s.capacity}</td>
-                    <td class="text-mono">{s.sold}</td>
-                    <td class="text-mono">{s.held}</td>
-                    <td class="text-mono">{s.available}</td>
-                    <td class="text-mono">{s.validated}</td>
+                    <td class="td-title">{type.name}</td>
+                    <td data-label="Cap" class="td-num">{s.capacity}</td>
+                    <td data-label="Vend" class="td-num">{s.sold}</td>
+                    <td data-label="Pend" class="td-num">{s.held}</td>
+                    <td data-label="Disp" class="td-num">{s.available}</td>
+                    <td data-label="Valid" class="td-num">{s.validated}</td>
                   </tr>
                 </tbody>
               </table>
             </section>
 
             <section :if={@recent != []} class="stack-3">
-              <h2 class="text-sm text-muted">Histórico</h2>
-              <ul class="stack-2">
-                <li :for={o <- @recent} class="text-sm">
-                  <a
-                    href={~p"/admin/#{@org.slug}/pedidos/#{o.id}"}
-                    class="row space-between align-baseline gap-3"
-                  >
-                    <span class="text-accent text-cap flex-1">{o.customer_name}</span>
-                    <span class="text-mono text-xs text-dim">
-                      {money(o.total_cents)} · {Clock.format(o.inserted_at, :time)}
+              <h2 class="section-label">Histórico</h2>
+              <ul class="inset-list">
+                <li :for={o <- @recent}>
+                  <a href={~p"/admin/#{@org.slug}/pedidos/#{o.id}"} class="inset-row">
+                    <span class="text-base text-cap">{o.customer_name}</span>
+                    <span class="row gap-2 align-center">
+                      <span class="text-mono text-xs text-dim">
+                        {money(o.total_cents)} · {Clock.format(o.inserted_at, :time)}
+                      </span>
+                      <.status_badge status={o.status} />
                     </span>
-                    <.status_badge status={o.status} />
                   </a>
                 </li>
               </ul>
@@ -268,18 +270,6 @@ defmodule AponteWeb.Admin.DashboardLive do
         <% end %>
       </section>
     </Layouts.admin>
-    """
-  end
-
-  attr :label, :string, required: true
-  attr :value, :integer, required: true
-
-  defp stat(assigns) do
-    ~H"""
-    <div class="stat stack-1">
-      <span class="text-mono text-lg">{@value}</span>
-      <span class="text-xs text-dim">{@label}</span>
-    </div>
     """
   end
 end

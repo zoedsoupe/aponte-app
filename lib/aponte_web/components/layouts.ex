@@ -80,6 +80,11 @@ defmodule AponteWeb.Layouts do
   attr :back, :string, default: nil, doc: "back-link label; omit on root (/admin)"
   attr :back_to, :string, default: nil, doc: "back-link target"
   attr :org, :map, default: nil, doc: "loaded org inside /admin/:org_slug; nil on /admin"
+
+  attr :current_path, :string,
+    default: nil,
+    doc: "request path (OrgHooks :admin_path), for the admin tab bar active state"
+
   slot :inner_block, required: true
 
   def admin(assigns) do
@@ -87,14 +92,14 @@ defmodule AponteWeb.Layouts do
 
     ~H"""
     <div class="shell shell--admin">
-      <header class="site-header">
-        <a href={~p"/admin"} class="brand row gap-2 align-center">
-          <span class="text-mono text-xs text-dim">
-            {if @org, do: "/admin/#{@org.slug}", else: "/admin"}
-          </span>
+      <%!-- slim in-shell header: breadcrumb + config links. Daily-ops nav is
+           the admin tab bar below (same chrome as the public pages). --%>
+      <header class="admin-top">
+        <a href={~p"/admin"} class="text-mono text-xs text-dim">
+          {if @org, do: "/admin/#{@org.slug}", else: "/admin"}
         </a>
-        <nav class="site-nav row gap-3 align-center">
-          <span :if={@org} class="row gap-1 align-center" title={"tema de #{@org.name}"}>
+        <nav class="admin-top-nav">
+          <span :if={@org} class="admin-swatches" title={"tema de #{@org.name}"}>
             <span class="swatch" style={"background-color:#{theme_color(@org, :bg_color, "#FEF8DA")}"}>
             </span>
             <span class="swatch" style={"background-color:#{theme_color(@org, :fg_color, "#49422F")}"}>
@@ -103,7 +108,7 @@ defmodule AponteWeb.Layouts do
           </span>
           <a :if={@org} href={~p"/admin/#{@org.slug}/perfil"}>Perfil</a>
           <a :if={@org} href={~p"/admin/#{@org.slug}/galeria"}>Galeria</a>
-          <a href={~p"/"}>Site</a>
+          <a href={if @org, do: ~p"/#{@org.slug}", else: ~p"/"}>Site</a>
         </nav>
       </header>
 
@@ -111,6 +116,8 @@ defmodule AponteWeb.Layouts do
         <a :if={@back} href={@back_to} class="text-xs text-dim">← {@back}</a>
         {render_slot(@inner_block)}
       </main>
+
+      <.admin_tab_bar :if={@org} org={@org} current_path={@current_path} />
 
       <.flash_group flash={@flash} />
     </div>

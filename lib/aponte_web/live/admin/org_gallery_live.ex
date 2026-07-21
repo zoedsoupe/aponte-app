@@ -145,14 +145,15 @@ defmodule AponteWeb.Admin.OrgGalleryLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section class="stack-5">
-        <header class="stack-1">
-          <h1 class="text-xl text-mono">Galeria</h1>
-          <p class="text-xs text-dim">
-            Fotos da vitrine pública da org. Até 10 por vez, 5 MB cada.
-          </p>
-        </header>
+        <.admin_header
+          title="Galeria"
+          eyebrow={@org.name}
+        />
+        <p class="text-xs text-dim">
+          Fotos da vitrine pública da org. Até 10 por vez, 5 MB cada.
+        </p>
 
         <form phx-submit="save" phx-change="validate" id="gallery-form" class="stack-2">
           <label class="dropzone" phx-drop-target={@uploads.images.ref}>
@@ -196,7 +197,13 @@ defmodule AponteWeb.Admin.OrgGalleryLive do
 
         <ul class="stack-2" id="gallery-list">
           <li :for={{img, i} <- Enum.with_index(@images)} class="card row gap-3 align-center">
-            <img src={image_url(@org, img.thumb_path)} alt="" width="64" height="64" />
+            <img
+              src={image_url(@org, img.thumb_path)}
+              alt=""
+              width="64"
+              height="64"
+              class="gallery-thumb"
+            />
             <span class="text-xs text-mono flex-1">{img.original_filename || img.path}</span>
             <span class="row gap-2">
               <button

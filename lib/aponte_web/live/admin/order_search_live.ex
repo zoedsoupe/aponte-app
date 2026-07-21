@@ -55,9 +55,9 @@ defmodule AponteWeb.Admin.OrderSearchLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section class="stack-4">
-        <h1 class="text-xl text-mono">Pedidos</h1>
+        <.admin_header title="Pedidos" eyebrow={@org.name} />
 
         <form phx-change="search">
           <input
@@ -82,31 +82,45 @@ defmodule AponteWeb.Admin.OrderSearchLive do
           Nenhum pedido ainda.
         </p>
 
-        <ul class="stack-2">
-          <li :for={o <- @results} class="card stack-2">
-            <a href={~p"/admin/#{@org.slug}/pedidos/#{o.id}"} class="stack-1 block">
-              <div class="row space-between">
-                <span class="text-base text-accent text-cap">{o.customer_name}</span>
+        <table :if={@results != []} class="data-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Instagram</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Recebido</th>
+              <th><span class="sr-only">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={o <- @results}>
+              <td class="td-title text-cap">
+                <a href={~p"/admin/#{@org.slug}/pedidos/#{o.id}"}>{o.customer_name}</a>
+              </td>
+              <td data-label="Instagram" class="text-mono text-dim">@{o.customer_instagram}</td>
+              <td data-label="Total" class="td-num">{money(o.total_cents)}</td>
+              <td data-label="Status">
                 <.status_badge status={o.status} />
-              </div>
-              <div class="row space-between text-xs text-dim">
-                <span class="text-mono">@{o.customer_instagram}</span>
-                <span class="text-mono">{money(o.total_cents)}</span>
-              </div>
-              <span class="text-xs text-dim text-mono">{Clock.format(o.inserted_at, :datetime)}</span>
-            </a>
-            <%!-- ponytail: inline onclick clipboard, not the data-copy-target hook —
-                  LiveView-diffed rows aren't re-bound by copy.js (no page-loading-stop
-                  on phx-change). UUID url has no quotes to escape. --%>
-            <button
-              type="button"
-              onclick={"navigator.clipboard.writeText('#{order_url(@org, o.id)}')"}
-              class="btn btn--ghost btn--sm btn--block"
-            >
-              Copiar link
-            </button>
-          </li>
-        </ul>
+              </td>
+              <td data-label="Recebido" class="text-mono text-dim">
+                {Clock.format(o.inserted_at, :datetime)}
+              </td>
+              <td class="td-actions">
+                <%!-- ponytail: inline onclick clipboard, not the data-copy-target hook —
+                      LiveView-diffed rows aren't re-bound by copy.js (no page-loading-stop
+                      on phx-change). UUID url has no quotes to escape. --%>
+                <button
+                  type="button"
+                  onclick={"navigator.clipboard.writeText('#{order_url(@org, o.id)}')"}
+                  class="btn btn--ghost btn--sm"
+                >
+                  Copiar link
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
         <button
           :if={more?(@term, @results, @limit)}

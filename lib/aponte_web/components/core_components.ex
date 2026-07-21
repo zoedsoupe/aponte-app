@@ -10,10 +10,11 @@ defmodule AponteWeb.CoreComponents do
   import Phoenix.HTML, only: [raw: 1]
 
   @doc """
-  Botão simples. Variantes: `:primary` (padrão), `:ghost`, `:danger`.
+  Botão simples. Variantes: `:primary` (padrão), `:accent` (outline accent),
+  `:ghost`, `:danger`.
   """
   attr :type, :string, default: "button"
-  attr :variant, :atom, default: :primary, values: [:primary, :ghost, :danger]
+  attr :variant, :atom, default: :primary, values: [:primary, :accent, :ghost, :danger]
   attr :class, :string, default: nil
   attr :rest, :global, include: ~w(disabled form name value href)
   slot :inner_block, required: true

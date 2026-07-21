@@ -217,89 +217,101 @@ defmodule AponteWeb.Admin.OrgFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={assigns[:org]} back={@live_action == :edit && "Painel"}>
+    <Layouts.admin
+      flash={@flash}
+      org={assigns[:org]}
+      current_path={assigns[:admin_path]}
+      back={@live_action == :edit && "Painel"}
+    >
       <section class="stack-5">
-        <h1 class="text-xl text-mono">
-          {if @live_action == :new, do: "Nova organização", else: "Perfil — #{@record.name}"}
-        </h1>
+        <.admin_header
+          title={if @live_action == :new, do: "Nova organização", else: @record.name}
+          eyebrow={if @live_action == :new, do: "Organização", else: "Perfil"}
+        />
 
         <.form
           for={@form}
           phx-change="validate"
           phx-submit="save"
           id="org-form"
-          class="stack-3"
+          class="stack-5"
           multipart
         >
-          <.input field={@form[:name]} label="Nome" required />
+          <.form_section title="Identidade">
+            <.input field={@form[:name]} label="Nome" required />
 
-          <%!-- slug is immutable: only asked on create, never rendered on edit --%>
-          <.input
-            :if={@live_action == :new}
-            field={@form[:slug]}
-            label="Slug (minúsculas, números ou hífen; não dá pra mudar depois)"
-            required
-            autocomplete="off"
-          />
+            <%!-- slug is immutable: only asked on create, never rendered on edit --%>
+            <.input
+              :if={@live_action == :new}
+              field={@form[:slug]}
+              label="Slug (minúsculas, números ou hífen; não dá pra mudar depois)"
+              required
+              autocomplete="off"
+            />
 
-          <.input
-            field={@form[:about]}
-            type="textarea"
-            label="Sobre (uma linha em branco separa parágrafos)"
-            rows="5"
-          />
+            <.input
+              field={@form[:about]}
+              type="textarea"
+              label="Sobre (uma linha em branco separa parágrafos)"
+              rows="5"
+            />
+          </.form_section>
 
-          <.color_input field={@form[:accent_color]} label="Cor de destaque" fallback="#BF7262" />
-          <.color_input field={@form[:bg_color]} label="Cor de fundo" fallback="#FEF8DA" />
-          <.color_input field={@form[:fg_color]} label="Cor do texto" fallback="#49422F" />
-          <p class="text-xs text-dim">
-            Fundo e texto sem customização herdam a paleta padrão da Aponte.
-          </p>
+          <.form_section
+            title="Tema"
+            hint="Fundo e texto sem customização herdam a paleta padrão da Aponte."
+          >
+            <.color_input field={@form[:accent_color]} label="Cor de destaque" fallback="#BF7262" />
+            <.color_input field={@form[:bg_color]} label="Cor de fundo" fallback="#FEF8DA" />
+            <.color_input field={@form[:fg_color]} label="Cor do texto" fallback="#49422F" />
+          </.form_section>
 
-          <.input field={@form[:instagram]} label="Instagram (sem @)" autocomplete="off" />
-          <.input field={@form[:pix_key]} label="Chave PIX (recebe as vendas)" autocomplete="off" />
+          <.form_section title="Contato">
+            <.input field={@form[:instagram]} label="Instagram (sem @)" autocomplete="off" />
+            <.input field={@form[:pix_key]} label="Chave PIX (recebe as vendas)" autocomplete="off" />
+          </.form_section>
 
           <%!-- links sociais: linhas label + url, adiciona/remove dinamicamente --%>
-          <fieldset class="stack-2">
-            <legend class="text-sm text-muted">Links sociais</legend>
+          <.form_section title="Links sociais">
+            <fieldset class="stack-2">
+              <legend class="sr-only">Links sociais</legend>
 
-            <div :for={{link, i} <- Enum.with_index(@social_links)} class="row gap-2 align-center">
-              <input
-                type="text"
-                name={"#{@form[:social_links].name}[#{i}][label]"}
-                value={link["label"]}
-                placeholder="label"
-                class="field-input flex-1"
-              />
-              <input
-                type="text"
-                name={"#{@form[:social_links].name}[#{i}][url]"}
-                value={link["url"]}
-                placeholder="https://"
-                class="field-input flex-1"
-              />
-              <button
-                type="button"
-                phx-click="remove_social_link"
-                phx-value-index={i}
-                class="btn btn--ghost btn--sm"
-                aria-label="remover link"
-              >
-                Remover
+              <div :for={{link, i} <- Enum.with_index(@social_links)} class="row gap-2 align-center">
+                <input
+                  type="text"
+                  name={"#{@form[:social_links].name}[#{i}][label]"}
+                  value={link["label"]}
+                  placeholder="label"
+                  class="input flex-1"
+                />
+                <input
+                  type="text"
+                  name={"#{@form[:social_links].name}[#{i}][url]"}
+                  value={link["url"]}
+                  placeholder="https://"
+                  class="input flex-1"
+                />
+                <button
+                  type="button"
+                  phx-click="remove_social_link"
+                  phx-value-index={i}
+                  class="btn btn--ghost btn--sm"
+                  aria-label="remover link"
+                >
+                  Remover
+                </button>
+              </div>
+
+              <p :for={{msg, _} <- @form[:social_links].errors} class="field-error">{msg}</p>
+
+              <button type="button" phx-click="add_social_link" class="btn btn--ghost btn--block">
+                + Adicionar link
               </button>
-            </div>
-
-            <p :for={{msg, _} <- @form[:social_links].errors} class="field-error">{msg}</p>
-
-            <button type="button" phx-click="add_social_link" class="btn btn--ghost btn--block">
-              + Adicionar link
-            </button>
-          </fieldset>
+            </fieldset>
+          </.form_section>
 
           <%!-- logo: mesmo pipeline da galeria (hash + orgs/:org_id/) --%>
-          <div class="field stack-2">
-            <span class="field-label">Logo (opcional)</span>
-
+          <.form_section title="Logo" hint="Opcional. Aparece na vitrine da org.">
             <div :if={@record.logo_path} class="photo-preview">
               <img src={logo_url(@record)} alt="logo atual" width="120" />
             </div>
@@ -332,11 +344,13 @@ defmodule AponteWeb.Admin.OrgFormLive do
             <p :for={err <- upload_errors(@uploads.logo)} class="field-error">
               {upload_error_message(err)}
             </p>
-          </div>
+          </.form_section>
 
-          <.button type="submit" class="btn--block">
-            {if @live_action == :new, do: "Criar organização", else: "Salvar"}
-          </.button>
+          <.form_bar>
+            <.button type="submit" class="btn--block">
+              {if @live_action == :new, do: "Criar organização", else: "Salvar"}
+            </.button>
+          </.form_bar>
         </.form>
       </section>
     </Layouts.admin>
@@ -356,11 +370,7 @@ defmodule AponteWeb.Admin.OrgFormLive do
       <div class="row gap-3 align-center">
         <input type="color" name={@field.name} id={@field.id} value={@value} class="color-input" />
         <span class="text-mono text-xs">{@value}</span>
-        <span
-          class="swatch"
-          style={"background-color:#{@value};width:1.5rem;height:1.5rem;border-radius:4px;display:inline-block"}
-        >
-        </span>
+        <span class="swatch" style={"background-color:#{@value}"}></span>
       </div>
     </div>
     """

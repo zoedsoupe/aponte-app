@@ -84,65 +84,79 @@ defmodule AponteWeb.Admin.OrderShowLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Pedidos" back_to={~p"/admin/#{@org.slug}/buscar"}>
       <section class="stack-5">
         <header class="stack-2">
-          <h1 class="text-xl text-mono">{@order.customer_name}</h1>
-          <.status_badge status={@order.status} />
-          <p class="text-xs text-dim text-mono">@{@order.customer_instagram}</p>
+          <p class="eyebrow">Pedido</p>
+          <h1 class="text-xl">{@order.customer_name}</h1>
+          <div class="row gap-2 align-center">
+            <.status_badge status={@order.status} />
+            <span class="text-mono text-sm text-dim">@{@order.customer_instagram}</span>
+          </div>
         </header>
 
-        <ul class="stack-2">
-          <li :for={item <- @order.items} class="row space-between text-sm">
-            <span>{item.quantity}x {Aponte.Tickets.OrderItem.line_name(item)}</span>
-            <span class="text-mono">{money(item.unit_price_cents * item.quantity)}</span>
-          </li>
-        </ul>
-
-        <div :if={@order.discount_cents > 0} class="row space-between text-sm text-accent">
-          <span>Cupom {@order.coupon_code}</span>
-          <span class="text-mono">- {money(@order.discount_cents)}</span>
+        <%!-- DM é o canal admin↔cliente (aprovação de pagamento async no
+             Instagram): primeiro botão, sempre visível, qualquer status. --%>
+        <div class="order-actions">
+          <a
+            href={Instagram.dm_url(@order.customer_instagram)}
+            target="_blank"
+            rel="noopener"
+            class="btn btn--primary"
+          >
+            Abrir DM
+          </a>
+          <.button :if={@order.status == :pending} phx-click="confirm" variant={:accent}>
+            Confirmar pagamento
+          </.button>
         </div>
 
-        <div class="row space-between total-line">
-          <span class="text-sm text-muted">Total</span>
-          <span class="text-mono text-lg">{money(@order.total_cents)}</span>
-        </div>
+        <.button
+          :if={@order.status == :pending}
+          phx-click="cancel"
+          data-confirm="Cancelar e devolver capacidade?"
+          variant={:danger}
+          class="btn--block"
+        >
+          Cancelar pedido
+        </.button>
 
-        <dl class="stack-1 text-sm">
-          <div class="row space-between">
-            <dt class="text-muted">Recebido</dt>
-            <dd class="text-mono text-xs">{Clock.format(@order.inserted_at, :datetime)}</dd>
+        <.button
+          :if={@order.status == :confirmed}
+          phx-click="cancel"
+          data-confirm="Cancelar pedido confirmado? Isso apaga os ingressos e produtos emitidos."
+          variant={:danger}
+          class="btn--block"
+        >
+          Cancelar pedido
+        </.button>
+
+        <.form_section title="Itens">
+          <ul class="stack-2">
+            <li :for={item <- @order.items} class="row space-between text-sm">
+              <span>{item.quantity}x {Aponte.Tickets.OrderItem.line_name(item)}</span>
+              <span class="text-mono">{money(item.unit_price_cents * item.quantity)}</span>
+            </li>
+          </ul>
+
+          <div :if={@order.discount_cents > 0} class="row space-between text-sm text-accent">
+            <span>Cupom {@order.coupon_code}</span>
+            <span class="text-mono">- {money(@order.discount_cents)}</span>
           </div>
-        </dl>
 
-        <div :if={@order.status == :pending} class="stack-2">
-          <.button phx-click="confirm" class="btn--block">Confirmar pagamento</.button>
-          <.button
-            phx-click="cancel"
-            data-confirm="Cancelar e devolver capacidade?"
-            variant={:danger}
-            class="btn--block"
-          >
-            Cancelar pedido
-          </.button>
-        </div>
+          <div class="row space-between total-line">
+            <span class="text-sm text-muted">Total</span>
+            <span class="text-mono text-lg">{money(@order.total_cents)}</span>
+          </div>
 
-        <div :if={@order.status == :confirmed} class="stack-2">
-          <.button
-            phx-click="cancel"
-            data-confirm="Cancelar pedido confirmado? Isso apaga os ingressos e produtos emitidos."
-            variant={:danger}
-            class="btn--block"
-          >
-            Cancelar pedido
-          </.button>
-        </div>
+          <p class="text-xs text-dim">
+            Recebido <span class="text-mono">{Clock.format(@order.inserted_at, :datetime)}</span>
+          </p>
+        </.form_section>
 
-        <section :if={@order.tickets != []} class="stack-2">
-          <h2 class="text-sm text-muted">Ingressos emitidos ({length(@order.tickets)})</h2>
-          <ul class="stack-1">
-            <li :for={t <- @order.tickets} class="row space-between text-sm">
+        <.form_section :if={@order.tickets != []} title={"Ingressos emitidos (#{length(@order.tickets)})"}>
+          <ul class="inset-list">
+            <li :for={t <- @order.tickets} class="inset-row inset-row--static">
               <span class="text-mono">{Ticket.display_code(t)}</span>
               <span :if={t.used_at} class="text-xs text-dim">
                 Validado {Clock.format(t.used_at, :time)}
@@ -150,12 +164,11 @@ defmodule AponteWeb.Admin.OrderShowLive do
               <span :if={is_nil(t.used_at)} class="text-xs text-dim">Não usado</span>
             </li>
           </ul>
-        </section>
+        </.form_section>
 
-        <section :if={@order.merch_units != []} class="stack-2">
-          <h2 class="text-sm text-muted">Produtos emitidos ({length(@order.merch_units)})</h2>
-          <ul class="stack-1">
-            <li :for={u <- @order.merch_units} class="row space-between text-sm">
+        <.form_section :if={@order.merch_units != []} title={"Produtos emitidos (#{length(@order.merch_units)})"}>
+          <ul class="inset-list">
+            <li :for={u <- @order.merch_units} class="inset-row inset-row--static">
               <span>
                 <span class="text-mono">{Unit.display_code(u)}</span> · {u.merch_item_name_snapshot}
               </span>
@@ -165,18 +178,7 @@ defmodule AponteWeb.Admin.OrderShowLive do
               <span :if={is_nil(u.redeemed_at)} class="text-xs text-dim">Não retirado</span>
             </li>
           </ul>
-        </section>
-
-        <%!-- DM é o único canal admin↔cliente (aprovação de pagamento async no
-              Instagram), tão importante quanto confirmar — fica em destaque. --%>
-        <a
-          href={Instagram.dm_url(@order.customer_instagram)}
-          target="_blank"
-          rel="noopener"
-          class="btn btn--primary btn--block"
-        >
-          Abrir DM
-        </a>
+        </.form_section>
 
         <details class="stack-2">
           <summary class="text-sm text-muted">Link do pedido / perfil</summary>
