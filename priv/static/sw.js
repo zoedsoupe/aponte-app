@@ -2,8 +2,8 @@ const CACHE = "aponte-v1";
 const SHELL = [
   "/",
   "/manifest.webmanifest",
-  "/images/mascara-192.png",
-  "/images/mascara-512.png",
+  "/images/aponte-192.png",
+  "/images/aponte-512.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -71,8 +71,8 @@ function parsePayload(event) {
 }
 
 function renderNotification(data) {
-  const icon = "/images/mascara-192.png";
-  const badge = "/images/mascara-192.png";
+  const icon = "/images/aponte-192.png";
+  const badge = "/images/aponte-192.png";
 
   switch (data.t) {
     // ── admin ──────────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@ function renderNotification(data) {
           body: "nova inscrição de DJ",
           icon,
           badge,
-          data: { url: data.url || "/admin/tocar" },
+          data: { url: data.url || "/admin/" },
         },
       };
 
@@ -182,7 +182,7 @@ function renderNotification(data) {
 
     default:
       return {
-        title: "SESH LAB.",
+        title: "Aponte",
         options: {
           body: data.text || "",
           icon,

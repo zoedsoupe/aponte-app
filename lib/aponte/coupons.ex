@@ -33,6 +33,14 @@ defmodule Aponte.Coupons do
 
   def get_rule!(id), do: Repo.get!(CouponRule, id)
 
+  @spec fetch_rule(Ecto.UUID.t()) :: {:ok, CouponRule.t()} | :error
+  def fetch_rule(id) do
+    case Repo.get(CouponRule, id) do
+      %CouponRule{} = rule -> {:ok, rule}
+      nil -> :error
+    end
+  end
+
   def create_rule(%Org{} = org, attrs),
     do: %CouponRule{} |> CouponRule.changeset(put_org_id(attrs, org)) |> Repo.insert()
 
@@ -54,6 +62,14 @@ defmodule Aponte.Coupons do
   end
 
   def get_coupon!(id), do: Repo.get!(Coupon, id)
+
+  @spec fetch_coupon(Ecto.UUID.t()) :: {:ok, Coupon.t()} | :error
+  def fetch_coupon(id) do
+    case Repo.get(Coupon, id) do
+      %Coupon{} = coupon -> {:ok, coupon}
+      nil -> :error
+    end
+  end
 
   def change_public_coupon(coupon \\ %Coupon{}, attrs \\ %{}),
     do: Coupon.public_changeset(coupon, attrs)

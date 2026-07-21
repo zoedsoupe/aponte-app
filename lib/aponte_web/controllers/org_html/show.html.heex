@@ -83,6 +83,38 @@
     </a>
   </section>
 
+  <%!-- editions list: the current published one links to the compra flow;
+       the rest are plain text (no per-edition public pages in v1). --%>
+  <section :if={@upcoming_editions != []} class="stack-2">
+    <h2 class="text-sm text-muted">Próximas edições</h2>
+    <ul class="stack-1">
+      <li :for={ed <- @upcoming_editions}>
+        <a
+          :if={@edition && ed.id == @edition.id}
+          href={~p"/#{@org.slug}/comprar"}
+          class="row space-between align-center"
+        >
+          <span class="text-base">{ed.name}</span>
+          <span class="text-xs text-mono text-dim">{edition_day(ed.starts_at)}</span>
+        </a>
+        <p :if={is_nil(@edition) or ed.id != @edition.id} class="row space-between align-center">
+          <span class="text-base text-dim">{ed.name}</span>
+          <span class="text-xs text-mono text-dim">{edition_day(ed.starts_at)}</span>
+        </p>
+      </li>
+    </ul>
+  </section>
+
+  <section :if={@past_editions != []} class="stack-2">
+    <h2 class="text-sm text-muted">Edições passadas</h2>
+    <ul class="stack-1">
+      <li :for={ed <- @past_editions} class="row space-between align-center">
+        <span class="text-base text-dim">{ed.name}</span>
+        <span class="text-xs text-mono text-dim">{edition_day(ed.starts_at)}</span>
+      </li>
+    </ul>
+  </section>
+
   <section :if={@images != []} class="stack-3">
     <h2 class="text-sm text-muted">Galeria</h2>
     <ul class="gallery-grid">

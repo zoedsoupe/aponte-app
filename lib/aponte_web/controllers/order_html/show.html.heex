@@ -91,7 +91,12 @@
       </p>
     </section>
 
-    <div data-push-prompt></div>
+    <div
+      data-push-prompt
+      data-push-vapid-url={~p"/#{@org.slug}/push/vapid-key"}
+      data-push-sub-url={~p"/#{@org.slug}/push/subscribe"}
+    >
+    </div>
 
     <a href={~p"/#{@org.slug}"} class="btn btn--ghost btn--block">Voltar</a>
   </section>

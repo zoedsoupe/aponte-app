@@ -88,14 +88,22 @@ defmodule AponteWeb.Admin.ProductFormLive do
   defp assign_item(socket, _params, :new), do: assign_form(socket, %Item{})
 
   defp assign_item(socket, %{"id" => id}, :edit) do
+    org = socket.assigns.org
+
     case Merch.fetch_item(id) do
-      {:ok, item} ->
+      # Guarda contra URL-tampering cross-org: o produto precisa ser da org da URL.
+      {:ok, %Item{org_id: org_id} = item} when org_id == org.id ->
         assign_form(socket, item)
+
+      {:ok, _other_orgs_item} ->
+        socket
+        |> put_flash(:error, "Produto não encontrado.")
+        |> redirect(to: ~p"/admin/#{org.slug}")
 
       :error ->
         socket
         |> put_flash(:error, "Produto não encontrado.")
-        |> push_navigate(to: ~p"/admin/#{socket.assigns.org.slug}/produtos")
+        |> push_navigate(to: ~p"/admin/#{org.slug}/produtos")
     end
   end
 

@@ -62,8 +62,20 @@ defmodule AponteWeb.Admin.CouponFormLive do
 
   defp assign_coupon(socket, _params, :new), do: assign_form(socket, %Coupon{is_active: true})
 
-  defp assign_coupon(socket, %{"id" => id}, :edit),
-    do: assign_form(socket, Coupons.get_coupon!(id))
+  defp assign_coupon(socket, %{"id" => id}, :edit) do
+    org = socket.assigns.org
+
+    case Coupons.fetch_coupon(id) do
+      # Guarda contra URL-tampering cross-org: o cupom precisa ser da org da URL.
+      {:ok, %Coupon{org_id: org_id} = coupon} when org_id == org.id ->
+        assign_form(socket, coupon)
+
+      _ ->
+        socket
+        |> put_flash(:error, "Cupom não encontrado.")
+        |> redirect(to: ~p"/admin/#{org.slug}")
+    end
+  end
 
   defp assign_form(socket, coupon) do
     assign(socket,

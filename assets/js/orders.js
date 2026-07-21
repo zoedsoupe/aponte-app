@@ -33,11 +33,14 @@ export function bindOrderRecord() {
 }
 
 // Populate [data-order-history] with links to each saved order, newest first.
-// Shows an empty state when this device has no history.
+// Links are org-scoped: the container carries data-org-slug (rendered by the
+// history page) and orders live under /<slug>/compra/<id>. Shows an empty
+// state when this device has no history.
 export function renderOrderHistory() {
   const root = document.querySelector("[data-order-history]");
   if (!root) return;
 
+  const slug = root.dataset.orgSlug;
   const list = read();
   root.replaceChildren();
 
@@ -51,7 +54,7 @@ export function renderOrderHistory() {
 
   for (const o of list) {
     const a = document.createElement("a");
-    a.href = `/compra/${encodeURIComponent(o.id)}`;
+    a.href = orderUrl(slug, o.id);
     a.className = "card row space-between align-center";
 
     const label = document.createElement("span");
@@ -69,6 +72,20 @@ export function renderOrderHistory() {
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
+// Org-scoped order URL. Without a slug (defensive) falls back to the legacy
+// bare path.
+function orderUrl(slug, id) {
+  const path = `/compra/${encodeURIComponent(id)}`;
+  return slug ? `/${slug}${path}` : path;
+}
+
+// Accepts both org-scoped (/<slug>/compra/<uuid>) and legacy bare
+// (/compra/<uuid>) links buyers saved, with or without scheme+host.
+const COMPRA_LINK = new RegExp(
+  `(?:/[a-z0-9][a-z0-9-]*)?/compra/(${UUID.source})`,
+  "i",
+);
+
 // Import an order this device never visited (e.g. a backfilled order whose
 // link arrived by DM). On iOS the standalone PWA has its own localStorage,
 // isolated from Safari — an external link can't reach it. The escape hatch:
@@ -82,7 +99,7 @@ export function bindOrderImport() {
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const id = input.value.match(UUID)?.[0];
+    const id = input.value.match(COMPRA_LINK)?.[1];
     if (!id) {
       input.setCustomValidity("link inválido — cole o /compra/... que você recebeu.");
       input.reportValidity();
@@ -90,7 +107,7 @@ export function bindOrderImport() {
     }
     // In-scope navigation: stays in the PWA context, so the order is recorded
     // in this store on arrival.
-    location.assign(`/compra/${id}`);
+    location.assign(orderUrl(form.dataset.orgSlug, id));
   });
 
   input.addEventListener("input", () => input.setCustomValidity(""));

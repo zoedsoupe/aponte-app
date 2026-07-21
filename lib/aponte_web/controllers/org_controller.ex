@@ -6,24 +6,40 @@ defmodule AponteWeb.OrgController do
 
   use AponteWeb, :controller
 
-  alias Aponte.{Editions, Orgs}
+  alias Aponte.{Clock, Editions, Orgs}
   alias AponteWeb.SEO
 
   def show(conn, _params) do
     org = conn.assigns.org
     edition = Editions.current_edition(org.id)
     images = Orgs.list_images(org.id)
+    {upcoming, past} = split_editions(Editions.list_editions(org.id))
+    image_url = edition && SEO.abs_url(Editions.logo_url(edition.logo_path))
 
     conn
     |> assign(:seo_description, seo_description(org))
     |> assign(:seo_type, "website")
-    |> assign(:seo_image, edition && SEO.abs_url(Editions.logo_url(edition.logo_path)))
+    |> assign(:seo_image, image_url)
+    |> assign(:jsonld, SEO.music_event_jsonld(edition, image_url, org.name))
     |> render(:show,
       org: org,
       edition: edition,
       images: images,
+      upcoming_editions: upcoming,
+      past_editions: past,
       page_title: org.name
     )
+  end
+
+  # Upcoming (starts_at >= now, soonest first) vs past (most recent first).
+  defp split_editions(editions) do
+    now = Clock.now_utc()
+
+    {upcoming, past} =
+      Enum.split_with(editions, &(DateTime.compare(&1.starts_at, now) != :lt))
+
+    {Enum.sort_by(upcoming, & &1.starts_at, {:asc, DateTime}),
+     Enum.sort_by(past, & &1.starts_at, {:desc, DateTime})}
   end
 
   # SEO description from the org's about, truncated to a snippet.

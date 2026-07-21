@@ -38,10 +38,10 @@ defmodule AponteWeb.SEO do
   def abs_url(path), do: AponteWeb.Endpoint.url() <> path
 
   @doc "MusicEvent JSON-LD for the current edition. nil if no edition. Pure."
-  @spec music_event_jsonld(map() | nil, String.t() | nil) :: String.t() | nil
-  def music_event_jsonld(nil, _url), do: nil
+  @spec music_event_jsonld(map() | nil, String.t() | nil, String.t()) :: String.t() | nil
+  def music_event_jsonld(nil, _url, _org_name), do: nil
 
-  def music_event_jsonld(edition, image_url) do
+  def music_event_jsonld(edition, image_url, org_name) do
     %{
       "@context" => "https://schema.org",
       "@type" => "MusicEvent",
@@ -53,7 +53,7 @@ defmodule AponteWeb.SEO do
         "address" => edition.venue_address
       },
       "image" => image_url,
-      "organizer" => %{"@type" => "Organization", "name" => @site_name}
+      "organizer" => %{"@type" => "Organization", "name" => org_name}
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()

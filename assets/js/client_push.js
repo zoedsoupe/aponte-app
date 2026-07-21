@@ -1,15 +1,32 @@
-// Customer-facing Web Push: site-wide device subscription (audience=client),
-// opt-in by topic. Server endpoints live under /push/ via the :client_api
-// pipeline, which keeps CSRF on — so writes send the x-csrf-token header.
+// Customer-facing Web Push: device subscription (audience=client), opt-in by
+// topic. Server endpoints live under /<org_slug>/push/ (org-scoped, so the
+// subscription lands with the right org_id) via the :client_api pipeline,
+// which keeps CSRF on — so writes send the x-csrf-token header.
+//
+// The endpoint URLs come from data-push-vapid-url / data-push-sub-url
+// attributes rendered by the page (avisos panel, post-purchase prompt). Pages
+// without them fall back to the Aponte-wide /push/* routes (org_id NULL).
 //
 // Used by: the post-purchase soft-prompt (order page), the /avisos config
 // panel, and the order form (injects the device endpoint so confirm/cancel can
 // notify this device).
 
-const VAPID_URL = "/push/vapid-key";
-const SUB_URL = "/push/subscribe";
 const DISMISS_KEY = "aponte.push_prompt_dismissed.v1";
 const DEFAULT_TOPICS = ["order_status"];
+
+function vapidUrl() {
+  return (
+    document.querySelector("[data-push-vapid-url]")?.dataset.pushVapidUrl ||
+    "/push/vapid-key"
+  );
+}
+
+function subUrl() {
+  return (
+    document.querySelector("[data-push-sub-url]")?.dataset.pushSubUrl ||
+    "/push/subscribe"
+  );
+}
 
 function csrfToken() {
   return (
@@ -61,7 +78,7 @@ export async function enable(topics = DEFAULT_TOPICS) {
     });
   }
 
-  await post(SUB_URL, "POST", {
+  await post(subUrl(), "POST", {
     subscription: sub.toJSON(),
     topics,
     user_agent: navigator.userAgent,
@@ -74,20 +91,20 @@ export async function disable() {
   const reg = await navigator.serviceWorker.ready;
   const sub = await reg.pushManager.getSubscription();
   if (!sub) return;
-  await post(SUB_URL, "DELETE", { endpoint: sub.endpoint });
+  await post(subUrl(), "DELETE", { endpoint: sub.endpoint });
   await sub.unsubscribe();
 }
 
 export async function updateTopics(topics) {
   const endpoint = await getEndpoint();
   if (!endpoint) return;
-  await post(SUB_URL, "PATCH", { endpoint, topics });
+  await post(subUrl(), "PATCH", { endpoint, topics });
 }
 
 async function fetchTopics() {
   const endpoint = await getEndpoint();
   if (!endpoint) return null;
-  const url = `${SUB_URL}?endpoint=${encodeURIComponent(endpoint)}`;
+  const url = `${subUrl()}?endpoint=${encodeURIComponent(endpoint)}`;
   const res = await fetch(url, { credentials: "same-origin" });
   if (!res.ok) return null;
   const { topics } = await res.json();
@@ -241,7 +258,7 @@ export async function bindOrderEndpoint() {
 // ── helpers ─────────────────────────────────────────────────────────────────
 
 async function fetchVapidKey() {
-  const res = await fetch(VAPID_URL, { credentials: "same-origin" });
+  const res = await fetch(vapidUrl(), { credentials: "same-origin" });
   if (!res.ok) throw new Error(`Falha ao buscar chave VAPID (${res.status}).`);
   const { public_key } = await res.json();
   return public_key;

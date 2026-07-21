@@ -97,6 +97,19 @@ defmodule Aponte.NotificationsTest do
       assert :ok = Notifications.notify_admin_soldout(type)
       assert :ok = Notifications.notify_admin_dj_application(%{name: "DJ Fulano"})
     end
+
+    test "dj application payload links to the org-scoped admin tocar page" do
+      {:ok, org} = Aponte.Orgs.get_org_by_slug("sesh")
+
+      payload = Notifications.dj_application_payload("DJ Fulano", org)
+
+      assert payload["url"] == "/admin/sesh/tocar"
+      assert payload["n"] == "DJ"
+    end
+
+    test "dj application payload falls back to /admin without an org" do
+      assert Notifications.dj_application_payload("DJ Fulano", nil)["url"] == "/admin"
+    end
   end
 
   describe "client subscriptions" do

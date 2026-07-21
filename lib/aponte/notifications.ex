@@ -102,16 +102,24 @@ defmodule Aponte.Notifications do
     fanout(payload, audience: :admin, urgency: "normal", topic: "soldout-" <> short_id(type.id))
   end
 
-  @spec notify_admin_dj_application(%{name: String.t()}) :: :ok
-  def notify_admin_dj_application(%{name: name}) do
-    payload = %{
+  @spec notify_admin_dj_application(%{name: String.t()}, Org.t() | nil) :: :ok
+  def notify_admin_dj_application(%{name: name}, org \\ nil) do
+    fanout(dj_application_payload(name, org), audience: :admin, urgency: "normal")
+  end
+
+  @doc "Push payload for a new DJ application. Pure; the org scopes the admin URL."
+  @spec dj_application_payload(String.t() | nil, Org.t() | nil) :: map()
+  def dj_application_payload(name, org) do
+    %{
       "t" => "dj_application",
       "n" => first_name(name),
-      "url" => "/admin/tocar"
+      "url" => dj_admin_url(org)
     }
-
-    fanout(payload, audience: :admin, urgency: "normal")
   end
+
+  # Org-aware admin URL; nil org covers ad-hoc callers without one.
+  defp dj_admin_url(%Org{slug: slug}), do: "/admin/#{slug}/tocar"
+  defp dj_admin_url(nil), do: "/admin"
 
   # ── Customer notifications ─────────────────────────────────────────────────
 

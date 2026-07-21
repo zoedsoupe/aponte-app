@@ -57,7 +57,21 @@ defmodule AponteWeb.Admin.CouponRuleFormLive do
   end
 
   defp assign_rule(socket, _params, :new), do: assign_form(socket, %CouponRule{is_active: true})
-  defp assign_rule(socket, %{"id" => id}, :edit), do: assign_form(socket, Coupons.get_rule!(id))
+
+  defp assign_rule(socket, %{"id" => id}, :edit) do
+    org = socket.assigns.org
+
+    case Coupons.fetch_rule(id) do
+      # Guarda contra URL-tampering cross-org: a regra precisa ser da org da URL.
+      {:ok, %CouponRule{org_id: org_id} = rule} when org_id == org.id ->
+        assign_form(socket, rule)
+
+      _ ->
+        socket
+        |> put_flash(:error, "Regra não encontrada.")
+        |> redirect(to: ~p"/admin/#{org.slug}")
+    end
+  end
 
   defp assign_form(socket, rule) do
     assign(socket,

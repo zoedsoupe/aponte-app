@@ -17,7 +17,7 @@ defmodule Aponte.DjApplications do
 
     case %DjApplication{} |> DjApplication.changeset(attrs) |> Repo.insert() do
       {:ok, application} = ok ->
-        Notifications.notify_admin_dj_application(application)
+        Notifications.notify_admin_dj_application(application, org)
         ok
 
       err ->

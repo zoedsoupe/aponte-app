@@ -54,4 +54,20 @@ defmodule AponteWeb.PublicPagesTest do
     assert conn |> get(~p"/sesh/avisos") |> html_response(200) =~ "avisos"
     assert conn |> get(~p"/sesh/meus-ingressos") |> html_response(200) =~ "Meus ingressos"
   end
+
+  describe "client JS seams" do
+    test "avisos renders the org-scoped push endpoint data attributes", %{conn: conn} do
+      html = conn |> get(~p"/sesh/avisos") |> html_response(200)
+      assert html =~ ~s(data-push-vapid-url="/sesh/push/vapid-key")
+      assert html =~ ~s(data-push-sub-url="/sesh/push/subscribe")
+    end
+
+    test "meus-ingressos renders the org slug for the client-side order store", %{
+      conn: conn
+    } do
+      html = conn |> get(~p"/sesh/meus-ingressos") |> html_response(200)
+      assert html =~ ~s(data-order-history data-org-slug="sesh")
+      assert html =~ ~s(data-order-import data-org-slug="sesh")
+    end
+  end
 end

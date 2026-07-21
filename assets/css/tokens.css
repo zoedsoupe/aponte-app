@@ -1,15 +1,17 @@
 :root {
   /* Aponte paper palette (SPEC_APONTE_V1 §2.1, extracted from the watercolor
      logo): cream paper bg, ink brown text, terracotta accent. Org accents
-     override only --accent via inline style on <html>. */
+     override --bg/--ink/--accent via inline style on <html>. */
   --bg: #fef8da;
-  --surface: #f3ebc3;
+  /* Derived, not hardcoded: a dark org (bg #05070a) must get dark surfaces,
+     not the cream #f3ebc3 these used to pin. */
+  --surface: color-mix(in srgb, var(--bg) 92%, var(--ink));
   --surface-2: color-mix(in srgb, var(--surface), var(--ink) 8%);
   --border: color-mix(in srgb, var(--ink), var(--bg) 85%);
   --border-strong: color-mix(in srgb, var(--ink), var(--bg) 72%);
 
   --ink: #49422f;
-  --ink-muted: #91817c;
+  --ink-muted: color-mix(in srgb, var(--ink) 60%, var(--bg));
   --fg: var(--ink);
   --fg-muted: var(--ink-muted);
   --fg-dim: color-mix(in srgb, var(--ink-muted), var(--bg) 40%);

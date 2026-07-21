@@ -13,8 +13,8 @@ defmodule AponteWeb.SeoController do
     User-agent: *
     Allow: /
     Disallow: /admin
-    Disallow: /compra
-    Disallow: /meus-ingressos
+    Disallow: /*/compra
+    Disallow: /*/meus-ingressos
     Sitemap: #{host}/sitemap.xml
     """
 
@@ -26,13 +26,18 @@ defmodule AponteWeb.SeoController do
   def sitemap(conn, _params) do
     host = AponteWeb.Endpoint.url()
 
+    org_urls =
+      for org <- Aponte.Orgs.list_active_orgs(),
+          path <- ["", "/comprar", "/loja", "/avisos", "/tocar"] do
+        "  <url><loc>#{host}/#{org.slug}#{path}</loc></url>"
+      end
+
     body = """
     <?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       <url><loc>#{host}/</loc></url>
-      <url><loc>#{host}/loja</loc></url>
       <url><loc>#{host}/sobre</loc></url>
-      <url><loc>#{host}/tocar</loc></url>
+    #{Enum.join(org_urls, "\n")}
     </urlset>
     """
 
