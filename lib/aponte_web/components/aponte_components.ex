@@ -172,6 +172,106 @@ defmodule AponteWeb.AponteComponents do
   end
 
   @doc """
+  Native quantity stepper: −/+ buttons around a number input. Wired by
+  assets/js/stepper.js (`data-stepper*` hooks), which clamps to [0, max] and
+  re-fires `input` so listeners (form gate, totals) stay in sync. Submits a
+  plain scalar under `name`, so params shape is unchanged.
+  """
+  attr :name, :string, required: true
+  attr :value, :any, default: 0
+  attr :max, :any, default: nil
+  attr :label, :string, default: nil, doc: "item name, used for aria labels"
+
+  def qty_stepper(assigns) do
+    ~H"""
+    <div class="stepper" data-stepper data-max={@max}>
+      <button
+        type="button"
+        class="stepper-btn"
+        data-stepper-decr
+        aria-label={if @label, do: "diminuir #{@label}", else: "diminuir"}
+      >
+        −
+      </button>
+      <input
+        type="number"
+        name={@name}
+        value={@value}
+        min="0"
+        max={@max}
+        step="1"
+        inputmode="numeric"
+        class="stepper-input"
+        data-stepper-input
+        aria-label={if @label, do: "quantidade: #{@label}", else: "quantidade"}
+      />
+      <button
+        type="button"
+        class="stepper-btn"
+        data-stepper-incr
+        aria-label={if @label, do: "aumentar #{@label}", else: "aumentar"}
+      >
+        +
+      </button>
+    </div>
+    """
+  end
+
+  @doc """
+  Form section with the design system's small uppercase label and an optional
+  hint. Groups a purchase-flow (or admin) form into titled blocks.
+  """
+  attr :title, :string, required: true
+  attr :hint, :string, default: nil
+  attr :class, :string, default: nil
+  slot :inner_block, required: true
+
+  def form_section(assigns) do
+    ~H"""
+    <section class={["stack-3", @class]}>
+      <header class="stack-1">
+        <h2 class="section-label">{@title}</h2>
+        <p :if={@hint} class="text-xs text-dim">{@hint}</p>
+      </header>
+      {render_slot(@inner_block)}
+    </section>
+    """
+  end
+
+  @doc """
+  Label + control wrapper for raw inputs (no changeset binding, e.g. the
+  phone/code lookup). Changeset-bound fields should use `input/1` from
+  CoreComponents instead.
+  """
+  attr :for, :string, required: true
+  attr :label, :string, required: true
+  attr :hint, :string, default: nil
+  slot :inner_block, required: true
+
+  def field(assigns) do
+    ~H"""
+    <div class="field">
+      <label for={@for} class="field-label">{@label}</label>
+      {render_slot(@inner_block)}
+      <p :if={@hint} class="text-xs text-dim">{@hint}</p>
+    </div>
+    """
+  end
+
+  @doc """
+  Sticky submit dock for long purchase forms: pins the primary action to the
+  bottom of the viewport (above the tab bar on mobile) while the form scrolls.
+  Renders in normal flow, so it never covers content.
+  """
+  slot :inner_block, required: true
+
+  def form_bar(assigns) do
+    ~H"""
+    <div class="form-bar">{render_slot(@inner_block)}</div>
+    """
+  end
+
+  @doc """
   The comprar call-to-action. Floats above the tab bar on mobile (hides on
   scroll down, returns on scroll up — see scroll_fx.js); on desktop it is
   hidden and the docked inline CTA in the page body takes over.

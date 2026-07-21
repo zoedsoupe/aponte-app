@@ -28,24 +28,15 @@ defmodule AponteWeb.LojaHTML do
       <div class="store-card-body stack-2">
         <div class="row space-between align-baseline">
           <span class="text-base">{item.name}</span>
-          <span class="text-xs text-dim text-mono">{money(item.price_cents)}</span>
+          <span class="text-sm text-dim text-mono">{money(item.price_cents)}</span>
         </div>
         <p :if={item.description not in [nil, ""]} class="text-xs text-dim">{item.description}</p>
-        <div class="stepper" data-stepper data-max={item.available}>
-          <button type="button" class="stepper-btn" data-stepper-decr aria-label="diminuir">−</button>
-          <input
-            type="number"
-            name={"merch[#{item.id}]"}
-            value={Map.get(@qtys, item.id) || Map.get(@qtys, to_string(item.id)) || 0}
-            min="0"
-            max={item.available}
-            step="1"
-            inputmode="numeric"
-            class="stepper-input"
-            data-stepper-input
-          />
-          <button type="button" class="stepper-btn" data-stepper-incr aria-label="aumentar">+</button>
-        </div>
+        <.qty_stepper
+          name={"merch[#{item.id}]"}
+          value={Map.get(@qtys, item.id) || Map.get(@qtys, to_string(item.id)) || 0}
+          max={item.available}
+          label={item.name}
+        />
       </div>
     </li>
     """

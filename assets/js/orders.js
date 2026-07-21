@@ -32,6 +32,10 @@ export function bindOrderRecord() {
   write(list);
 }
 
+// Static inline chevron (same mark as the server-rendered inset rows).
+const CHEV_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="inset-chev" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>';
+
 // Populate [data-order-history] with links to each saved order, newest first.
 // Links are org-scoped: the container carries data-org-slug (rendered by the
 // history page) and orders live under /<slug>/compra/<id>. Shows an empty
@@ -52,22 +56,26 @@ export function renderOrderHistory() {
     return;
   }
 
+  const ul = document.createElement("ul");
+  ul.className = "inset-list";
+
   for (const o of list) {
+    const li = document.createElement("li");
     const a = document.createElement("a");
     a.href = orderUrl(slug, o.id);
-    a.className = "card row space-between align-center";
+    a.className = "inset-row";
 
     const label = document.createElement("span");
-    label.className = "text-sm text-mono";
+    label.className = "text-base text-mono";
     label.textContent = o.label || o.id;
 
-    const cta = document.createElement("span");
-    cta.className = "text-xs text-accent";
-    cta.textContent = "ver →";
-
-    a.append(label, cta);
-    root.appendChild(a);
+    a.appendChild(label);
+    a.insertAdjacentHTML("beforeend", CHEV_SVG);
+    li.appendChild(a);
+    ul.appendChild(li);
   }
+
+  root.appendChild(ul);
 }
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;

@@ -3,42 +3,41 @@
   <div hidden data-order-record data-id={@order.id} data-label={order_label(@order)}></div>
 
   <section class="stack-5">
-    <header class="stack-1">
-      <h1 class="text-xl text-mono">
-        Pedido{if @edition, do: " — #{@edition.name}"}
-      </h1>
-      <.status_badge status={@order.status} />
-      <p class="text-xs text-dim">{status_message(@order.status)}</p>
+    <header class="stack-2">
+      <p class="eyebrow">{if @edition, do: @edition.name, else: @org.name}</p>
+      <h1 class="text-xl">Pedido</h1>
+      <div class="row gap-3 align-center">
+        <.status_badge status={@order.status} />
+        <p class="text-xs text-dim">{status_message(@order.status)}</p>
+      </div>
     </header>
 
-    <ul class="stack-2">
-      <li :for={item <- @order.items} class="row space-between text-sm">
-        <span>{item.quantity}× {Aponte.Tickets.OrderItem.line_name(item)}</span>
-        <span class="text-mono">{money(item.unit_price_cents * item.quantity)}</span>
+    <ul class="inset-list">
+      <li :for={item <- @order.items} class="inset-row inset-row--static">
+        <span class="text-sm">{item.quantity}× {Aponte.Tickets.OrderItem.line_name(item)}</span>
+        <span class="text-mono text-sm">{money(item.unit_price_cents * item.quantity)}</span>
+      </li>
+      <li :if={@order.discount_cents > 0} class="inset-row inset-row--static">
+        <span class="text-sm text-accent">Cupom {@order.coupon_code}</span>
+        <span class="text-mono text-sm text-accent">- {money(@order.discount_cents)}</span>
+      </li>
+      <li class="inset-row inset-row--static">
+        <span class="text-sm text-muted">Total</span>
+        <span class="text-mono text-lg">{money(@order.total_cents)}</span>
       </li>
     </ul>
-
-    <div :if={@order.discount_cents > 0} class="row space-between text-sm text-accent">
-      <span>Cupom {@order.coupon_code}</span>
-      <span class="text-mono">- {money(@order.discount_cents)}</span>
-    </div>
-
-    <div class="row space-between total-line">
-      <span class="text-sm text-muted">Total</span>
-      <span class="text-mono text-lg">{money(@order.total_cents)}</span>
-    </div>
 
     <section
       :if={@order.status == :confirmed and @order.tickets != []}
       class="stack-3"
     >
-      <h2 class="text-sm text-muted">
-        Seus ingressos ({length(@order.tickets)})
-      </h2>
-      <p class="text-xs text-dim">Mostre o QR na porta. Cada ingresso entra uma vez.</p>
+      <header class="stack-1">
+        <h2 class="section-label">Seus ingressos ({length(@order.tickets)})</h2>
+        <p class="text-xs text-dim">Mostre o QR na porta. Cada ingresso entra uma vez.</p>
+      </header>
 
       <ul class="stack-3">
-        <li :for={ticket <- @order.tickets} class="ticket-card stack-2">
+        <li :for={ticket <- @order.tickets} class="ticket-card">
           <div class="qr-frame" aria-label="qr code do ingresso">
             {Phoenix.HTML.raw(ticket_qr(ticket))}
           </div>
@@ -48,12 +47,14 @@
     </section>
 
     <section :if={@order.status == :confirmed and @order.merch_units != []} class="stack-3">
-      <h2 class="text-sm text-muted">Seus produtos ({length(@order.merch_units)})</h2>
-      <p class="text-xs text-dim">
-        Mostre o QR no balcão pra retirar. Cada código retira uma vez.
-      </p>
+      <header class="stack-1">
+        <h2 class="section-label">Seus produtos ({length(@order.merch_units)})</h2>
+        <p class="text-xs text-dim">
+          Mostre o QR no balcão pra retirar. Cada código retira uma vez.
+        </p>
+      </header>
       <ul class="stack-3">
-        <li :for={unit <- @order.merch_units} class="ticket-card stack-2">
+        <li :for={unit <- @order.merch_units} class="ticket-card">
           <div class="qr-frame" aria-label="qr code do produto">
             {Phoenix.HTML.raw(merch_qr(unit))}
           </div>
@@ -64,7 +65,7 @@
     </section>
 
     <section :if={@earned != []} class="stack-2 alert alert--info">
-      <h2 class="text-sm text-muted">Você ganhou um cupom</h2>
+      <h2 class="section-label">Você ganhou um cupom</h2>
       <ul class="stack-1">
         <li :for={c <- @earned} class="row space-between text-sm">
           <span class="text-mono">{c.code}</span>
@@ -75,18 +76,18 @@
     </section>
 
     <section :if={@pix} class="stack-3 pix-block">
-      <h2 class="text-sm text-muted">PIX</h2>
+      <h2 class="section-label">PIX</h2>
       <div class="qr-frame" aria-label="qr code pix">
         {Phoenix.HTML.raw(@pix.svg)}
       </div>
       <div class="stack-2">
         <span class="text-xs text-dim">Copia e cola</span>
         <code class="pix-copy text-mono text-xs" id="pix-copy" data-pix-copy>{@pix.emv}</code>
-        <button type="button" class="btn btn--ghost btn--block" data-copy-target="#pix-copy">
-          Copiar
+        <button type="button" class="btn btn--accent btn--block" data-copy-target="#pix-copy">
+          Copiar código PIX
         </button>
       </div>
-      <p class="text-base text-dim">
+      <p class="text-sm text-dim">
         A {@org.name} foi notificada. Assim que cair, seus ingressos aparecem aqui.
       </p>
     </section>

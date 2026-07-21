@@ -1,58 +1,75 @@
 <Layouts.app flash={@flash} org={@org} current_path={@conn.request_path}>
   <section class="stack-5">
     <header class="stack-1">
-      <h1 class="text-xl text-mono">Meus ingressos</h1>
-      <p class="text-xs text-dim">
+      <h1 class="text-xl">Meus ingressos</h1>
+      <p class="text-sm text-dim">
         Compras feitas neste aparelho. Toque pra ver status, PIX e QR.
       </p>
     </header>
 
     <%!-- phase 6: orders.js builds /compra/ links from data-org-slug --%>
-    <div class="stack-2" data-order-history data-org-slug={@org.slug}></div>
+    <div data-order-history data-org-slug={@org.slug}></div>
 
-    <.form :let={_f} for={%{}} action={~p"/#{@org.slug}/meus-ingressos"} class="stack-2">
-      <label class="text-xs text-dim" for="lookup-phone">
-        Perdeu o link do pedido? Busca pelo telefone + código do pedido.
-      </label>
-      <input
-        id="lookup-phone"
-        type="tel"
-        name="phone"
-        required
-        inputmode="numeric"
-        placeholder="telefone (DDD + número)"
-        class="input text-mono text-sm"
-        autocomplete="off"
-      />
-      <input
-        id="lookup-code"
-        type="text"
-        name="code"
-        required
-        placeholder="código do pedido"
-        class="input text-mono text-sm"
-        autocapitalize="off"
-        autocomplete="off"
-        spellcheck="false"
-      />
-      <button type="submit" class="btn btn--ghost btn--block">Buscar pedido</button>
+    <.form :let={_f} for={%{}} action={~p"/#{@org.slug}/meus-ingressos"} class="stack-3">
+      <header class="stack-1">
+        <h2 class="section-label">Achar um pedido</h2>
+        <p class="text-xs text-dim">
+          Perdeu o link do pedido? Busca pelo telefone e o código do pedido.
+        </p>
+      </header>
+
+      <.field for="lookup-phone" label="Telefone (DDD + número)">
+        <input
+          id="lookup-phone"
+          type="tel"
+          name="phone"
+          required
+          inputmode="numeric"
+          placeholder="22999998888"
+          class="input text-mono"
+          autocomplete="off"
+        />
+      </.field>
+
+      <.field for="lookup-code" label="Código do pedido">
+        <input
+          id="lookup-code"
+          type="text"
+          name="code"
+          required
+          placeholder="código do pedido"
+          class="input text-mono"
+          autocapitalize="off"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </.field>
+
+      <.button type="submit" variant={:primary} class="btn--block">Buscar pedido</.button>
     </.form>
 
-    <form class="stack-2" data-order-import data-org-slug={@org.slug}>
-      <label class="text-xs text-dim" for="order-import-input">
-        Comprou pelo Instagram ou abriu o link em outro app? Cole aqui o link
-        do seu pedido pra salvá-lo neste aparelho.
-      </label>
-      <input
-        id="order-import-input"
-        type="text"
-        inputmode="url"
-        placeholder="https://…/compra/…"
-        class="input text-mono text-sm"
-        autocapitalize="off"
-        autocomplete="off"
-        spellcheck="false"
-      />
+    <form class="stack-3" data-order-import data-org-slug={@org.slug}>
+      <header class="stack-1">
+        <h2 class="section-label">Salvar um link</h2>
+        <p class="text-xs text-dim">
+          Comprou pelo Instagram ou abriu o link em outro app? Cole aqui o link
+          do seu pedido pra salvá-lo neste aparelho.
+        </p>
+      </header>
+
+      <.field for="order-import-input" label="Link do pedido">
+        <input
+          id="order-import-input"
+          type="text"
+          inputmode="url"
+          placeholder="https://…/compra/…"
+          class="input text-mono"
+          autocapitalize="off"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </.field>
+
       <button type="submit" class="btn btn--ghost btn--block">Salvar pedido</button>
     </form>
 

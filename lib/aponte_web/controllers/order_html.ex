@@ -13,30 +13,17 @@ defmodule AponteWeb.OrderHTML do
   def lot_row(assigns) do
     ~H"""
     <li :for={lot <- @lots} class="qty-row">
-      <div class="stack-1">
+      <div class="qty-row-info stack-1">
         <span class="text-base">{lot.name}</span>
-        <span class="text-xs text-dim text-mono">{money(lot.price_cents)}</span>
+        <span class="text-sm text-dim text-mono">{money(lot.price_cents)}</span>
       </div>
 
-      <div class="stepper" data-stepper data-max={lot.available}>
-        <button type="button" class="stepper-btn" data-stepper-decr aria-label="diminuir">
-          −
-        </button>
-        <input
-          type="number"
-          name={"items[#{lot.id}]"}
-          value={item_qty(@items, lot.id)}
-          min="0"
-          max={lot.available}
-          step="1"
-          inputmode="numeric"
-          class="stepper-input"
-          data-stepper-input
-        />
-        <button type="button" class="stepper-btn" data-stepper-incr aria-label="aumentar">
-          +
-        </button>
-      </div>
+      <.qty_stepper
+        name={"items[#{lot.id}]"}
+        value={item_qty(@items, lot.id)}
+        max={lot.available}
+        label={lot.name}
+      />
 
       <div :if={lot.description not in [nil, ""]} class="lot-req">
         <span class="lot-req-label">Pra usar esse ingresso</span>
@@ -60,32 +47,19 @@ defmodule AponteWeb.OrderHTML do
         class="qty-row-img"
       />
 
-      <div class="stack-1">
+      <div class="qty-row-info stack-1">
         <span class="text-base">{item.name}</span>
-        <span class="text-xs text-dim text-mono">{money(item.price_cents)}</span>
+        <span class="text-sm text-dim text-mono">{money(item.price_cents)}</span>
       </div>
 
-      <div class="stepper" data-stepper data-max={item.available}>
-        <button type="button" class="stepper-btn" data-stepper-decr aria-label="diminuir">
-          −
-        </button>
-        <input
-          type="number"
-          name={"merch[#{item.id}]"}
-          value={item_qty(@items, item.id)}
-          min="0"
-          max={item.available}
-          step="1"
-          inputmode="numeric"
-          class="stepper-input"
-          data-stepper-input
-        />
-        <button type="button" class="stepper-btn" data-stepper-incr aria-label="aumentar">
-          +
-        </button>
-      </div>
+      <.qty_stepper
+        name={"merch[#{item.id}]"}
+        value={item_qty(@items, item.id)}
+        max={item.available}
+        label={item.name}
+      />
 
-      <div :if={item.description not in [nil, ""]} class="lot-req">
+      <div :if={item.description not in [nil, ""]} class="lot-req lot-req--plain">
         <span class="lot-req-text">{item.description}</span>
       </div>
     </li>

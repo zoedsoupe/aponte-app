@@ -9,20 +9,20 @@
     <input type="hidden" name="order[client_endpoint]" data-client-endpoint />
 
     <header class="stack-1">
-      <h1 class="text-xl text-mono">Loja</h1>
-      <p class="text-xs text-dim">Produtos da {@org.name}. Escolha, finalize e pague no PIX.</p>
+      <p class="eyebrow">{@org.name}</p>
+      <h1 class="text-xl">Loja</h1>
+      <p class="text-sm text-dim">Escolha, finalize e pague no PIX.</p>
     </header>
 
     <p :if={@merch == []} class="text-sm text-dim">
-      Nenhum produto disponivel agora. Volta logo.
+      Nenhum produto disponível agora. Volta logo.
     </p>
 
-    <ul :if={@merch != []} class="store-grid stack-3">
+    <ul :if={@merch != []} class="store-grid">
       <.store_card items={@merch} qtys={@items} />
     </ul>
 
-    <section :if={@merch != []} class="stack-3">
-      <h2 class="text-sm text-muted">Seus dados</h2>
+    <.form_section :if={@merch != []} title="Seus dados">
       <.input field={f[:customer_name]} label="Nome" required autocomplete="name" />
       <.input
         field={f[:customer_instagram]}
@@ -36,13 +36,13 @@
         <input type="checkbox" id="remember-me" data-remember class="checkbox" />
         <span class="field-label">Lembrar meus dados neste aparelho</span>
       </label>
-    </section>
+    </.form_section>
 
     <%!-- Sticky finish bar; plain submit, no live total. --%>
-    <div :if={@merch != []} class="store-finish-bar">
+    <.form_bar :if={@merch != []}>
       <.button type="submit" variant={:primary} class="btn--block btn--blob">
         Finalizar pedido
       </.button>
-    </div>
+    </.form_bar>
   </.form>
 </Layouts.app>

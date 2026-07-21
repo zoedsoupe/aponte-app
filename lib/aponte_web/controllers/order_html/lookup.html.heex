@@ -1,10 +1,10 @@
 <Layouts.app flash={@flash} org={@org} current_path={@conn.request_path}>
   <section class="stack-5">
     <header class="stack-1">
-      <h1 class="text-xl text-mono">Meus ingressos</h1>
+      <h1 class="text-xl">Meus ingressos</h1>
     </header>
 
-    <div :if={@order} class="card stack-2">
+    <div :if={@order} class="card stack-3">
       <div class="row space-between align-center">
         <span class="text-base">{Order.masked_name(@order.customer_name)}</span>
         <.status_badge status={@order.status} />
@@ -15,9 +15,11 @@
       </a>
     </div>
 
-    <p :if={is_nil(@order)} class="text-sm text-dim">
-      Nada encontrado. Confere o telefone e o código do pedido e tenta de novo.
-    </p>
+    <div :if={is_nil(@order)} class="alert" role="status">
+      <p class="text-sm">
+        Nada encontrado. Confere o telefone e o código do pedido e tenta de novo.
+      </p>
+    </div>
 
     <a href={~p"/#{@org.slug}/meus-ingressos"} class="btn btn--ghost btn--block">Voltar</a>
   </section>

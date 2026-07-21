@@ -319,7 +319,7 @@ defmodule AponteWeb.Admin.BalcaoLive do
         </li>
       </ul>
 
-      <div :if={@total > 0} class="pos-bar store-finish-bar stack-2">
+      <div :if={@total > 0} class="pos-bar form-bar stack-2">
         <div class="row space-between align-center">
           <span class="text-sm text-dim">Total</span>
           <span class="text-lg text-mono">{money(@total)}</span>

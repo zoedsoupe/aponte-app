@@ -9,8 +9,9 @@
     <input type="hidden" name="order[client_endpoint]" data-client-endpoint />
 
     <header class="stack-1">
-      <h1 class="text-xl text-mono">Comprar — {@edition.name}</h1>
-      <p class="text-xs text-dim">Escolha as quantidades e preencha seus dados.</p>
+      <p class="eyebrow">{@edition.name}</p>
+      <h1 class="text-xl">Comprar</h1>
+      <p class="text-sm text-dim">Escolha as quantidades e preencha seus dados.</p>
     </header>
 
     <div :if={Phoenix.Flash.get(@flash, :error)} class="alert alert--error" role="alert">
@@ -25,69 +26,68 @@
       <p class="text-sm">Não foi possível registrar o pedido. Confira os campos destacados.</p>
     </div>
 
-    <section class="stack-3">
-      <h2 class="text-sm text-muted">Ingressos</h2>
+    <div class="buy-grid">
+      <div class="stack-5">
+        <.form_section title="Ingressos">
+          <p :if={@lots == []} class="text-sm text-dim">
+            Nenhum lote à venda agora. Fica de olho que abre logo.
+          </p>
 
-      <p :if={@lots == []} class="text-sm text-dim">
-        Nenhum lote à venda agora. Fica de olho que abre logo.
-      </p>
+          <ul :if={@lots != []} class="stack-3">
+            <.lot_row lots={@lots} items={@items} />
+          </ul>
+        </.form_section>
 
-      <ul :if={@lots != []} class="stack-3">
-        <.lot_row lots={@lots} items={@items} />
-      </ul>
-    </section>
+        <.form_section :if={@merch != []} title="Leve também">
+          <ul class="stack-3">
+            <.merch_row merch={@merch} items={@items} />
+          </ul>
+        </.form_section>
+      </div>
 
-    <section :if={@merch != []} class="stack-3">
-      <h2 class="text-sm text-muted">Leve também</h2>
+      <.form_section
+        :if={@lots != [] or @merch != []}
+        title="Seus dados"
+        class="buy-grid-side"
+      >
+        <.input field={f[:customer_name]} label="Nome" required autocomplete="name" />
 
-      <ul class="stack-3">
-        <.merch_row merch={@merch} items={@items} />
-      </ul>
-    </section>
+        <.input
+          field={f[:customer_instagram]}
+          type="text"
+          label="Instagram (sem o @)"
+          required
+          inputmode="text"
+          autocomplete="off"
+          placeholder="seu.usuario"
+        />
+        <p class="text-xs text-dim">
+          É por aí que a {@org.name} te chama caso precise falar do seu ingresso.
+        </p>
 
-    <section :if={@lots != [] or @merch != []} class="stack-3">
-      <h2 class="text-sm text-muted">Seus dados</h2>
+        <.input
+          field={f[:coupon_code]}
+          type="text"
+          label="Cupom (opcional)"
+          autocomplete="off"
+          placeholder="Ex: APO-7K9Q"
+        />
 
-      <.input field={f[:customer_name]} label="Nome" required autocomplete="name" />
+        <label class="field field--inline">
+          <input type="checkbox" id="remember-me" data-remember class="checkbox" />
+          <span class="field-label">Lembrar meus dados neste aparelho</span>
+        </label>
 
-      <.input
-        field={f[:customer_instagram]}
-        type="text"
-        label="Instagram (sem o @)"
-        required
-        inputmode="text"
-        autocomplete="off"
-        placeholder="seu.usuario"
-      />
-      <p class="text-xs text-dim">
-        É por aí que a {@org.name} te chama caso precise falar do seu ingresso.
-      </p>
+        <button type="button" class="btn btn--ghost btn--block" data-clear-storage>
+          Limpar meus dados deste dispositivo
+        </button>
+      </.form_section>
+    </div>
 
-      <.input
-        field={f[:coupon_code]}
-        type="text"
-        label="Cupom (opcional)"
-        autocomplete="off"
-        placeholder="Ex: APO-7K9Q"
-      />
-
-      <label class="field field--inline">
-        <input type="checkbox" id="remember-me" data-remember class="checkbox" />
-        <span class="field-label">Lembrar meus dados neste aparelho</span>
-      </label>
-    </section>
-
-    <.button
-      :if={@lots != [] or @merch != []}
-      type="submit"
-      variant={:primary}
-      class="btn--block btn--blob"
-    >
-      Ir pro PIX
-    </.button>
-
-    <button type="button" class="btn btn--ghost btn--block" data-clear-storage>
-      Limpar meus dados deste dispositivo
-    </button>
+    <.form_bar :if={@lots != [] or @merch != []}>
+      <.button type="submit" variant={:primary} class="btn--block btn--blob">
+        Ir pro PIX
+      </.button>
+    </.form_bar>
   </.form>
 </Layouts.app>

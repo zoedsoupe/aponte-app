@@ -95,7 +95,7 @@ body:has(.sesh-logo--hero) .brand {
   white-space: nowrap;
 }
 
-.site-header > .brand-logo {
+.site-header>.brand-logo {
   grid-area: logo;
 }
 
@@ -122,6 +122,7 @@ body:has(.sesh-logo--hero) .brand {
   white-space: nowrap;
   transition: color var(--motion-fast, 120ms) ease;
 }
+
 .site-nav a:hover,
 .site-nav a:focus-visible {
   color: var(--accent);
@@ -140,7 +141,7 @@ body:has(.sesh-logo--hero) .brand {
     order: 1;
   }
 
-  .site-header > .brand-logo {
+  .site-header>.brand-logo {
     order: 2;
   }
 }
@@ -436,6 +437,7 @@ body:has(.sesh-logo--hero) .brand {
   border-color: var(--accent);
   color: var(--accent);
 }
+
 .btn--accent:hover,
 .btn--accent:focus-visible {
   background: var(--accent);
@@ -482,11 +484,13 @@ body:has(.sesh-logo--hero) .brand {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+
 .cta-dock .btn {
   width: 100%;
 }
 
 @media (min-width: 640px) {
+
   .btn--float,
   .cta-dock {
     max-width: calc(34rem - var(--s-5) * 2);
@@ -494,6 +498,7 @@ body:has(.sesh-logo--hero) .brand {
 }
 
 @media (min-width: 960px) {
+
   .btn--float,
   .cta-dock {
     max-width: calc(42rem - var(--s-6) * 2);
@@ -501,6 +506,7 @@ body:has(.sesh-logo--hero) .brand {
 }
 
 @media (min-width: 1280px) {
+
   .btn--float,
   .cta-dock {
     max-width: calc(48rem - var(--s-7) * 2);
@@ -605,22 +611,22 @@ select.input {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  padding: var(--s-3);
+  padding: var(--s-3) var(--s-4);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   gap: var(--s-3);
 }
 
-.qty-row > * {
+.qty-row>* {
   min-width: 0;
 }
 
-.qty-row > .stack-1 {
+.qty-row-info {
   flex: 1 1 8rem;
 }
 
-.qty-row > .presets {
+.qty-row>.presets {
   flex-basis: 100%;
 }
 
@@ -637,6 +643,18 @@ select.input {
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
+
+/* merch description: same slot, quiet treatment (not a door requirement) */
+.lot-req--plain {
+  border: 1px solid var(--border);
+  background: transparent;
+}
+
+.lot-req--plain .lot-req-text {
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+}
+
 .lot-req-label {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -645,9 +663,11 @@ select.input {
   color: var(--accent);
   font-weight: 700;
 }
+
 .lot-req-label::before {
   content: "★ ";
 }
+
 .lot-req-text {
   color: var(--fg);
   font-size: var(--text-sm);
@@ -686,6 +706,7 @@ select.input {
   font-family: var(--font-mono);
   font-size: var(--text-base);
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .stepper-input:focus {
@@ -708,6 +729,20 @@ select.input {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: grid;
+  gap: var(--s-3);
+}
+
+@media (min-width: 640px) {
+  .store-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .store-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* stacked card: full-width photo on top, then name/desc/stepper in the body */
@@ -716,8 +751,19 @@ select.input {
   flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  transition:
+    transform var(--dur, 0ms) var(--ease-spring),
+    box-shadow var(--dur, 0ms) var(--ease-out);
+}
+
+/* hover lift only where hover exists */
+@media (hover: hover) and (min-width: 960px) {
+  .store-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-2);
+  }
 }
 
 /* photo spans the full card width; natural height (whole image, no crop) */
@@ -756,16 +802,31 @@ select.input {
 }
 
 .store-card-body {
-  padding: var(--s-3);
+  padding: var(--s-3) var(--s-3) var(--s-4);
 }
 
-/* barra fixa de finalizar, flutua no rodapé enquanto a página rola */
-.store-finish-bar {
+/* ── form bar: sticky submit dock (comprar, loja) ──────────────────────────
+   In normal flow (nunca cobre conteúdo), mas gruda no rodapé do viewport
+   enquanto o formulário rola. Mesma linguagem do cta-dock: painel fosco,
+   radius-lg, shadow-2. No mobile, sobe pra ficar acima da tab bar. */
+.form-bar {
   position: sticky;
-  bottom: 0;
-  padding-top: var(--s-3);
-  padding-bottom: var(--s-3);
-  background: var(--bg);
+  bottom: var(--s-3);
+  z-index: 40;
+  border-radius: var(--radius-lg);
+}
+
+@media (max-width: 959px) {
+  body:has(.tab-bar) .form-bar {
+    bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3));
+  }
+}
+
+/* desktop: a flash não cobre o botão da form bar */
+@media (min-width: 960px) {
+  body:has(.form-bar) .flash-group {
+    bottom: calc(var(--s-3) + 4.5rem);
+  }
 }
 
 /* imagem do produto no formulário /comprar (merch_row) */
@@ -832,7 +893,7 @@ select.input {
   padding: var(--s-5);
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   display: flex;
   justify-content: center;
 }
@@ -841,13 +902,16 @@ select.input {
   width: 100%;
   max-width: 280px;
   height: auto;
+  /* módulos nítidos em qualquer escala (QR bitmap dentro do svg) */
+  image-rendering: pixelated;
 }
 
 .pix-block {
   padding: var(--s-4);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
 }
 
 .pix-copy {
@@ -1036,11 +1100,9 @@ select.input {
 .alert--demand {
   color: var(--cinnamon-3);
   border: 1.5px solid color-mix(in srgb, var(--accent-yellow) 70%, transparent);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent-yellow) 14%, transparent),
-    color-mix(in srgb, var(--accent-warm) 12%, transparent)
-  );
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--accent-yellow) 14%, transparent),
+      color-mix(in srgb, var(--accent-warm) 12%, transparent));
   padding: var(--s-4) var(--s-5);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-yellow) 12%, transparent);
   animation: demand-pulse 2.4s ease-in-out infinite;
@@ -1052,6 +1114,7 @@ select.input {
 }
 
 @keyframes demand-pulse {
+
   0%,
   100% {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-yellow) 12%, transparent);
@@ -1129,6 +1192,7 @@ details[open] summary {
 .shell--admin .text-xs {
   font-size: var(--text-sm);
 }
+
 .shell--admin .text-sm {
   font-size: var(--text-base);
 }
@@ -1139,6 +1203,7 @@ details[open] summary {
   flex-wrap: wrap;
   gap: var(--s-2);
 }
+
 .admin-action {
   display: inline-flex;
   align-items: center;
@@ -1155,16 +1220,19 @@ details[open] summary {
     background var(--motion-fast, 120ms) ease,
     color var(--motion-fast, 120ms) ease;
 }
+
 .admin-action:hover,
 .admin-action:focus-visible {
   background: var(--accent);
   color: var(--bg);
 }
+
 .admin-action--primary {
   background: var(--accent);
   color: var(--bg);
   font-weight: 500;
 }
+
 .admin-action--primary:hover,
 .admin-action--primary:focus-visible {
   filter: brightness(1.08);
@@ -1330,11 +1398,12 @@ body::after {
   border-color: var(--accent);
   color: var(--bg);
   font-family: var(--font-display);
-  font-stretch: 112%;
+  font-stretch: 100%;
   font-size: var(--text-lg);
   border-radius: 12px;
-  font-weight: 560;
+  font-weight: 500;
 }
+
 .btn--blob:hover {
   filter: brightness(1.08);
   border-color: var(--accent);
@@ -1377,24 +1446,29 @@ body::after {
   position: relative;
   overflow: hidden;
 }
+
 .flyer-title {
   font-size: var(--text-2xl);
   color: var(--fg);
   text-transform: uppercase;
 }
+
 .lineup li {
   letter-spacing: 0.04em;
 }
 
-/* ticket card — wirebox holding the white QR panel */
+/* ticket card — painel de surface com radius/shadow dos tokens, segurando o
+   quadro branco do QR */
 .ticket-card {
-  border: 1px solid var(--fg);
-  border-radius: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
   padding: var(--s-4);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-3);
 }
 
 /* ── dashboard stats ─────────────────────────────────────────────────────── */
@@ -1406,6 +1480,7 @@ body::after {
   justify-content: center;
   gap: var(--s-2);
 }
+
 .stat {
   border: 1px solid var(--border);
   padding: var(--s-2) var(--s-2);
@@ -1413,21 +1488,25 @@ body::after {
   overflow-wrap: anywhere;
   min-width: 0;
 }
+
 /* label fica pequeno mesmo com o bump de fonte do admin (senão "disponível"
    estoura a célula) */
 .shell--admin .stat .text-xs {
   font-size: var(--text-xs);
 }
+
 .stats-table {
   width: 100%;
   border-collapse: collapse;
 }
+
 .stats-table th,
 .stats-table td {
   padding: var(--s-1) var(--s-2);
   text-align: center;
   border-bottom: 1px solid var(--border);
 }
+
 .stats-table td:first-child,
 .stats-table th:first-child {
   text-align: left;
@@ -1454,6 +1533,7 @@ body::after {
   aspect-ratio: 1;
   overflow: hidden;
 }
+
 .scanner-video {
   width: 100%;
   height: 100%;
@@ -1471,19 +1551,23 @@ body::after {
   padding: var(--s-5);
   cursor: pointer;
 }
+
 .scan-result--ok {
   background: var(--green);
   color: #05070a;
 }
+
 .scan-result--err {
   background: var(--danger);
   color: #05070a;
 }
+
 .scan-result-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 .scan-result-mark {
   font-size: 5rem;
   line-height: 1;
@@ -1498,20 +1582,24 @@ body::after {
   /* SESH (currentColor) tinge com o accent da edição */
   color: var(--accent);
 }
+
 .sesh-logo svg {
   display: block;
   height: 100%;
   width: auto;
 }
+
 /* arte custom da edição: renderiza crua, só redimensiona (sem recolor/tema) */
 .sesh-logo--custom {
   width: auto;
   color: initial;
   object-fit: contain;
 }
+
 .sesh-logo--sm {
   height: 1.5rem;
 }
+
 /* hero logo carrega a marca — grande de propósito. Aspect ~2:1 (viewBox
    720×356), então 7rem de altura ≈ 14rem de largura: cabe folgado no container
    de 26rem. svg{max-width:100%} (tokens) já barra overflow em telas menores. */
@@ -1522,11 +1610,13 @@ body::after {
      so pin them left too instead of centering. */
   margin-inline: 0;
 }
+
 @media (min-width: 640px) {
   .sesh-logo--hero {
     height: 9rem;
   }
 }
+
 .sesh-logo--custom {
   margin-inline-end: auto;
 }
@@ -1537,11 +1627,13 @@ body::after {
   height: auto;
   border-radius: var(--radius-lg);
 }
+
 .aponte-logo--hero {
   width: min(12rem, 55vw);
   /* left-aligned like the sesh hero */
   margin-inline: 0;
 }
+
 /* Páginas com o logo Aponte no hero (home, /sobre) não repetem no header. */
 body:has(.aponte-logo--hero) .brand {
   display: none;
@@ -1553,9 +1645,11 @@ body:has(.aponte-logo--hero) .brand {
   grid-template-columns: repeat(3, 1fr);
   gap: var(--s-2);
 }
+
 .gallery-grid a {
   display: block;
 }
+
 .gallery-grid img {
   width: 100%;
   aspect-ratio: 1;
@@ -1585,8 +1679,7 @@ body:has(.aponte-logo--hero) .brand {
   bottom: 0;
   z-index: 60;
   display: flex;
-  padding: var(--s-1) var(--safe-right) calc(var(--s-1) + var(--safe-bottom))
-    var(--safe-left);
+  padding: var(--s-1) var(--safe-right) calc(var(--s-1) + var(--safe-bottom)) var(--safe-left);
   background: color-mix(in srgb, var(--bg) 78%, transparent);
   backdrop-filter: blur(var(--blur-bar));
   -webkit-backdrop-filter: blur(var(--blur-bar));
@@ -1660,6 +1753,7 @@ body:has(.aponte-logo--hero) .brand {
 
 /* mobile: content and legacy fixed/sticky UI clear the bottom tab bar */
 @media (max-width: 959px) {
+
   /* reserve space so content never ends under the bar */
   body:has(.tab-bar) .shell {
     padding-bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-7));
@@ -1670,12 +1764,13 @@ body:has(.aponte-logo--hero) .brand {
     bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3));
   }
 
-  body:has(.tab-bar) .store-finish-bar {
-    padding-bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3));
-  }
-
   body:has(.tab-bar) .flash-group {
     bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3));
+  }
+
+  /* a flash sobe mais um tanto quando a form bar está presa no rodapé */
+  body:has(.tab-bar):has(.form-bar) .flash-group {
+    bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3) + 4.5rem);
   }
 }
 
@@ -1683,7 +1778,7 @@ body:has(.aponte-logo--hero) .brand {
 .floating-cta {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-3));
+  bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-4));
   transform: translateX(-50%);
   z-index: 55;
   width: calc(100% - var(--s-5) * 2);
@@ -1717,7 +1812,8 @@ body:has(.aponte-logo--hero) .brand {
   --hand-tilt: -3deg;
   width: 9.5rem;
   padding: var(--s-2);
-  background: #fbf3d4; /* paper of the original scan — constant across themes */
+  background: #fbf3d4;
+  /* paper of the original scan — constant across themes */
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-2);
   transform: rotate(var(--hand-tilt));
@@ -1766,6 +1862,7 @@ body:has(.aponte-logo--hero) .brand {
 .vitrine-edition-logo {
   height: 6rem;
 }
+
 .vitrine-edition-logo.sesh-logo--custom {
   width: auto;
   max-width: 100%;
@@ -1814,7 +1911,7 @@ body:has(.aponte-logo--hero) .brand {
   overflow: hidden;
 }
 
-.inset-list li + li {
+.inset-list li+li {
   border-top: 1px solid var(--border);
 }
 
@@ -1846,6 +1943,49 @@ a.inset-row:hover {
   height: 18px;
   color: var(--accent);
   flex-shrink: 0;
+}
+
+/* ── purchase flows (comprar, pedido, loja, meus-ingressos) ──────────────── */
+
+/* small uppercase context line above the h1 (edition/org name). Same voice
+   as .vitrine-eyebrow, generic name for non-vitrine pages. */
+.eyebrow {
+  color: var(--fg-muted);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* comprar: itens à esquerda, dados à direita no desktop; coluna única no
+   mobile. A shell alarga pra acomodar as duas colunas. */
+.buy-grid {
+  display: grid;
+  gap: var(--s-5);
+}
+
+@media (min-width: 960px) {
+  body:has(.buy-grid) .shell {
+    max-width: 58rem;
+  }
+
+  .buy-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 19rem);
+    gap: var(--s-7);
+    align-items: start;
+  }
+
+  /* "seus dados" acompanha o scroll de listas longas de lotes */
+  .buy-grid-side {
+    position: sticky;
+    top: calc(var(--tab-bar-h) + var(--s-4));
+  }
+}
+
+@media (min-width: 1280px) {
+  body:has(.buy-grid) .shell {
+    max-width: 62rem;
+  }
 }
 
 /* gallery page: multi-column grid everywhere, hover lift where hover exists */
@@ -1924,7 +2064,7 @@ a.inset-row:hover {
   }
 
   /* the stack utility's margin would offset the second column in the grid */
-  .vitrine-editions > * + * {
+  .vitrine-editions>*+* {
     margin-top: 0;
   }
 }
