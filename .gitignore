@@ -47,3 +47,6 @@ npm-debug.log
 /priv/static/uploads/
 /.claude/
 pix.svg
+
+# dev uploads (served by UploadController, not Plug.Static)
+/uploads/

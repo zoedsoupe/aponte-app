@@ -64,6 +64,10 @@ config :aponte, AponteWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :aponte, dev_routes: true
 
+# Uploads live outside priv/static so Plug.Static never sees them
+# (UploadController serves them with immutable cache headers).
+config :aponte, :uploads_dir, Path.expand("uploads", File.cwd!())
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
 
