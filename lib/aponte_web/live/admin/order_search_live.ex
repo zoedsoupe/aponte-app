@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.OrderSearchLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, Orgs, Tickets}
+  alias Aponte.{Clock, Tickets}
 
   # ponytail: load-more grows the limit and re-queries — no offset bookkeeping,
   # no keyset cursor. Re-fetching a growing recent-list is fine at admin scale;
@@ -10,12 +10,10 @@ defmodule AponteWeb.Admin.OrderSearchLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
 
     {:ok,
      assign(socket,
-       org: org,
        term: "",
        limit: @page_size,
        results: Tickets.list_recent(org.id, @page_size),
@@ -47,7 +45,7 @@ defmodule AponteWeb.Admin.OrderSearchLive do
      assign(socket, limit: limit, results: Tickets.list_recent(socket.assigns.org.id, limit))}
   end
 
-  defp order_url(id), do: url(~p"/compra/#{id}")
+  defp order_url(org, id), do: url(~p"/#{org.slug}/compra/#{id}")
 
   defp searching?(term), do: String.length(String.trim(term)) >= 2
 
@@ -57,7 +55,7 @@ defmodule AponteWeb.Admin.OrderSearchLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section class="stack-4">
         <h1 class="text-xl text-mono">Pedidos</h1>
 
@@ -86,7 +84,7 @@ defmodule AponteWeb.Admin.OrderSearchLive do
 
         <ul class="stack-2">
           <li :for={o <- @results} class="card stack-2">
-            <a href={~p"/admin/pedidos/#{o.id}"} class="stack-1 block">
+            <a href={~p"/admin/#{@org.slug}/pedidos/#{o.id}"} class="stack-1 block">
               <div class="row space-between">
                 <span class="text-base text-accent text-cap">{o.customer_name}</span>
                 <.status_badge status={o.status} />
@@ -102,7 +100,7 @@ defmodule AponteWeb.Admin.OrderSearchLive do
                   on phx-change). UUID url has no quotes to escape. --%>
             <button
               type="button"
-              onclick={"navigator.clipboard.writeText('#{order_url(o.id)}')"}
+              onclick={"navigator.clipboard.writeText('#{order_url(@org, o.id)}')"}
               class="btn btn--ghost btn--sm btn--block"
             >
               Copiar link

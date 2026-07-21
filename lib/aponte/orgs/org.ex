@@ -11,6 +11,8 @@ defmodule Aponte.Orgs.Org do
     field :name, :string
     field :about, :string
     field :accent_color, :string, default: "#F07BC0"
+    field :bg_color, :string
+    field :fg_color, :string
     field :logo_path, :string
     field :instagram, :string
     field :pix_key, :string
@@ -25,8 +27,8 @@ defmodule Aponte.Orgs.Org do
     timestamps()
   end
 
-  @castable ~w(slug name about accent_color logo_path instagram pix_key status tier
-               storage_quota_bytes social_links)a
+  @castable ~w(slug name about accent_color bg_color fg_color logo_path instagram pix_key
+               status tier storage_quota_bytes social_links)a
   @required ~w(slug name)a
 
   def changeset(org, attrs) do
@@ -39,6 +41,8 @@ defmodule Aponte.Orgs.Org do
     )
     |> validate_reserved_slug()
     |> validate_format(:accent_color, ~r/^#[0-9a-fA-F]{6}$/, message: "use formato hex #RRGGBB")
+    |> validate_format(:bg_color, ~r/^#[0-9a-fA-F]{6}$/, message: "use formato hex #RRGGBB")
+    |> validate_format(:fg_color, ~r/^#[0-9a-fA-F]{6}$/, message: "use formato hex #RRGGBB")
     |> validate_social_links()
     |> unique_constraint(:slug)
   end

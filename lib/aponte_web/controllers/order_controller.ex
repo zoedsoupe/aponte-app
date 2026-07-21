@@ -5,6 +5,7 @@ defmodule AponteWeb.OrderController do
   alias Aponte.Editions.{Edition, TicketType}
   alias Aponte.Tickets.Order
   alias Aponte.Payments.Pix
+  alias AponteWeb.Plugs
 
   def new(conn, _params) do
     org = conn.assigns.org
@@ -98,7 +99,7 @@ defmodule AponteWeb.OrderController do
       edition = order.edition_id && Editions.get_edition!(order.edition_id)
 
       conn
-      |> assign(:accent, edition && edition.accent_color)
+      |> Plugs.Accent.assign_edition_accent(edition)
       |> assign(:no_index, true)
       |> render(:show,
         org: org,
@@ -145,7 +146,7 @@ defmodule AponteWeb.OrderController do
 
   defp render_form(conn, edition, changeset, items) do
     conn
-    |> assign(:accent, edition.accent_color)
+    |> Plugs.Accent.assign_edition_accent(edition)
     |> render(:new,
       org: conn.assigns.org,
       edition: edition,

@@ -13,6 +13,25 @@ alias Aponte.Repo
 # Orgs foram criadas pela migration 20260719000001 (seed "sesh" lendo PIX_KEY).
 org = Repo.get_by!(Org, slug: "sesh")
 
+# Perfil da org: about recuperado do antigo /sobre (git history, pre-vitrine),
+# instagram e tema escuro clássico da SESH. Idempotente (update direto).
+about = """
+A SESH é um rolê experimental pensado pra formar uma comunidade em torno da música eletrônica em todos os seus formatos e estilos.
+
+Nossa proposta é criar um espaço acessível pra quem quer curtir e pros novos DJs que estão buscando lugar pra se lançar.
+
+Tem uma baguncinha no início, com os DJs trocando ideia sobre produção, e depois muita música estranha até as 5h da manhã.
+"""
+
+{:ok, org} =
+  Aponte.Orgs.update_org(org, %{
+    about: String.trim(about),
+    instagram: "coletivo.sesh",
+    accent_color: "#F07BC0",
+    bg_color: "#05070a",
+    fg_color: "#f3f3f3"
+  })
+
 upsert = fn attrs ->
   number = attrs.number
 

@@ -1,7 +1,7 @@
-# fly.io config for sesh-lab (Phoenix + sqlite, single machine).
-# Fly app name stays sesh-lab; the volume is attached to it.
+# fly.io config for aponte (Phoenix + sqlite, single machine).
+# The app is "aponte" with the "aponte_data" volume mounted at /data.
 
-app = "sesh-lab"
+app = "aponte"
 primary_region = "gru"
 
 [build]
@@ -21,7 +21,7 @@ primary_region = "gru"
   POOL_SIZE = "5"
 
 [[mounts]]
-  source = "sesh_data"
+  source = "aponte_data"
   destination = "/data"
   initial_size = "1"
 

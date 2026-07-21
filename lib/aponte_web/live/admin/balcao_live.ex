@@ -10,19 +10,17 @@ defmodule AponteWeb.Admin.BalcaoLive do
   """
   use AponteWeb, :live_view
 
-  alias Aponte.{Bar, Clock, Editions, Merch, Orgs}
+  alias Aponte.{Bar, Clock, Editions, Merch}
   alias Aponte.Payments.Pix
 
   @impl true
   def mount(_params, _session, socket) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
 
     {:ok,
      socket
      |> assign(
        mode: :sell,
-       org: org,
        items: Merch.list_counter_items(org.id),
        edition: Editions.current_edition(org.id),
        cart: %{},
@@ -97,7 +95,7 @@ defmodule AponteWeb.Admin.BalcaoLive do
     edition_id = socket.assigns.edition && socket.assigns.edition.id
     org_id = socket.assigns.org.id
 
-    case Bar.record_sale(edition_id, method, socket.assigns.cart) do
+    case Bar.record_sale(edition_id, method, socket.assigns.cart, org_id) do
       {:ok, sale} ->
         socket
         |> assign(cart: %{}, pix: nil, sale: %{total: sale.total_cents, method: method})
@@ -180,7 +178,7 @@ defmodule AponteWeb.Admin.BalcaoLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section class="stack-4">
         <header class="stack-1">
           <h1 class="text-xl text-mono">Balcão</h1>
@@ -206,7 +204,13 @@ defmodule AponteWeb.Admin.BalcaoLive do
           </button>
         </div>
 
-        <.pos :if={@mode == :sell} items={@items} cart={@cart} total={cart_total(assigns)} />
+        <.pos
+          :if={@mode == :sell}
+          items={@items}
+          cart={@cart}
+          total={cart_total(assigns)}
+          org={@org}
+        />
         <.scanner :if={@mode == :redeem} />
       </section>
 
@@ -271,13 +275,14 @@ defmodule AponteWeb.Admin.BalcaoLive do
   attr :items, :list, required: true
   attr :cart, :map, required: true
   attr :total, :integer, required: true
+  attr :org, :map, required: true
 
   defp pos(assigns) do
     ~H"""
     <div class="stack-3">
       <div :if={@items == []} class="text-sm text-dim">
         Nenhum item de balcão. Cadastre em
-        <.link navigate={~p"/admin/produtos/novo"} class="text-accent">Produtos</.link>
+        <.link navigate={~p"/admin/#{@org.slug}/produtos/novo"} class="text-accent">Produtos</.link>
         com tipo “balcão”.
       </div>
 

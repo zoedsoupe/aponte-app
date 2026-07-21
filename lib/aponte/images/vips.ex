@@ -30,8 +30,9 @@ defmodule Aponte.Images.Vips do
   defp write_variant(image, dest_dir, filename, width) do
     path = Path.join(dest_dir, filename)
 
+    # image ~> 0.71: Image.write/2 returns {:ok, image}, not :ok.
     with {:ok, resized} <- Image.thumbnail(image, width),
-         :ok <- Image.write(resized, path) do
+         {:ok, _written} <- Image.write(resized, path) do
       {:ok, path}
     end
   end

@@ -11,8 +11,7 @@ defmodule AponteWeb.Admin.ScannerLiveTest do
     cfg = Application.fetch_env!(:aponte, :admin_auth)
     auth = "Basic " <> Base.encode64("#{cfg[:username]}:#{cfg[:password]}")
 
-    # Phase-3: admin routes resolve the tenant via the "sesh" org (seeded by
-    # the orgs migration) until phase 4.
+    # Admin routes are org-scoped; the "sesh" org is seeded by the orgs migration.
     {:ok, org} = Aponte.Orgs.get_org_by_slug("sesh")
     {edition, lot} = edition_with_lot(%{org_id: org.id})
     {:ok, order} = Tickets.create_order(org, order_attrs(edition, lot))
@@ -25,17 +24,17 @@ defmodule AponteWeb.Admin.ScannerLiveTest do
   defp authed(conn, auth), do: put_req_header(conn, "authorization", auth)
 
   test "requires basic auth", %{conn: conn} do
-    assert get(conn, ~p"/admin/validar").status == 401
+    assert get(conn, ~p"/admin/sesh/validar").status == 401
   end
 
   test "shows the door header for the published edition", %{conn: conn, auth: auth} do
-    {:ok, _view, html} = conn |> authed(auth) |> live(~p"/admin/validar")
+    {:ok, _view, html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
     assert html =~ "Porta"
     assert html =~ "validadas 0 / vendidas 1"
   end
 
   test "first scan is green, rescan is red (já validado)", %{conn: conn, auth: auth, ticket: t} do
-    {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/validar")
+    {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
 
     html = view |> element("#scanner") |> render_hook("scan", %{"code" => t.code})
     assert html =~ "scan-result--ok"
@@ -48,7 +47,7 @@ defmodule AponteWeb.Admin.ScannerLiveTest do
   end
 
   test "manual unknown code is not found", %{conn: conn, auth: auth} do
-    {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/validar")
+    {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
 
     html = view |> form("#scanner form", %{code: "ZZZZZZZZ"}) |> render_submit()
     assert html =~ "scan-result--err"
@@ -60,7 +59,7 @@ defmodule AponteWeb.Admin.ScannerLiveTest do
     auth: auth,
     ticket: t
   } do
-    {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/validar")
+    {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
 
     noisy = String.downcase(String.slice(t.code, 0, 4) <> "-" <> String.slice(t.code, 4, 4))
     html = view |> form("#scanner form", %{code: noisy}) |> render_submit()

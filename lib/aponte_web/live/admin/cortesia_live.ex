@@ -5,17 +5,28 @@ defmodule AponteWeb.Admin.CortesiaLive do
 
   @impl true
   def mount(%{"id" => edition_id}, _session, socket) do
-    edition = Editions.get_edition!(edition_id)
-    comp_lotes = Enum.filter(edition.ticket_types, &(not &1.is_active))
+    org = socket.assigns.org
 
-    {:ok,
-     assign(socket,
-       edition: edition,
-       comp_lotes: comp_lotes,
-       page_title: "Cortesia — #{edition.name}",
-       emitted: nil,
-       form: new_form()
-     )}
+    # Guarda contra URL-tampering cross-org: a edição precisa ser da org da URL.
+    case Editions.get_edition_in_org(org.id, edition_id) do
+      {:ok, edition} ->
+        comp_lotes = Enum.filter(edition.ticket_types, &(not &1.is_active))
+
+        {:ok,
+         assign(socket,
+           edition: edition,
+           comp_lotes: comp_lotes,
+           page_title: "Cortesia — #{edition.name}",
+           emitted: nil,
+           form: new_form()
+         )}
+
+      {:error, :not_found} ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Edição não encontrada.")
+         |> redirect(to: ~p"/admin/#{org.slug}")}
+    end
   end
 
   @impl true
@@ -44,7 +55,11 @@ defmodule AponteWeb.Admin.CortesiaLive do
         {:noreply,
          socket
          |> assign(
-           emitted: %{order_id: order.id, url: order_url(order.id), codes: codes},
+           emitted: %{
+             order_id: order.id,
+             url: order_url(socket.assigns.org, order.id),
+             codes: codes
+           },
            form: new_form()
          )
          |> put_flash(:info, "#{length(codes)} cortesia(s) emitida(s).")}
@@ -76,12 +91,12 @@ defmodule AponteWeb.Admin.CortesiaLive do
     )
   end
 
-  defp order_url(id), do: AponteWeb.Endpoint.url() <> "/compra/#{id}"
+  defp order_url(org, id), do: AponteWeb.Endpoint.url() <> "/#{org.slug}/compra/#{id}"
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section class="stack-5">
         <h1 class="text-xl text-mono">Cortesia — {@edition.name}</h1>
         <p class="text-xs text-dim">
@@ -90,7 +105,9 @@ defmodule AponteWeb.Admin.CortesiaLive do
 
         <p :if={@comp_lotes == []} class="text-sm text-dim">
           Nenhum lote de cortesia. crie um lote inativo na edição primeiro.
-          <a href={~p"/admin/edicoes/#{@edition.id}"} class="text-accent">Editar edição →</a>
+          <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}"} class="text-accent">
+            Editar edição →
+          </a>
         </p>
 
         <.form

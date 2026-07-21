@@ -10,6 +10,10 @@ defmodule AponteWeb.OrgHTML do
   @doc "Public URL of a gallery file stored under the org's uploads dir."
   def image_url(org, filename), do: "/uploads/orgs/#{org.id}/#{filename}"
 
+  @doc "Public URL of the org's uploaded logo, `nil` when unset."
+  def logo_url(%{logo_path: nil}), do: nil
+  def logo_url(org), do: image_url(org, org.logo_path)
+
   @doc "About text split into paragraphs (one per non-empty line)."
   def about_paragraphs(nil), do: []
 

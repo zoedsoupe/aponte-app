@@ -2,7 +2,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
   use AponteWeb, :live_view
 
   alias Phoenix.LiveView.JS
-  alias Aponte.{Clock, Editions, Merch, Notifications, Orgs}
+  alias Aponte.{Clock, Editions, Merch, Notifications}
   alias Aponte.Editions.Edition
 
   @max_logo 2_000_000
@@ -28,8 +28,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
   end
 
   def handle_event("save", %{"edition" => params}, %{assigns: %{live_action: :new}} = socket) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
     params = params |> to_utc() |> put_logo(socket, params["number"])
 
     case Editions.create_edition(org, params) do
@@ -37,7 +36,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
         {:noreply,
          socket
          |> put_flash(:info, "Edição “#{edition.name}” criada. Publique quando estiver pronta.")
-         |> push_navigate(to: ~p"/admin")}
+         |> push_navigate(to: ~p"/admin/#{org.slug}")}
 
       {:error, changeset} ->
         {:noreply,
@@ -53,7 +52,10 @@ defmodule AponteWeb.Admin.EditionFormLive do
 
     case Editions.update_edition(edition, params) do
       {:ok, _edition} ->
-        {:noreply, socket |> put_flash(:info, "Edição salva.") |> push_navigate(to: ~p"/admin")}
+        {:noreply,
+         socket
+         |> put_flash(:info, "Edição salva.")
+         |> push_navigate(to: ~p"/admin/#{socket.assigns.org.slug}")}
 
       {:error, changeset} ->
         {:noreply,
@@ -109,8 +111,18 @@ defmodule AponteWeb.Admin.EditionFormLive do
 
   defp assign_edition(socket, _params, :new), do: assign_form(socket, %Edition{ticket_types: []})
 
-  defp assign_edition(socket, %{"id" => id}, :edit),
-    do: assign_form(socket, Editions.get_edition!(id))
+  defp assign_edition(socket, %{"id" => id}, :edit) do
+    # Guarda contra URL-tampering cross-org: a edição precisa ser da org da URL.
+    case Editions.get_edition_in_org(socket.assigns.org.id, id) do
+      {:ok, edition} ->
+        assign_form(socket, edition)
+
+      {:error, :not_found} ->
+        socket
+        |> put_flash(:error, "Edição não encontrada.")
+        |> redirect(to: ~p"/admin/#{socket.assigns.org.slug}")
+    end
+  end
 
   defp assign_form(socket, %Edition{} = edition) do
     socket
@@ -129,11 +141,8 @@ defmodule AponteWeb.Admin.EditionFormLive do
   end
 
   defp assign_featured_merch(socket, %Edition{id: id}) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
-
     assign(socket,
-      all_merch: Merch.list_active_items(org.id),
+      all_merch: Merch.list_active_items(socket.assigns.org.id),
       featured_ids: Editions.featured_merch_ids(id)
     )
   end
@@ -207,7 +216,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section class="stack-5">
         <div class="row space-between align-baseline">
           <h1 class="text-xl text-mono">

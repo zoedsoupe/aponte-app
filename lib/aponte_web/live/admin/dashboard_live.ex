@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.DashboardLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Bar, Clock, Editions, Orgs, Tickets}
+  alias Aponte.{Bar, Clock, Editions, Tickets}
   alias Aponte.Editions.Edition
 
   @topic "admin:orders"
@@ -10,12 +10,10 @@ defmodule AponteWeb.Admin.DashboardLive do
   def mount(_params, _session, socket) do
     if connected?(socket), do: Phoenix.PubSub.subscribe(Aponte.PubSub, @topic)
 
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
     editions = Editions.list_editions(org.id)
 
-    {:ok,
-     socket |> assign(org: org, editions: editions) |> select_edition(default_edition(editions))}
+    {:ok, socket |> assign(editions: editions) |> select_edition(default_edition(editions))}
   end
 
   @impl true
@@ -87,13 +85,15 @@ defmodule AponteWeb.Admin.DashboardLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash}>
+    <Layouts.admin flash={@flash} org={@org}>
       <section class="stack-5">
         <div class="row space-between align-baseline">
           <h1 class="text-xl text-mono">Painel</h1>
           <button
             type="button"
             data-push-toggle
+            data-push-vapid-url={~p"/admin/#{@org.slug}/push/vapid-key"}
+            data-push-sub-url={~p"/admin/#{@org.slug}/push/subscribe"}
             class="text-xs text-muted underline-offset-2 hover:underline"
           >
             Avisos
@@ -101,17 +101,17 @@ defmodule AponteWeb.Admin.DashboardLive do
         </div>
 
         <nav class="admin-actions">
-          <a href={~p"/admin/edicoes/nova"} class="admin-action admin-action--primary">
+          <a href={~p"/admin/#{@org.slug}/edicoes/nova"} class="admin-action admin-action--primary">
             + Nova edição
           </a>
-          <a href={~p"/admin/buscar"} class="admin-action">Pedidos</a>
-          <a href={~p"/admin/cupons"} class="admin-action">Cupons</a>
-          <a href={~p"/admin/produtos"} class="admin-action">Produtos</a>
+          <a href={~p"/admin/#{@org.slug}/buscar"} class="admin-action">Pedidos</a>
+          <a href={~p"/admin/#{@org.slug}/cupons"} class="admin-action">Cupons</a>
+          <a href={~p"/admin/#{@org.slug}/produtos"} class="admin-action">Produtos</a>
         </nav>
 
         <p :if={@editions == []} class="text-sm text-dim">
           Nenhuma edição ainda.
-          <a href={~p"/admin/edicoes/nova"} class="text-accent">Criar a primeira →</a>
+          <a href={~p"/admin/#{@org.slug}/edicoes/nova"} class="text-accent">Criar a primeira →</a>
         </p>
 
         <section :if={@editions != []} class="stack-2">
@@ -136,16 +136,22 @@ defmodule AponteWeb.Admin.DashboardLive do
               <div class="row space-between align-baseline">
                 <h2 class="text-sm text-muted">{@edition.name}</h2>
                 <div class="row gap-3">
-                  <a href={~p"/admin/validar/#{@edition.id}"} class="text-xs text-accent">Porta</a>
-                  <a href={~p"/admin/balcao"} class="text-xs text-accent">Balcão</a>
+                  <a href={~p"/admin/#{@org.slug}/validar/#{@edition.id}"} class="text-xs text-accent">
+                    Porta
+                  </a>
+                  <a href={~p"/admin/#{@org.slug}/balcao"} class="text-xs text-accent">Balcão</a>
                   <a
-                    href={~p"/admin/edicoes/#{@edition.id}/cortesia"}
+                    href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}/cortesia"}
                     class="text-xs text-accent"
                   >
                     Cortesia
                   </a>
-                  <a href={~p"/admin/tocar"} class="text-xs text-accent">Aplicações DJ</a>
-                  <a href={~p"/admin/edicoes/#{@edition.id}"} class="text-xs text-accent">Editar</a>
+                  <a href={~p"/admin/#{@org.slug}/tocar"} class="text-xs text-accent">
+                    Aplicações DJ
+                  </a>
+                  <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}"} class="text-xs text-accent">
+                    Editar
+                  </a>
                 </div>
               </div>
 
@@ -185,7 +191,7 @@ defmodule AponteWeb.Admin.DashboardLive do
               <p :if={@pending == []} class="text-xs text-dim">Nenhum pedido pendente.</p>
               <ul class="stack-2">
                 <li :for={o <- @pending} class="card stack-2">
-                  <a href={~p"/admin/pedidos/#{o.id}"} class="stack-1 block">
+                  <a href={~p"/admin/#{@org.slug}/pedidos/#{o.id}"} class="stack-1 block">
                     <div class="row space-between">
                       <span class="text-base text-accent text-cap">{o.customer_name}</span>
                       <span class="text-mono text-sm">{money(o.total_cents)}</span>
@@ -205,7 +211,7 @@ defmodule AponteWeb.Admin.DashboardLive do
                         aren't re-bound by copy.js. UUID url has no quotes to escape. --%>
                   <button
                     type="button"
-                    onclick={"navigator.clipboard.writeText('#{url(~p"/compra/#{o.id}")}')"}
+                    onclick={"navigator.clipboard.writeText('#{url(~p"/#{@org.slug}/compra/#{o.id}")}')"}
                     class="btn btn--ghost btn--sm btn--block"
                   >
                     Copiar link
@@ -245,7 +251,10 @@ defmodule AponteWeb.Admin.DashboardLive do
               <h2 class="text-sm text-muted">Histórico</h2>
               <ul class="stack-2">
                 <li :for={o <- @recent} class="text-sm">
-                  <a href={~p"/admin/pedidos/#{o.id}"} class="row space-between align-baseline gap-3">
+                  <a
+                    href={~p"/admin/#{@org.slug}/pedidos/#{o.id}"}
+                    class="row space-between align-baseline gap-3"
+                  >
                     <span class="text-accent text-cap flex-1">{o.customer_name}</span>
                     <span class="text-mono text-xs text-dim">
                       {money(o.total_cents)} · {Clock.format(o.inserted_at, :time)}

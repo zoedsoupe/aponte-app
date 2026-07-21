@@ -9,37 +9,47 @@ defmodule AponteWeb.Admin.ScannerLive do
   """
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, Editions, Orgs, Tickets}
+  alias Aponte.{Clock, Editions, Tickets}
 
   @impl true
   def mount(params, _session, socket) do
+    org = socket.assigns.org
+
     # Porta da edição selecionada no painel quando vier `:edition_id`; senão a
-    # publicada atual (link global do topo).
-    edition =
-      case params do
-        %{"edition_id" => id} ->
-          Editions.get_edition!(id)
+    # publicada atual (link global do topo). A edição precisa pertencer à org
+    # da URL — get_edition_in_org é a guarda contra URL-tampering cross-org.
+    case load_edition(org, params) do
+      {:ok, edition} ->
+        if connected?(socket) and edition do
+          Phoenix.PubSub.subscribe(Aponte.PubSub, "door:#{edition.id}")
+        end
 
-        _ ->
-          # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-          {:ok, org} = Orgs.get_org_by_slug("sesh")
-          Editions.current_edition(org.id)
-      end
+        {:ok,
+         socket
+         |> assign(
+           scanner: true,
+           edition: edition,
+           result: nil,
+           page_title: "Porta"
+         )
+         |> load_stats()}
 
-    if connected?(socket) and edition do
-      Phoenix.PubSub.subscribe(Aponte.PubSub, "door:#{edition.id}")
+      :error ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Edição não encontrada.")
+         |> redirect(to: ~p"/admin/#{org.slug}")}
     end
-
-    {:ok,
-     socket
-     |> assign(
-       scanner: true,
-       edition: edition,
-       result: nil,
-       page_title: "Porta"
-     )
-     |> load_stats()}
   end
+
+  defp load_edition(org, %{"edition_id" => id}) do
+    case Editions.get_edition_in_org(org.id, id) do
+      {:ok, edition} -> {:ok, edition}
+      {:error, :not_found} -> :error
+    end
+  end
+
+  defp load_edition(org, _params), do: {:ok, Editions.current_edition(org.id)}
 
   @impl true
   def handle_event("scan", %{"code" => code}, socket), do: {:noreply, validate(socket, code)}
@@ -104,7 +114,7 @@ defmodule AponteWeb.Admin.ScannerLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section id="scanner" phx-hook="Scanner" data-scanner class="scanner stack-4">
         <div class="row space-between align-baseline">
           <span :if={@stats} class="text-mono text-sm">

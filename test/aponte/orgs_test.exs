@@ -57,6 +57,20 @@ defmodule Aponte.OrgsTest do
       assert {:ok, _} = Orgs.create_org(org_attrs(%{accent_color: "#9AA0A8"}))
     end
 
+    test "validates theme color hex formats (bg/fg)" do
+      assert {:error, changeset} = Orgs.create_org(org_attrs(%{bg_color: "dark"}))
+      assert %{bg_color: _} = errors_on(changeset)
+
+      assert {:error, changeset} = Orgs.create_org(org_attrs(%{fg_color: "#fff"}))
+      assert %{fg_color: _} = errors_on(changeset)
+
+      assert {:ok, org} =
+               Orgs.create_org(org_attrs(%{bg_color: "#05070A", fg_color: "#F3F3F3"}))
+
+      assert org.bg_color == "#05070A"
+      assert org.fg_color == "#F3F3F3"
+    end
+
     test "social_links entries need non-empty label and url" do
       assert {:ok, org} =
                Orgs.create_org(

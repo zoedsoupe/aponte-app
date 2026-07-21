@@ -619,6 +619,16 @@ defmodule Aponte.Tickets do
     Order |> Repo.get!(id) |> Repo.preload([:items, :tickets, :merch_units])
   end
 
+  @doc "Pedido por id dentro da org — guarda contra URL-tampering cross-org no admin."
+  @spec get_order_in_org(Ecto.UUID.t(), Ecto.UUID.t()) ::
+          {:ok, Order.t()} | {:error, :not_found}
+  def get_order_in_org(org_id, id) do
+    case Order |> where(org_id: ^org_id) |> Repo.get(id) do
+      nil -> {:error, :not_found}
+      %Order{} = order -> {:ok, Repo.preload(order, [:items, :tickets, :merch_units])}
+    end
+  end
+
   @doc """
   Buyer self-lookup (meus-ingressos): a single order matching the exact
   (org, phone, id) triple. Phone is normalized before matching; there is no

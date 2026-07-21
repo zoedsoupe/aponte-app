@@ -15,9 +15,12 @@ config :aponte,
 # Gallery image processing (libvips). Test env swaps in Aponte.Images.Fake.
 config :aponte, :image_processor, Aponte.Images.Vips
 
-# Platform accent (terracotta, from the watercolor logo) for org-less pages.
-# Org pages override with org.accent_color via AponteWeb.Plugs.Accent.
+# Platform theme defaults (spec section 2.1, from the watercolor logo) for
+# org-less pages and for org levers left unset. Org pages override via
+# AponteWeb.Plugs.Accent.
 config :aponte, :default_accent, "#BF7262"
+config :aponte, :default_bg, "#FEF8DA"
+config :aponte, :default_ink, "#49422F"
 
 # VAPID keys for Web Push. Generate with: mix web_push.gen.vapid
 # Both keys must be URL-safe base64 (no padding).

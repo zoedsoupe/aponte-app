@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.CouponFormLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, Coupons, Orgs}
+  alias Aponte.{Clock, Coupons}
   alias Aponte.Coupons.Coupon
 
   @impl true
@@ -21,8 +21,7 @@ defmodule AponteWeb.Admin.CouponFormLive do
   end
 
   def handle_event("save", %{"coupon" => params}, %{assigns: %{live_action: :new}} = socket) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
     attrs = params |> blank_to_nil() |> put_expires_at()
 
     case Coupons.create_public_coupon(org, attrs) do
@@ -30,7 +29,7 @@ defmodule AponteWeb.Admin.CouponFormLive do
         {:noreply,
          socket
          |> put_flash(:info, "Cupom #{coupon.code} criado.")
-         |> push_navigate(to: ~p"/admin/cupons")}
+         |> push_navigate(to: ~p"/admin/#{org.slug}/cupons")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
@@ -43,7 +42,9 @@ defmodule AponteWeb.Admin.CouponFormLive do
     case Coupons.update_public_coupon(socket.assigns.coupon, attrs) do
       {:ok, _coupon} ->
         {:noreply,
-         socket |> put_flash(:info, "Cupom salvo.") |> push_navigate(to: ~p"/admin/cupons")}
+         socket
+         |> put_flash(:info, "Cupom salvo.")
+         |> push_navigate(to: ~p"/admin/#{socket.assigns.org.slug}/cupons")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
@@ -54,7 +55,9 @@ defmodule AponteWeb.Admin.CouponFormLive do
     {:ok, _} = Coupons.delete_coupon(socket.assigns.coupon)
 
     {:noreply,
-     socket |> put_flash(:info, "Cupom removido.") |> push_navigate(to: ~p"/admin/cupons")}
+     socket
+     |> put_flash(:info, "Cupom removido.")
+     |> push_navigate(to: ~p"/admin/#{socket.assigns.org.slug}/cupons")}
   end
 
   defp assign_coupon(socket, _params, :new), do: assign_form(socket, %Coupon{is_active: true})
@@ -90,7 +93,7 @@ defmodule AponteWeb.Admin.CouponFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Cupons" back_to="/admin/cupons">
+    <Layouts.admin flash={@flash} org={@org} back="Cupons" back_to={~p"/admin/#{@org.slug}/cupons"}>
       <section class="stack-5">
         <h1 class="text-xl text-mono">
           {if @live_action == :new, do: "Novo cupom público", else: "Editar cupom"}

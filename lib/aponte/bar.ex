@@ -21,12 +21,15 @@ defmodule Aponte.Bar do
 
   @doc """
   Registra uma venda de balcão. `cart` é `%{item_id => qty}` (qty 0/"" ignorada).
+
+  `org_id` (opcional) é a org do balcão: os itens do carrinho resolvem
+  org-scoped mesmo sem edição publicada. Quando há edição, a org vem dela.
   """
-  @spec record_sale(Ecto.UUID.t() | nil, :cash | :pix, cart()) ::
+  @spec record_sale(Ecto.UUID.t() | nil, :cash | :pix, cart(), Ecto.UUID.t() | nil) ::
           {:ok, Sale.t()}
           | {:error, :empty_cart | {:sold_out, String.t()} | Ecto.Changeset.t()}
-  def record_sale(edition_id, payment_method, cart) when is_map(cart) do
-    items = counter_items(edition_id, item_ids(cart))
+  def record_sale(edition_id, payment_method, cart, org_id \\ nil) when is_map(cart) do
+    items = counter_items(edition_id, org_id, item_ids(cart))
 
     case build_lines(items, cart) do
       {:ok, []} -> {:error, :empty_cart}
@@ -35,11 +38,11 @@ defmodule Aponte.Bar do
     end
   end
 
-  # Bar has no org_id of its own: the org comes through the edition (spec §4).
-  # A sale without an edition (single-operator v1) has no org to scope by and
-  # falls back to an unscoped lookup.
-  defp counter_items(edition_id, ids) do
-    case edition_id && edition_org_id(edition_id) do
+  # Bar has no org_id of its own: the org comes through the edition (spec §4)
+  # or, with no published edition, from the caller (BalcaoLive). The unscoped
+  # fallback only fires when neither exists (ad-hoc callers/tests).
+  defp counter_items(edition_id, org_id, ids) do
+    case (edition_id && edition_org_id(edition_id)) || org_id do
       nil ->
         Item
         |> where([m], m.is_active and m.kind == :counter and m.id in ^ids)

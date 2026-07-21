@@ -54,7 +54,5 @@ defmodule AponteWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  # 301s requests on legacy hosts (config :aponte, :legacy_host_redirects).
-  plug AponteWeb.Plugs.RedirectLegacyHost
   plug AponteWeb.Router
 end

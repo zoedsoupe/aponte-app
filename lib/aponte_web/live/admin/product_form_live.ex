@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.ProductFormLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Merch, Orgs}
+  alias Aponte.Merch
   alias Aponte.Merch.Item
 
   @max_image 2_000_000
@@ -25,15 +25,14 @@ defmodule AponteWeb.Admin.ProductFormLive do
   end
 
   def handle_event("save", %{"item" => params}, %{assigns: %{live_action: :new}} = socket) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
 
     case Merch.create_item(org, put_image(params, socket)) do
       {:ok, _item} ->
         {:noreply,
          socket
          |> put_flash(:info, "Produto criado.")
-         |> push_navigate(to: ~p"/admin")}
+         |> push_navigate(to: ~p"/admin/#{org.slug}")}
 
       {:error, changeset} ->
         {:noreply,
@@ -46,7 +45,10 @@ defmodule AponteWeb.Admin.ProductFormLive do
   def handle_event("save", %{"item" => params}, socket) do
     case Merch.update_item(socket.assigns.item, put_image(params, socket)) do
       {:ok, _item} ->
-        {:noreply, socket |> put_flash(:info, "Produto salvo.") |> push_navigate(to: ~p"/admin")}
+        {:noreply,
+         socket
+         |> put_flash(:info, "Produto salvo.")
+         |> push_navigate(to: ~p"/admin/#{socket.assigns.org.slug}")}
 
       {:error, changeset} ->
         {:noreply,
@@ -69,7 +71,9 @@ defmodule AponteWeb.Admin.ProductFormLive do
     case Merch.delete_item(socket.assigns.item) do
       {:ok, _item} ->
         {:noreply,
-         socket |> put_flash(:info, "Produto excluído.") |> push_navigate(to: ~p"/admin/produtos")}
+         socket
+         |> put_flash(:info, "Produto excluído.")
+         |> push_navigate(to: ~p"/admin/#{socket.assigns.org.slug}/produtos")}
 
       {:error, :referenced} ->
         {:noreply,
@@ -91,7 +95,7 @@ defmodule AponteWeb.Admin.ProductFormLive do
       :error ->
         socket
         |> put_flash(:error, "Produto não encontrado.")
-        |> push_navigate(to: ~p"/admin/produtos")
+        |> push_navigate(to: ~p"/admin/#{socket.assigns.org.slug}/produtos")
     end
   end
 
@@ -130,7 +134,7 @@ defmodule AponteWeb.Admin.ProductFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section class="stack-5">
         <h1 class="text-xl text-mono">
           {if @live_action == :new, do: "Novo produto", else: @item.name}

@@ -11,12 +11,6 @@ config :aponte, AponteWeb.Endpoint, cache_static_manifest: "priv/static/cache_ma
 # a deploys. AponteWeb.UploadController serve em /uploads com cache longo.
 config :aponte, :uploads_dir, "/data/uploads"
 
-# Old Fly hostname 301s to the canonical host during the cutover window
-# (SPEC_APONTE_V1 section 6). Flip :legacy_host_status to 410 after the
-# 30-day window, then remove both configs and the plug. Empty map = off.
-config :aponte, :legacy_host_redirects, %{"sesh-lab.fly.dev" => "aponte.fly.dev"}
-config :aponte, :legacy_host_status, 301
-
 # Force using SSL in production. This also sets the "strict-security-transport" header,
 # known as HSTS. If you have a health check endpoint, you may want to exclude it below.
 # Note `:force_ssl` is required to be set at compile-time.

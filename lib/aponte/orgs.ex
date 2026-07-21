@@ -43,6 +43,12 @@ defmodule Aponte.Orgs do
     Org |> where(status: :active) |> order_by(asc: :name) |> Repo.all()
   end
 
+  @doc "Every org, active or suspended (admin listing)."
+  @spec list_orgs() :: [Org.t()]
+  def list_orgs do
+    Org |> order_by(asc: :name) |> Repo.all()
+  end
+
   @doc """
   Every active org zipped with its current (published) edition, `nil` when it
   has none. Two queries total: orgs, then published editions grouped by org.

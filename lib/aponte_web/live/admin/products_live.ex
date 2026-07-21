@@ -1,14 +1,13 @@
 defmodule AponteWeb.Admin.ProductsLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Merch, Orgs}
+  alias Aponte.Merch
 
   @impl true
   def mount(_params, _session, socket) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
 
-    {:ok, assign(socket, org: org, items: Merch.list_items(org.id), page_title: "Produtos")}
+    {:ok, assign(socket, items: Merch.list_items(org.id), page_title: "Produtos")}
   end
 
   @impl true
@@ -21,18 +20,23 @@ defmodule AponteWeb.Admin.ProductsLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section class="stack-5">
         <div class="row space-between align-baseline">
           <h1 class="text-xl text-mono">Produtos</h1>
-          <a href={~p"/admin/produtos/novo"} class="admin-action admin-action--primary">+ Novo</a>
+          <a href={~p"/admin/#{@org.slug}/produtos/novo"} class="admin-action admin-action--primary">
+            + Novo
+          </a>
         </div>
 
         <p :if={@items == []} class="text-sm text-dim">Nenhum produto ainda.</p>
 
         <ul class="stack-2">
           <li :for={item <- @items} class="card stack-2">
-            <a href={~p"/admin/produtos/#{item.id}"} class="row space-between align-baseline">
+            <a
+              href={~p"/admin/#{@org.slug}/produtos/#{item.id}"}
+              class="row space-between align-baseline"
+            >
               <span class="text-base text-accent">{item.name}</span>
               <span class="text-mono text-sm">{money(item.price_cents)}</span>
             </a>

@@ -41,7 +41,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
 
   describe "without authentication" do
     test "returns 401 on vapid-key", %{conn: conn} do
-      conn = get(conn, ~p"/admin/push/vapid-key")
+      conn = get(conn, ~p"/admin/sesh/push/vapid-key")
       assert conn.status == 401
     end
 
@@ -49,7 +49,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
       conn =
         conn
         |> put_req_header("content-type", "application/json")
-        |> post(~p"/admin/push/subscribe", Jason.encode!(%{subscription: @subscription}))
+        |> post(~p"/admin/sesh/push/subscribe", Jason.encode!(%{subscription: @subscription}))
 
       assert conn.status == 401
     end
@@ -57,7 +57,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
 
   describe "GET /admin/push/vapid-key" do
     test "returns the configured public key", %{conn: conn, auth_header: auth, public_key_b64: pk} do
-      conn = conn |> authed(auth) |> get(~p"/admin/push/vapid-key")
+      conn = conn |> authed(auth) |> get(~p"/admin/sesh/push/vapid-key")
       assert %{"public_key" => ^pk} = json_response(conn, 200)
     end
   end
@@ -70,7 +70,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
         conn
         |> authed(auth)
         |> put_req_header("content-type", "application/json")
-        |> post(~p"/admin/push/subscribe", body)
+        |> post(~p"/admin/sesh/push/subscribe", body)
 
       assert %{"ok" => true} = json_response(conn, 201)
       assert Notifications.subscription_count() == 1
@@ -88,7 +88,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
       conn
       |> authed(auth)
       |> put_req_header("content-type", "application/json")
-      |> post(~p"/admin/push/subscribe", body1)
+      |> post(~p"/admin/sesh/push/subscribe", body1)
 
       new_sub =
         put_in(@subscription, ["keys", "p256dh"], "BNEW_REPLACEMENT_KEY_____________value")
@@ -99,7 +99,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
         build_conn()
         |> authed(auth)
         |> put_req_header("content-type", "application/json")
-        |> post(~p"/admin/push/subscribe", body2)
+        |> post(~p"/admin/sesh/push/subscribe", body2)
 
       assert %{"ok" => true} = json_response(conn, 201)
       assert Notifications.subscription_count() == 1
@@ -115,7 +115,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
         conn
         |> authed(auth)
         |> put_req_header("content-type", "application/json")
-        |> post(~p"/admin/push/subscribe", body)
+        |> post(~p"/admin/sesh/push/subscribe", body)
 
       assert %{"errors" => errors} = json_response(conn, 422)
       assert errors["p256dh"] == ["can't be blank"]
@@ -137,7 +137,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
         |> authed(auth)
         |> put_req_header("content-type", "application/json")
         |> delete(
-          ~p"/admin/push/subscribe",
+          ~p"/admin/sesh/push/subscribe",
           Jason.encode!(%{endpoint: @subscription["endpoint"]})
         )
 
@@ -150,7 +150,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
         conn
         |> authed(auth)
         |> put_req_header("content-type", "application/json")
-        |> delete(~p"/admin/push/subscribe", Jason.encode!(%{endpoint: "missing"}))
+        |> delete(~p"/admin/sesh/push/subscribe", Jason.encode!(%{endpoint: "missing"}))
 
       assert %{"ok" => true} = json_response(conn, 200)
     end
@@ -160,7 +160,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
         conn
         |> authed(auth)
         |> put_req_header("content-type", "application/json")
-        |> delete(~p"/admin/push/subscribe", Jason.encode!(%{}))
+        |> delete(~p"/admin/sesh/push/subscribe", Jason.encode!(%{}))
 
       assert json_response(conn, 400)
     end

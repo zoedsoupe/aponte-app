@@ -1,12 +1,11 @@
 defmodule AponteWeb.Admin.CouponsLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, Coupons, Orgs}
+  alias Aponte.{Clock, Coupons}
 
   @impl true
   def mount(_params, _session, socket) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
 
     {:ok,
      socket
@@ -29,14 +28,16 @@ defmodule AponteWeb.Admin.CouponsLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section class="stack-5">
         <h1 class="text-xl text-mono">Cupons</h1>
 
         <section class="stack-3">
           <div class="row space-between align-baseline">
             <h2 class="text-sm text-muted">Regras automáticas</h2>
-            <a href={~p"/admin/cupons/regras/nova"} class="text-xs text-accent">+ Nova regra</a>
+            <a href={~p"/admin/#{@org.slug}/cupons/regras/nova"} class="text-xs text-accent">
+              + Nova regra
+            </a>
           </div>
           <p class="text-xs text-dim">
             Emitem um cupom pro cliente quando o pedido atinge o valor mínimo.
@@ -45,7 +46,10 @@ defmodule AponteWeb.Admin.CouponsLive do
           <p :if={@rules == []} class="text-xs text-dim">Nenhuma regra ainda.</p>
           <ul class="stack-2">
             <li :for={r <- @rules} class="card">
-              <a href={~p"/admin/cupons/regras/#{r.id}"} class="row space-between align-center">
+              <a
+                href={~p"/admin/#{@org.slug}/cupons/regras/#{r.id}"}
+                class="row space-between align-center"
+              >
                 <div class="stack-1">
                   <span class="text-sm">{r.name}</span>
                   <span class="text-xs text-dim text-mono">
@@ -61,7 +65,9 @@ defmodule AponteWeb.Admin.CouponsLive do
         <section class="stack-3">
           <div class="row space-between align-baseline">
             <h2 class="text-sm text-muted">Cupons públicos</h2>
-            <a href={~p"/admin/cupons/novo"} class="text-xs text-accent">+ Novo cupom</a>
+            <a href={~p"/admin/#{@org.slug}/cupons/novo"} class="text-xs text-accent">
+              + Novo cupom
+            </a>
           </div>
           <p class="text-xs text-dim">
             Código que qualquer cliente usa. inscritos recebem aviso ao criar.
@@ -70,7 +76,7 @@ defmodule AponteWeb.Admin.CouponsLive do
           <p :if={@coupons == []} class="text-xs text-dim">Nenhum cupom público ainda.</p>
           <ul class="stack-2">
             <li :for={c <- @coupons} class="card">
-              <a href={~p"/admin/cupons/#{c.id}"} class="row space-between align-center">
+              <a href={~p"/admin/#{@org.slug}/cupons/#{c.id}"} class="row space-between align-center">
                 <div class="stack-1">
                   <span class="text-sm text-mono">{c.code}</span>
                   <span class="text-xs text-dim">

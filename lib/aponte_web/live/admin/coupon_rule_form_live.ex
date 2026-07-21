@@ -1,7 +1,7 @@
 defmodule AponteWeb.Admin.CouponRuleFormLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Coupons, Orgs}
+  alias Aponte.Coupons
   alias Aponte.Coupons.CouponRule
 
   @impl true
@@ -20,13 +20,14 @@ defmodule AponteWeb.Admin.CouponRuleFormLive do
   end
 
   def handle_event("save", %{"coupon_rule" => params}, %{assigns: %{live_action: :new}} = socket) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
 
     case Coupons.create_rule(org, params) do
       {:ok, _rule} ->
         {:noreply,
-         socket |> put_flash(:info, "Regra criada.") |> push_navigate(to: ~p"/admin/cupons")}
+         socket
+         |> put_flash(:info, "Regra criada.")
+         |> push_navigate(to: ~p"/admin/#{org.slug}/cupons")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
@@ -37,7 +38,9 @@ defmodule AponteWeb.Admin.CouponRuleFormLive do
     case Coupons.update_rule(socket.assigns.rule, params) do
       {:ok, _rule} ->
         {:noreply,
-         socket |> put_flash(:info, "Regra salva.") |> push_navigate(to: ~p"/admin/cupons")}
+         socket
+         |> put_flash(:info, "Regra salva.")
+         |> push_navigate(to: ~p"/admin/#{socket.assigns.org.slug}/cupons")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
@@ -48,7 +51,9 @@ defmodule AponteWeb.Admin.CouponRuleFormLive do
     {:ok, _} = Coupons.delete_rule(socket.assigns.rule)
 
     {:noreply,
-     socket |> put_flash(:info, "Regra removida.") |> push_navigate(to: ~p"/admin/cupons")}
+     socket
+     |> put_flash(:info, "Regra removida.")
+     |> push_navigate(to: ~p"/admin/#{socket.assigns.org.slug}/cupons")}
   end
 
   defp assign_rule(socket, _params, :new), do: assign_form(socket, %CouponRule{is_active: true})
@@ -65,7 +70,7 @@ defmodule AponteWeb.Admin.CouponRuleFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Cupons" back_to="/admin/cupons">
+    <Layouts.admin flash={@flash} org={@org} back="Cupons" back_to={~p"/admin/#{@org.slug}/cupons"}>
       <section class="stack-5">
         <h1 class="text-xl text-mono">
           {if @live_action == :new, do: "Nova regra de cupom", else: "Editar regra"}

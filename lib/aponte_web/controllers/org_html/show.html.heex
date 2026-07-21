@@ -1,9 +1,9 @@
 <Layouts.app flash={@flash} org={@org}>
   <section :if={@edition} class="flyer stack-5">
     <header class="flyer-head stack-2">
-      <%!-- ponytail: the fallback brand mark is the SESH vector for any org;
-           OrgForm (phase 5) adds per-org logo_path — swap the fallback then. --%>
-      <.sesh_logo src={edition_logo(@edition)} class="sesh-logo--hero" />
+      <%!-- fallback: org logo (perfil) when the edition has none; the SESH
+           vector is the last resort for orgs without either. --%>
+      <.sesh_logo src={edition_logo(@edition) || logo_url(@org)} class="sesh-logo--hero" />
       <p class="text-xs text-mono text-dim">{"#{@org.name} ##{@edition.number}"}</p>
       <h1
         :if={
@@ -67,7 +67,7 @@
 
   <section :if={is_nil(@edition)} class="teaser stack-5">
     <header class="stack-3">
-      <.sesh_logo class="sesh-logo--hero" />
+      <.sesh_logo src={logo_url(@org)} class="sesh-logo--hero" />
       <p class="text-base text-dim">Próxima edição em breve.</p>
     </header>
 

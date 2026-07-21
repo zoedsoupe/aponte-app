@@ -1,9 +1,11 @@
 // Web Push subscribe / unsubscribe / status. Server endpoints live under
-// /admin/push/. CSRF is not needed — those routes go through the `:admin_api`
-// pipeline which doesn't include `:protect_from_forgery`.
+// /admin/:org_slug/push/ — the URLs come from data attributes on the
+// `data-push-toggle` button (rendered by the org-scoped dashboard). CSRF is
+// not needed — those routes go through the `:admin_api` pipeline which
+// doesn't include `:protect_from_forgery`.
 
-const VAPID_URL = "/admin/push/vapid-key";
-const SUB_URL = "/admin/push/subscribe";
+let VAPID_URL = null;
+let SUB_URL = null;
 
 export async function getPushState() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
@@ -57,9 +59,13 @@ export async function disablePush() {
 
 // Bind any button with `data-push-toggle` to the enable/disable flow and
 // reflect current state in its label. Idempotent — safe to call on every
-// `phx:page-loading-stop`.
+// `phx:page-loading-stop`. The button carries the org-scoped endpoint URLs
+// in `data-push-vapid-url` / `data-push-sub-url`.
 export function bindPushToggle() {
   document.querySelectorAll("[data-push-toggle]").forEach((btn) => {
+    VAPID_URL = btn.dataset.pushVapidUrl || VAPID_URL;
+    SUB_URL = btn.dataset.pushSubUrl || SUB_URL;
+
     if (btn.dataset.pushBound === "1") {
       updateLabel(btn);
       return;

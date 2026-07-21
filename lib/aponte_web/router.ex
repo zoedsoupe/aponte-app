@@ -64,48 +64,48 @@ defmodule AponteWeb.Router do
     get "/sitemap.xml", SeoController, :sitemap
   end
 
-  # TEMPORARY: pre-multi-org global paths 301 to their /sesh/... equivalents.
-  # Removal trigger: 30 days after the domain cutover (SPEC_APONTE_V1 sec. 6).
-  scope "/", AponteWeb do
-    pipe_through :browser
-
-    get "/comprar", LegacyRedirectController, :comprar
-    get "/compra/:id", LegacyRedirectController, :compra
-    get "/meus-ingressos", LegacyRedirectController, :meus_ingressos
-    get "/loja", LegacyRedirectController, :loja
-    get "/avisos", LegacyRedirectController, :avisos
-    get "/tocar", LegacyRedirectController, :tocar
-  end
-
   # Admin — literal /admin scopes MUST come before any /:org_slug scope, or
-  # "admin" is swallowed as an org slug (LoadOrg 404s it as reserved).
+  # "admin" is swallowed as an org slug (LoadOrg 404s it as reserved). The
+  # org-less /admin scope (org list + create) likewise MUST come before
+  # /admin/:org_slug, or "organizacoes" is swallowed as an org slug.
   scope "/admin", AponteWeb do
     pipe_through [:browser, :admin]
 
-    live "/", Admin.DashboardLive, :index
-    live "/edicoes/nova", Admin.EditionFormLive, :new
-    live "/edicoes/:id", Admin.EditionFormLive, :edit
-    live "/edicoes/:id/cortesia", Admin.CortesiaLive, :index
-    live "/pedidos/:id", Admin.OrderShowLive, :show
-    live "/buscar", Admin.OrderSearchLive, :index
-    live "/validar", Admin.ScannerLive, :index
-    live "/validar/:edition_id", Admin.ScannerLive, :index
-    live "/tocar", Admin.DjApplicationsLive, :index
-
-    live "/cupons", Admin.CouponsLive, :index
-    live "/cupons/novo", Admin.CouponFormLive, :new
-    live "/cupons/regras/nova", Admin.CouponRuleFormLive, :new
-    live "/cupons/regras/:id", Admin.CouponRuleFormLive, :edit
-    live "/cupons/:id", Admin.CouponFormLive, :edit
-
-    live "/produtos", Admin.ProductsLive, :index
-    live "/produtos/novo", Admin.ProductFormLive, :new
-    live "/produtos/:id", Admin.ProductFormLive, :edit
-    live "/balcao", Admin.BalcaoLive, :index
+    live "/", Admin.OrgListLive, :index
+    live "/organizacoes/nova", Admin.OrgFormLive, :new
   end
 
-  scope "/admin", AponteWeb do
-    pipe_through :admin_api
+  scope "/admin/:org_slug", AponteWeb, as: :admin do
+    pipe_through [:browser, :admin, :load_org]
+
+    live_session :admin, on_mount: [{AponteWeb.OrgHooks, :load_org}] do
+      live "/", Admin.DashboardLive, :index
+      live "/perfil", Admin.OrgFormLive, :edit
+      live "/galeria", Admin.OrgGalleryLive, :index
+      live "/edicoes/nova", Admin.EditionFormLive, :new
+      live "/edicoes/:id", Admin.EditionFormLive, :edit
+      live "/edicoes/:id/cortesia", Admin.CortesiaLive, :index
+      live "/pedidos/:id", Admin.OrderShowLive, :show
+      live "/buscar", Admin.OrderSearchLive, :index
+      live "/validar", Admin.ScannerLive, :index
+      live "/validar/:edition_id", Admin.ScannerLive, :index
+      live "/tocar", Admin.DjApplicationsLive, :index
+
+      live "/cupons", Admin.CouponsLive, :index
+      live "/cupons/novo", Admin.CouponFormLive, :new
+      live "/cupons/regras/nova", Admin.CouponRuleFormLive, :new
+      live "/cupons/regras/:id", Admin.CouponRuleFormLive, :edit
+      live "/cupons/:id", Admin.CouponFormLive, :edit
+
+      live "/produtos", Admin.ProductsLive, :index
+      live "/produtos/novo", Admin.ProductFormLive, :new
+      live "/produtos/:id", Admin.ProductFormLive, :edit
+      live "/balcao", Admin.BalcaoLive, :index
+    end
+  end
+
+  scope "/admin/:org_slug", AponteWeb do
+    pipe_through [:admin_api, :load_org]
 
     get "/push/vapid-key", Admin.PushController, :vapid_key
     post "/push/subscribe", Admin.PushController, :subscribe

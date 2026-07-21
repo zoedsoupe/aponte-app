@@ -1,13 +1,12 @@
 defmodule AponteWeb.Admin.DjApplicationsLive do
   use AponteWeb, :live_view
 
-  alias Aponte.{Clock, DjApplications, Orgs}
+  alias Aponte.{Clock, DjApplications}
   alias AponteWeb.Instagram
 
   @impl true
   def mount(_params, _session, socket) do
-    # TODO(phase-4): org comes from assigns (OrgHooks on_mount)
-    {:ok, org} = Orgs.get_org_by_slug("sesh")
+    org = socket.assigns.org
 
     {:ok,
      assign(socket,
@@ -34,7 +33,7 @@ defmodule AponteWeb.Admin.DjApplicationsLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section class="stack-5">
         <header class="stack-1">
           <h1 class="text-xl text-mono">Quer tocar?</h1>

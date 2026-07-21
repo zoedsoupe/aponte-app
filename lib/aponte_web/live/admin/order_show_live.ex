@@ -10,8 +10,20 @@ defmodule AponteWeb.Admin.OrderShowLive do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    if connected?(socket), do: Phoenix.PubSub.subscribe(Aponte.PubSub, @topic)
-    {:ok, assign(socket, order: Tickets.get_order!(id), page_title: "Pedido")}
+    org = socket.assigns.org
+
+    # Guarda contra URL-tampering cross-org: o pedido precisa ser da org da URL.
+    case Tickets.get_order_in_org(org.id, id) do
+      {:ok, order} ->
+        if connected?(socket), do: Phoenix.PubSub.subscribe(Aponte.PubSub, @topic)
+        {:ok, assign(socket, order: order, page_title: "Pedido")}
+
+      {:error, :not_found} ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Pedido não encontrado.")
+         |> redirect(to: ~p"/admin/#{org.slug}/buscar")}
+    end
   end
 
   @impl true
@@ -72,7 +84,7 @@ defmodule AponteWeb.Admin.OrderShowLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} back="Painel">
+    <Layouts.admin flash={@flash} org={@org} back="Painel">
       <section class="stack-5">
         <header class="stack-2">
           <h1 class="text-xl text-mono">{@order.customer_name}</h1>
@@ -169,7 +181,9 @@ defmodule AponteWeb.Admin.OrderShowLive do
         <details class="stack-2">
           <summary class="text-sm text-muted">Link do pedido / perfil</summary>
           <div class="stack-2">
-            <p id="order-link" class="text-mono text-xs break-all">{url(~p"/compra/#{@order.id}")}</p>
+            <p id="order-link" class="text-mono text-xs break-all">
+              {url(~p"/#{@org.slug}/compra/#{@order.id}")}
+            </p>
             <button type="button" data-copy-target="#order-link" class="btn btn--ghost btn--block">
               Copiar link
             </button>
