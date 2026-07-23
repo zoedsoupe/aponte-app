@@ -7,13 +7,17 @@ defmodule AponteWeb.PublicPagesTest do
     test "renders the brand and the org listing", %{conn: conn} do
       html = conn |> get(~p"/") |> html_response(200)
       assert html =~ "Aponte"
-      assert html =~ "o que tá rolando em Campos"
+      assert html =~ "a ponte entre quem faz rolê e quem quer colar"
+      assert html =~ "O que tá rolando em Campos"
       assert html =~ ~s(href="/sesh")
     end
 
     test "/sobre renders the Aponte about page", %{conn: conn} do
       html = conn |> get(~p"/sobre") |> html_response(200)
-      assert html =~ "Aponte Produtoras"
+      assert html =~ "Qual é a da Aponte?"
+      assert html =~ "@aponteprodutoras"
+      # h1 links back home (a marca leva pra casa)
+      assert html =~ ~s(<a href="/">Aponte Produtoras</a>)
     end
   end
 

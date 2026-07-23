@@ -47,6 +47,11 @@ defmodule AponteWeb.Admin.OrderSearchLive do
 
   defp order_url(org, id), do: url(~p"/#{org.slug}/compra/#{id}")
 
+  # Contato do cliente na coluna: @handle quando tem instagram, senão telefone.
+  defp contact_label(%{customer_instagram: ig}) when is_binary(ig), do: "@#{ig}"
+  defp contact_label(%{customer_phone: phone}) when is_binary(phone), do: phone
+  defp contact_label(_), do: ""
+
   defp searching?(term), do: String.length(String.trim(term)) >= 2
 
   # More to load only while the history view fills the current limit exactly.
@@ -66,7 +71,7 @@ defmodule AponteWeb.Admin.OrderSearchLive do
             value={@term}
             phx-debounce="300"
             autocomplete="off"
-            placeholder="@handle ou nome"
+            placeholder="@handle, nome ou telefone"
             class="input text-mono"
           />
         </form>
@@ -86,7 +91,7 @@ defmodule AponteWeb.Admin.OrderSearchLive do
           <thead>
             <tr>
               <th>Cliente</th>
-              <th>Instagram</th>
+              <th>Contato</th>
               <th>Total</th>
               <th>Status</th>
               <th>Recebido</th>
@@ -98,7 +103,7 @@ defmodule AponteWeb.Admin.OrderSearchLive do
               <td class="td-title text-cap">
                 <a href={~p"/admin/#{@org.slug}/pedidos/#{o.id}"}>{o.customer_name}</a>
               </td>
-              <td data-label="Instagram" class="text-mono text-dim">@{o.customer_instagram}</td>
+              <td data-label="Contato" class="text-mono text-dim">{contact_label(o)}</td>
               <td data-label="Total" class="td-num">{money(o.total_cents)}</td>
               <td data-label="Status">
                 <.status_badge status={o.status} />

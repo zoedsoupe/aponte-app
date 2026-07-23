@@ -16,7 +16,7 @@ defmodule AponteWeb.Admin.OrgListLiveTest do
     assert get(conn, ~p"/admin").status == 401
   end
 
-  test "lists all orgs with status/tier and links into their dashboards", %{
+  test "lists all orgs with status and links into their dashboards", %{
     conn: conn,
     auth: auth
   } do
@@ -29,6 +29,6 @@ defmodule AponteWeb.Admin.OrgListLiveTest do
     assert has_element?(view, ~s|a[href="/admin/sesh"]|)
     assert has_element?(view, ~s|a[href="/admin/arena"]|)
     assert has_element?(view, ~s|a[href="/admin/organizacoes/nova"]|)
-    assert render(view) =~ "active"
+    assert render(view) =~ "Ativa"
   end
 end

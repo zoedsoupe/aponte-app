@@ -58,11 +58,17 @@ defmodule AponteWeb.Admin.BalcaoLive do
 
   def handle_event("pay-pix", _params, socket) do
     total = cart_total(socket.assigns)
+    org = socket.assigns.org
 
-    if total > 0 do
-      {:noreply, assign(socket, pix: pix_for(total))}
-    else
-      {:noreply, put_flash(socket, :error, "Carrinho vazio.")}
+    cond do
+      total <= 0 ->
+        {:noreply, put_flash(socket, :error, "Carrinho vazio.")}
+
+      pix_key_missing?(org) ->
+        {:noreply, put_flash(socket, :error, "Sem chave PIX. Cadastre a chave PIX no perfil.")}
+
+      true ->
+        {:noreply, assign(socket, pix: pix_for(total, org))}
     end
   end
 
@@ -146,14 +152,17 @@ defmodule AponteWeb.Admin.BalcaoLive do
     end
   end
 
-  defp pix_for(total_cents) do
+  # PIX do balcão cobra na chave da org (mesma fonte dos pedidos, que snapshotam
+  # org.pix_key no pedido); merchant_name é o nome da org — Pix.build sanitiza.
+  # merchant_city segue o default global do env.
+  defp pix_for(total_cents, org) do
     cfg = Application.fetch_env!(:aponte, :pix)
 
     emv =
       Pix.build(
-        pix_key: cfg[:key],
+        pix_key: org.pix_key,
         amount_cents: total_cents,
-        merchant_name: cfg[:merchant_name],
+        merchant_name: org.name,
         merchant_city: cfg[:merchant_city],
         txid: "BALCAO"
       )
@@ -327,8 +336,22 @@ defmodule AponteWeb.Admin.BalcaoLive do
           <.button type="button" variant={:ghost} class="flex-1" phx-click="pay-cash">
             Dinheiro
           </.button>
-          <.button type="button" variant={:primary} class="flex-1" phx-click="pay-pix">PIX</.button>
+          <.button
+            type="button"
+            variant={:primary}
+            class="flex-1"
+            phx-click="pay-pix"
+            disabled={pix_key_missing?(@org)}
+          >
+            PIX
+          </.button>
         </div>
+        <p :if={pix_key_missing?(@org)} class="text-xs text-dim">
+          PIX indisponível: cadastre a chave PIX no <.link
+            navigate={~p"/admin/#{@org.slug}/perfil"}
+            class="text-accent"
+          >perfil</.link>.
+        </p>
         <button type="button" class="text-xs text-dim" phx-click="clear-cart">limpar</button>
       </div>
     </div>
@@ -370,6 +393,8 @@ defmodule AponteWeb.Admin.BalcaoLive do
 
   defp payment_label(:cash), do: "Dinheiro"
   defp payment_label(:pix), do: "PIX"
+
+  defp pix_key_missing?(org), do: is_nil(org.pix_key) or org.pix_key == ""
 
   defp scan_result_class(:ok), do: "scan-result--ok"
   defp scan_result_class(_), do: "scan-result--err"

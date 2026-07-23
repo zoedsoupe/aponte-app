@@ -4,7 +4,7 @@
 
     <ul :if={@images != []} class="gallery-page-grid">
       <li :for={img <- @images}>
-        <a href={image_url(@org, img.path)} target="_blank" rel="noopener">
+        <a href={image_url(@org, img.path)}>
           <img src={image_url(@org, img.thumb_path)} alt="" loading="lazy" />
         </a>
       </li>

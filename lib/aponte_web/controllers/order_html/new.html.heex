@@ -14,8 +14,8 @@
       <p class="text-sm text-dim">Escolha as quantidades e preencha seus dados.</p>
     </header>
 
-    <div :if={Phoenix.Flash.get(@flash, :error)} class="alert alert--error" role="alert">
-      <p class="text-sm">{Phoenix.Flash.get(@flash, :error)}</p>
+    <div :if={@form_error} class="alert alert--error" role="alert">
+      <p class="text-sm">{@form_error}</p>
     </div>
 
     <div
@@ -52,18 +52,31 @@
       >
         <.input field={f[:customer_name]} label="Nome" required autocomplete="name" />
 
-        <.input
-          field={f[:customer_instagram]}
-          type="text"
-          label="Instagram (sem o @)"
-          required
-          inputmode="text"
-          autocomplete="off"
-          placeholder="seu.usuario"
-        />
-        <p class="text-xs text-dim">
-          É por aí que a {@org.name} te chama caso precise falar do seu ingresso.
-        </p>
+        <div class="field-group stack-2">
+          <span class="field-label">Como a gente te acha</span>
+
+          <.input
+            field={f[:customer_instagram]}
+            type="text"
+            label="Instagram (sem o @)"
+            inputmode="text"
+            autocomplete="off"
+            placeholder="seu.usuario"
+          />
+
+          <.input
+            field={f[:customer_phone]}
+            type="tel"
+            label="Telefone"
+            inputmode="numeric"
+            autocomplete="tel"
+            placeholder="22 99999-8888"
+          />
+
+          <p class="text-xs text-dim">
+            Instagram ou telefone, pelo menos um. É por aí que a {@org.name} te chama sobre seu ingresso.
+          </p>
+        </div>
 
         <.input
           field={f[:coupon_code]}
@@ -85,6 +98,7 @@
     </div>
 
     <.form_bar :if={@lots != [] or @merch != []}>
+      <p class="text-xs text-dim gate-hint" data-gate-hint hidden></p>
       <.button type="submit" variant={:primary} class="btn--block btn--blob">
         Ir pro PIX
       </.button>

@@ -2,7 +2,7 @@ defmodule AponteWeb.Admin.OrderShowLive do
   use AponteWeb, :live_view
 
   alias Aponte.{Clock, Tickets}
-  alias Aponte.Tickets.Ticket
+  alias Aponte.Tickets.{OrderItem, Ticket}
   alias Aponte.Merch.Unit
   alias AponteWeb.Instagram
 
@@ -16,7 +16,7 @@ defmodule AponteWeb.Admin.OrderShowLive do
     case Tickets.get_order_in_org(org.id, id) do
       {:ok, order} ->
         if connected?(socket), do: Phoenix.PubSub.subscribe(Aponte.PubSub, @topic)
-        {:ok, assign(socket, order: order, page_title: "Pedido")}
+        {:ok, assign(socket, order: order, confirm_armed: false, page_title: "Pedido")}
 
       {:error, :not_found} ->
         {:ok,
@@ -27,6 +27,13 @@ defmodule AponteWeb.Admin.OrderShowLive do
   end
 
   @impl true
+  # Dois toques pra confirmar (S2): o primeiro arma ("tocar de novo"), o
+  # segundo dentro de ~4s confirma de fato. Sem JS: assign + send_after.
+  def handle_event("confirm", _params, %{assigns: %{confirm_armed: false}} = socket) do
+    Process.send_after(self(), :disarm_confirm, 4_000)
+    {:noreply, assign(socket, confirm_armed: true)}
+  end
+
   def handle_event("confirm", _params, socket) do
     case Tickets.confirm_order(socket.assigns.order.id) do
       {:ok, order} ->
@@ -36,7 +43,7 @@ defmodule AponteWeb.Admin.OrderShowLive do
            :info,
            "Pagamento confirmado. #{length(order.tickets)} ingresso(s) emitido(s)."
          )
-         |> assign(order: order)}
+         |> assign(order: order, confirm_armed: false)}
 
       {:error, :not_pending} ->
         {:noreply,
@@ -72,6 +79,8 @@ defmodule AponteWeb.Admin.OrderShowLive do
   end
 
   @impl true
+  def handle_info(:disarm_confirm, socket), do: {:noreply, assign(socket, confirm_armed: false)}
+
   def handle_info({event, id}, %{assigns: %{order: %{id: id}}} = socket)
       when event in [:order_updated, :new_order, :soldout] do
     {:noreply, reload(socket)}
@@ -79,26 +88,63 @@ defmodule AponteWeb.Admin.OrderShowLive do
 
   def handle_info(_msg, socket), do: {:noreply, socket}
 
-  defp reload(socket), do: assign(socket, order: Tickets.get_order!(socket.assigns.order.id))
+  defp reload(socket),
+    do: assign(socket, order: Tickets.get_order!(socket.assigns.order.id), confirm_armed: false)
+
+  # Brazilian numbers come in as DDD + número (10–11 dígitos); prepend country
+  # code for the wa.me deep-link unless it's already there.
+  defp wa_url(digits) when is_binary(digits) do
+    full = if String.length(digits) <= 11, do: "55" <> digits, else: digits
+    "https://wa.me/" <> full
+  end
+
+  # Rótulo do segundo toque: quantos ingressos o pedido vai emitir (pedido só
+  # de merch mostra itens, não ingressos).
+  defp confirm_summary(order) do
+    tickets = order.items |> Enum.filter(&OrderItem.ticket?/1) |> Enum.sum_by(& &1.quantity)
+
+    if tickets > 0 do
+      "#{tickets} ingressos"
+    else
+      "#{Enum.sum_by(order.items, & &1.quantity)} itens"
+    end
+  end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Pedidos" back_to={~p"/admin/#{@org.slug}/buscar"}>
+    <Layouts.admin
+      flash={@flash}
+      org={@org}
+      current_path={assigns[:admin_path]}
+      back="Pedidos"
+      back_to={~p"/admin/#{@org.slug}/buscar"}
+    >
       <section class="stack-5">
         <header class="stack-2">
           <p class="eyebrow">Pedido</p>
           <h1 class="text-xl">{@order.customer_name}</h1>
           <div class="row gap-2 align-center">
             <.status_badge status={@order.status} />
-            <span class="text-mono text-sm text-dim">@{@order.customer_instagram}</span>
+            <span :if={@order.customer_instagram} class="text-mono text-sm text-dim">
+              @{@order.customer_instagram}
+            </span>
+            <span
+              :if={is_nil(@order.customer_instagram) and @order.customer_phone}
+              class="text-mono text-sm text-dim"
+            >
+              {@order.customer_phone}
+            </span>
           </div>
         </header>
 
         <%!-- DM é o canal admin↔cliente (aprovação de pagamento async no
-             Instagram): primeiro botão, sempre visível, qualquer status. --%>
+             Instagram): primeiro botão, sempre visível, qualquer status.
+             Comprador sem instagram recebe WhatsApp (wa.me) no lugar, com o
+             número à vista pra copiar. --%>
         <div class="order-actions">
           <a
+            :if={@order.customer_instagram}
             href={Instagram.dm_url(@order.customer_instagram)}
             target="_blank"
             rel="noopener"
@@ -106,10 +152,26 @@ defmodule AponteWeb.Admin.OrderShowLive do
           >
             Abrir DM
           </a>
+          <a
+            :if={@order.customer_phone}
+            href={wa_url(@order.customer_phone)}
+            target="_blank"
+            rel="noopener"
+            class="btn btn--primary"
+          >
+            Abrir WhatsApp
+          </a>
           <.button :if={@order.status == :pending} phx-click="confirm" variant={:accent}>
-            Confirmar pagamento
+            {if @confirm_armed,
+              do:
+                "Tocar de novo pra confirmar #{money(@order.total_cents)} · #{confirm_summary(@order)}",
+              else: "Confirmar pagamento"}
           </.button>
         </div>
+
+        <p :if={@order.customer_phone} class="text-mono text-sm text-dim">
+          {@order.customer_phone}
+        </p>
 
         <.button
           :if={@order.status == :pending}
@@ -154,7 +216,10 @@ defmodule AponteWeb.Admin.OrderShowLive do
           </p>
         </.form_section>
 
-        <.form_section :if={@order.tickets != []} title={"Ingressos emitidos (#{length(@order.tickets)})"}>
+        <.form_section
+          :if={@order.tickets != []}
+          title={"Ingressos emitidos (#{length(@order.tickets)})"}
+        >
           <ul class="inset-list">
             <li :for={t <- @order.tickets} class="inset-row inset-row--static">
               <span class="text-mono">{Ticket.display_code(t)}</span>
@@ -164,9 +229,19 @@ defmodule AponteWeb.Admin.OrderShowLive do
               <span :if={is_nil(t.used_at)} class="text-xs text-dim">Não usado</span>
             </li>
           </ul>
+          <a
+            :if={@order.edition_id}
+            href={~p"/admin/#{@org.slug}/validar/#{@order.edition_id}"}
+            class="btn btn--ghost btn--block"
+          >
+            Validar na porta
+          </a>
         </.form_section>
 
-        <.form_section :if={@order.merch_units != []} title={"Produtos emitidos (#{length(@order.merch_units)})"}>
+        <.form_section
+          :if={@order.merch_units != []}
+          title={"Produtos emitidos (#{length(@order.merch_units)})"}
+        >
           <ul class="inset-list">
             <li :for={u <- @order.merch_units} class="inset-row inset-row--static">
               <span>
@@ -190,6 +265,7 @@ defmodule AponteWeb.Admin.OrderShowLive do
               Copiar link
             </button>
             <a
+              :if={@order.customer_instagram}
               href={Instagram.profile_url(@order.customer_instagram)}
               target="_blank"
               rel="noopener"

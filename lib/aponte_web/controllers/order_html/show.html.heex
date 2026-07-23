@@ -1,6 +1,13 @@
 <Layouts.app flash={@flash} org={@org} current_path={@conn.request_path}>
   <meta :if={@order.status == :pending} http-equiv="refresh" content="30" />
-  <div hidden data-order-record data-id={@order.id} data-label={order_label(@order)}></div>
+  <div
+    hidden
+    data-order-record
+    data-id={@order.id}
+    data-label={order_label(@order)}
+    data-org-slug={@org.slug}
+  >
+  </div>
 
   <section class="stack-5">
     <header class="stack-2">
@@ -77,22 +84,85 @@
 
     <section :if={@pix} class="stack-3 pix-block">
       <h2 class="section-label">PIX</h2>
-      <div class="qr-frame" aria-label="qr code pix">
-        {Phoenix.HTML.raw(@pix.svg)}
-      </div>
-      <div class="stack-2">
-        <span class="text-xs text-dim">Copia e cola</span>
-        <code class="pix-copy text-mono text-xs" id="pix-copy" data-pix-copy>{@pix.emv}</code>
-        <button type="button" class="btn btn--accent btn--block" data-copy-target="#pix-copy">
-          Copiar código PIX
-        </button>
-      </div>
-      <p class="text-sm text-dim">
-        A {@org.name} foi notificada. Assim que cair, seus ingressos aparecem aqui.
+
+      <ol class="pix-steps stack-4">
+        <li class="pix-step stack-2">
+          <span class="pix-step-label">1. Copia o código ou aponta a câmera pro QR</span>
+          <div class="qr-frame" aria-label="qr code pix">
+            {Phoenix.HTML.raw(@pix.svg)}
+          </div>
+          <div class="stack-2">
+            <span class="text-xs text-dim">Copia e cola</span>
+            <code class="pix-copy text-mono text-xs" id="pix-copy" data-pix-copy>{@pix.emv}</code>
+            <button type="button" class="btn btn--accent btn--block" data-copy-target="#pix-copy">
+              Copiar código PIX
+            </button>
+          </div>
+        </li>
+
+        <li class="pix-step stack-2">
+          <span class="pix-step-label">2. Paga no app do seu banco</span>
+          <p class="text-sm">
+            {money(@order.total_cents)} para a {@org.name}.
+          </p>
+          <p class="text-xs text-dim">
+            pra {@org.name}, chave {@order.pix_key}
+          </p>
+        </li>
+
+        <li class="pix-step stack-2">
+          <span class="pix-step-label">3. Espera a confirmação</span>
+          <p class="text-sm">
+            A {@org.name} confirma manualmente e seus ingressos aparecem aqui. Pagou e demorou? Chama no Instagram.
+          </p>
+          <a
+            :if={AponteWeb.Instagram.dm_url(@org.instagram)}
+            href={AponteWeb.Instagram.dm_url(@org.instagram)}
+            class="btn btn--ghost btn--block"
+          >
+            Avisar no Instagram
+          </a>
+        </li>
+      </ol>
+    </section>
+
+    <section
+      :if={@order.status == :pending and is_nil(@pix)}
+      class="stack-3 alert alert--info"
+    >
+      <h2 class="section-label">PIX</h2>
+      <p class="text-sm">
+        A {@org.name} ainda não cadastrou a chave PIX. Chama no Instagram pra combinar o pagamento do seu pedido.
       </p>
+      <a
+        :if={AponteWeb.Instagram.dm_url(@org.instagram)}
+        href={AponteWeb.Instagram.dm_url(@org.instagram)}
+        class="btn btn--primary btn--block"
+      >
+        Chamar no Instagram
+      </a>
+    </section>
+
+    <section :if={@order.status in [:cancelled, :expired]} class="stack-3">
+      <p class="text-sm">
+        {if @order.status == :cancelled,
+          do: "Esse pedido foi cancelado.",
+          else: "Esse pedido expirou."} Se você pagou, fala com a {@org.name}.
+      </p>
+      <a
+        :if={AponteWeb.Instagram.dm_url(@org.instagram)}
+        href={AponteWeb.Instagram.dm_url(@org.instagram)}
+        class="btn btn--ghost btn--block"
+      >
+        Falar no Instagram
+      </a>
+      <a :if={@can_rebuy} href={~p"/#{@org.slug}/comprar"} class="btn btn--primary btn--block">
+        Comprar de novo
+      </a>
     </section>
 
     <div
+      :if={@order.status == :pending}
       data-push-prompt
       data-push-vapid-url={~p"/#{@org.slug}/push/vapid-key"}
       data-push-sub-url={~p"/#{@org.slug}/push/subscribe"}

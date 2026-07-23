@@ -117,7 +117,7 @@ defmodule AponteWeb.Admin.CortesiaLive do
           class="stack-5"
           id="cortesia-form"
         >
-          <.form_section title="Convidade">
+          <.form_section title="Convidado(a)">
             <.input field={@form[:customer_name]} label="Nome" autocomplete="off" />
             <.input field={@form[:customer_instagram]} label="Instagram (sem @)" autocomplete="off" />
           </.form_section>

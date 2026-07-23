@@ -35,8 +35,7 @@ defmodule AponteWeb.Admin.OrgListLive do
                 <span class="text-xs text-dim text-mono">/{org.slug}</span>
               </span>
               <span class="row gap-2 align-center">
-                <span class="chip">{org.status}</span>
-                <span class="chip">{org.tier}</span>
+                <span class="chip">{status_label(org.status)}</span>
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"

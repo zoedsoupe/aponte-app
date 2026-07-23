@@ -11,7 +11,9 @@
   --border-strong: color-mix(in srgb, var(--ink), var(--bg) 72%);
 
   --ink: #49422f;
-  --ink-muted: color-mix(in srgb, var(--ink) 60%, var(--bg));
+  /* 75% ink: o 60% original ficava em ~3.2:1 no cream, abaixo dos 4.5:1 que
+     texto pequeno (section-label, meta lines) precisa; 75% passa (~4.7:1) */
+  --ink-muted: color-mix(in srgb, var(--ink) 75%, var(--bg));
   --fg: var(--ink);
   --fg-muted: var(--ink-muted);
   --fg-dim: color-mix(in srgb, var(--ink-muted), var(--bg) 40%);

@@ -115,7 +115,7 @@ async function updateLabel(btn) {
   btn.disabled = false;
   btn.textContent = state.subscribed
     ? "notificações ativas"
-    : "ativar notificações";
+    : "Notificações de pedidos";
 }
 
 async function fetchVapidKey() {

@@ -13,6 +13,13 @@ defmodule AponteWeb.PageHTML do
   @doc "URL da arte custom da edição (nil se não houver upload → usa o vetor oficial)."
   def edition_logo(edition), do: Aponte.Editions.logo_url(edition.logo_path)
 
+  @doc "URL do logo da org (nil sem upload), servida pelo pipeline de uploads."
+  def org_logo(%{logo_path: nil}), do: nil
+  def org_logo(org), do: "/uploads/orgs/#{org.id}/#{org.logo_path}"
+
+  @doc "Inicial da org, fallback do slot de logo quando não há upload."
+  def org_initial(org), do: org.name |> String.trim() |> String.first() |> String.upcase()
+
   @months ~w(JAN FEV MAR ABR MAI JUN JUL AGO SET OUT NOV DEZ)
 
   @doc ~S|Dia da edição no formato duo-color: `27JUN.` (em BRT).|

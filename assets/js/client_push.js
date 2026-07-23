@@ -217,6 +217,10 @@ function selectedTopics() {
 
 async function syncTopicInputs() {
   const state = await getState();
+  // The "ative primeiro" hint is stale once subscribed — hide it.
+  document.querySelectorAll("[data-topics-hint]").forEach((h) => {
+    h.hidden = state.subscribed;
+  });
   const boxes = document.querySelectorAll("[data-topic]");
   boxes.forEach((b) => {
     b.disabled = !state.subscribed;

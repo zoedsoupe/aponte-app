@@ -25,6 +25,16 @@ defmodule Aponte.Editions do
     |> Repo.preload(:ticket_types)
   end
 
+  @doc "Edições visíveis nas páginas públicas (`published` + `past`) — rascunhos nunca vazam."
+  @spec list_public_editions(Ecto.UUID.t()) :: [Edition.t()]
+  def list_public_editions(org_id) do
+    Edition
+    |> where([e], e.org_id == ^org_id and e.status in [:published, :past])
+    |> order_by(desc: :number)
+    |> Repo.all()
+    |> Repo.preload(:ticket_types)
+  end
+
   @spec get_edition!(Ecto.UUID.t()) :: Edition.t()
   def get_edition!(id) do
     Edition |> Repo.get!(id) |> Repo.preload(:ticket_types)

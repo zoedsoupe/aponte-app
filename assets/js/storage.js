@@ -2,6 +2,7 @@ const KEY = "aponte.customer.v2";
 const FIELDS = [
   "customer_name",
   "customer_instagram",
+  "customer_phone",
   "delivery_type",
   "address",
   "payment_method",

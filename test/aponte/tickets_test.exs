@@ -381,5 +381,73 @@ defmodule Aponte.TicketsTest do
       assert [_] = Tickets.search_orders(org_id, "jose")
       assert Tickets.search_orders(org_id, "josé2") == []
     end
+
+    test "matches phone by digits substring, ignoring formatting", %{
+      edition: edition,
+      org_id: org_id
+    } do
+      insert_order(edition, %{
+        customer_name: "Sem Insta",
+        customer_instagram: nil,
+        customer_phone: "22998765432"
+      })
+
+      assert [o] = Tickets.search_orders(org_id, "(22) 99876")
+      assert o.customer_phone == "22998765432"
+      # menos de 2 dígitos no termo não ativa o braço de telefone
+      assert Tickets.search_orders(org_id, "a2") == []
+    end
+  end
+
+  describe "search_door_tickets/3" do
+    test "finds confirmed unused tickets by buyer name, scoped to org+edition" do
+      {edition, lot} = edition_with_lot()
+      org = org_for(edition)
+
+      {:ok, order} =
+        Tickets.create_order(
+          org,
+          order_attrs(edition, lot, %{customer_name: "Maria Porta"})
+        )
+
+      {:ok, _} = Tickets.confirm_order(order.id)
+
+      assert [t] = Tickets.search_door_tickets(org.id, edition.id, "maria")
+      assert t.order.customer_name == "Maria Porta"
+
+      # validated tickets drop out of the door search
+      {:ok, _} = Tickets.validate_ticket(t.code)
+      assert Tickets.search_door_tickets(org.id, edition.id, "maria") == []
+    end
+
+    test "does not leak other editions or orgs" do
+      {edition, lot} = edition_with_lot()
+      org = org_for(edition)
+      {other_edition, other_lot} = edition_with_lot(%{org_id: org.id})
+
+      {:ok, order} =
+        Tickets.create_order(org, order_attrs(edition, lot, %{customer_name: "Maria Porta"}))
+
+      {:ok, _} = Tickets.confirm_order(order.id)
+
+      {:ok, other_order} =
+        Tickets.create_order(
+          org,
+          order_attrs(other_edition, other_lot, %{customer_name: "Maria Outra"})
+        )
+
+      {:ok, _} = Tickets.confirm_order(other_order.id)
+
+      assert [t] = Tickets.search_door_tickets(org.id, edition.id, "maria")
+      assert t.edition_id == edition.id
+
+      other_org = org_fixture()
+      assert Tickets.search_door_tickets(other_org.id, edition.id, "maria") == []
+    end
+
+    test "term under 2 chars returns empty" do
+      {edition, _lot} = edition_with_lot()
+      assert Tickets.search_door_tickets(edition.org_id, edition.id, "m") == []
+    end
   end
 end

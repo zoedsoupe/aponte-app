@@ -7,7 +7,7 @@
         {paragraph}
       </p>
       <p :if={about_paragraphs(@org.about) == []} class="text-sm text-dim">
-        Esse coletivo ainda não escreveu sobre si.
+        {@org.name} ainda não escreveu sobre si.
       </p>
     </section>
 
@@ -58,8 +58,114 @@
       </ul>
     </section>
 
+    <%!-- bespoke SESH section (custom-pages model): the DJ application form
+         lives here for this org only — no generic mechanism, other orgs
+         never render it. POSTs still go to /:slug/tocar (DjController). --%>
+    <section :if={@org.slug == "sesh"} id="tocar" class="stack-5">
+      <div :if={@dj_submitted} class="stack-3">
+        <header class="stack-1">
+          <h2 class="text-xl">Recebido!</h2>
+          <p class="text-sm text-dim">Tua inscrição chegou. A {@org.name} te chama se rolar.</p>
+        </header>
+      </div>
+
+      <div :if={not @dj_open? and not @dj_submitted} class="stack-3">
+        <header class="stack-1">
+          <h2 class="text-xl">Inscrições fechadas</h2>
+          <p class="text-sm text-dim">
+            No momento não estamos recebendo inscrições. Fica de olho nas redes da {@org.name} pra próxima chamada.
+          </p>
+        </header>
+      </div>
+
+      <.form
+        :let={f}
+        :if={@dj_open? and not @dj_submitted}
+        for={@dj_changeset}
+        action={~p"/#{@org.slug}/tocar"}
+        class="stack-5"
+        id="dj-form"
+      >
+        <%!-- failed submit: focus the first invalid field (also scrolls it
+             into view) so the user lands where the fix is needed --%>
+        <% invalid = dj_first_invalid(@dj_changeset) %>
+        <input type="hidden" name="ts" value={@dj_form_ts} />
+
+        <header class="stack-2">
+          <h2 class="text-xl">Quer tocar?</h2>
+          <p class="text-sm text-muted">
+            Os DJs da cena têm que começar em algum lugar. Equipamento de som à
+            disposição, cobertura fotográfica e filmagem pra portfólio.
+          </p>
+          <p class="text-xs text-dim">Manda teu set. A gente escuta tudo.</p>
+        </header>
+
+        <div :if={Phoenix.Flash.get(@flash, :error)} class="alert alert--error" role="alert">
+          <p class="text-sm">{Phoenix.Flash.get(@flash, :error)}</p>
+        </div>
+
+        <%!-- honeypot: bot preenche, humano não vê (off-screen, não display:none) --%>
+        <div style="position:absolute;left:-9999px" aria-hidden="true">
+          <label>
+            Não preencha este campo
+            <input type="text" name="site" tabindex="-1" autocomplete="off" />
+          </label>
+        </div>
+
+        <.input
+          field={f[:name]}
+          label="Nome / nome artístico"
+          required
+          autocomplete="name"
+          autofocus={invalid == :name}
+        />
+
+        <.input
+          field={f[:whatsapp]}
+          type="tel"
+          label="WhatsApp (DDD + número)"
+          required
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="22999998888"
+          autofocus={invalid == :whatsapp}
+        />
+
+        <.input
+          field={f[:instagram]}
+          type="text"
+          label="Instagram (sem o @)"
+          required
+          autocomplete="off"
+          placeholder="seu.usuario"
+          autofocus={invalid == :instagram}
+        />
+
+        <.input
+          field={f[:musical_styles]}
+          type="textarea"
+          label="Estilos que você toca"
+          rows="2"
+          required
+          autofocus={invalid == :musical_styles}
+        />
+
+        <.input
+          field={f[:about]}
+          type="textarea"
+          label="Sobre você (+ link do set, se tiver)"
+          rows="3"
+          required
+          autofocus={invalid == :about}
+        />
+
+        <.button type="submit" variant={:primary} class="btn--block">Enviar inscrição</.button>
+      </.form>
+    </section>
+
     <%!-- notification prefs (moved from the standalone /avisos page; the
-         data-push-* attributes are read by assets/js/client_push.js) --%>
+         data-push-* attributes are read by assets/js/client_push.js). Page
+         footer: Sobre -> Links -> Tocar -> Avisos. --%>
     <section
       id="avisos"
       class="stack-5"
@@ -96,7 +202,8 @@
             <input type="checkbox" class="checkbox" data-topic="coupons" />
             <span class="field-label">Cupons (novidades e expiração)</span>
           </label>
-          <p class="text-xs text-dim">
+          <%!-- stale once subscribed: client_push.js hides it (data-topics-hint) --%>
+          <p class="text-xs text-dim" data-topics-hint>
             Ative os avisos primeiro para escolher o que receber.
           </p>
         </div>
@@ -125,98 +232,6 @@
           </p>
         </div>
       </details>
-    </section>
-
-    <%!-- bespoke SESH section (custom-pages model): the DJ application form
-         lives here for this org only — no generic mechanism, other orgs
-         never render it. POSTs still go to /:slug/tocar (DjController). --%>
-    <section :if={@org.slug == "sesh"} id="tocar" class="stack-5">
-      <div :if={@dj_submitted} class="stack-3">
-        <header class="stack-1">
-          <h2 class="text-xl">Recebido!</h2>
-          <p class="text-sm text-dim">Tua inscrição chegou. A {@org.name} te chama se rolar.</p>
-        </header>
-      </div>
-
-      <div :if={not @dj_open? and not @dj_submitted} class="stack-3">
-        <header class="stack-1">
-          <h2 class="text-xl">Inscrições fechadas</h2>
-          <p class="text-sm text-dim">
-            No momento não estamos recebendo inscrições. Fica de olho nas redes da {@org.name} pra próxima chamada.
-          </p>
-        </header>
-      </div>
-
-      <.form
-        :let={f}
-        :if={@dj_open? and not @dj_submitted}
-        for={@dj_changeset}
-        action={~p"/#{@org.slug}/tocar"}
-        class="stack-5"
-        id="dj-form"
-      >
-        <input type="hidden" name="ts" value={@dj_form_ts} />
-
-        <header class="stack-2">
-          <h2 class="text-xl">Quer tocar?</h2>
-          <p class="text-sm text-muted">
-            Os DJs da cena têm que começar em algum lugar. Equipamento de som à
-            disposição, cobertura fotográfica e filmagem pra portfólio.
-          </p>
-          <p class="text-xs text-dim">Manda teu set. A gente escuta tudo.</p>
-        </header>
-
-        <div :if={Phoenix.Flash.get(@flash, :error)} class="alert alert--error" role="alert">
-          <p class="text-sm">{Phoenix.Flash.get(@flash, :error)}</p>
-        </div>
-
-        <%!-- honeypot: bot preenche, humano não vê (off-screen, não display:none) --%>
-        <div style="position:absolute;left:-9999px" aria-hidden="true">
-          <label>
-            Não preencha este campo
-            <input type="text" name="site" tabindex="-1" autocomplete="off" />
-          </label>
-        </div>
-
-        <.input field={f[:name]} label="Nome / nome artístico" required autocomplete="name" />
-
-        <.input
-          field={f[:whatsapp]}
-          type="tel"
-          label="WhatsApp (DDD + número)"
-          required
-          inputmode="numeric"
-          autocomplete="off"
-          placeholder="22999998888"
-        />
-
-        <.input
-          field={f[:instagram]}
-          type="text"
-          label="Instagram (sem o @)"
-          required
-          autocomplete="off"
-          placeholder="seu.usuario"
-        />
-
-        <.input
-          field={f[:musical_styles]}
-          type="textarea"
-          label="Estilos que você toca"
-          rows="2"
-          required
-        />
-
-        <.input
-          field={f[:about]}
-          type="textarea"
-          label="Sobre você (+ link do set, se tiver)"
-          rows="3"
-          required
-        />
-
-        <.button type="submit" variant={:primary} class="btn--block">Enviar inscrição</.button>
-      </.form>
     </section>
   </div>
 </Layouts.app>

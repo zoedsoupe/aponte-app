@@ -1,26 +1,48 @@
-<Layouts.app flash={@flash}>
-  <section class="stack-6">
-    <header class="stack-3">
-      <img src={~p"/images/aponte-logo.jpg"} alt="Aponte" class="aponte-logo aponte-logo--hero" />
-      <p class="text-base text-dim">o que tá rolando em Campos</p>
-    </header>
+<Layouts.app flash={@flash} site_header={false}>
+  <div class="shell-page stack-6">
+    <section class="shell-hero">
+      <h1 class="shell-wordmark">Aponte</h1>
+      <.hand_motif class="hand-print--home" />
+      <p class="shell-tagline text-lg">a ponte entre quem faz rolê e quem quer colar</p>
+    </section>
 
-    <ul :if={@orgs != []} class="stack-3">
-      <li :for={{org, edition} <- @orgs}>
-        <a
-          href={~p"/#{org.slug}"}
-          class="card card--link stack-1"
-          style={"--accent: #{org.accent_color}"}
-        >
-          <span class="text-lg">{org.name}</span>
-          <span :if={edition} class="text-xs text-dim text-mono">
-            {edition.name} - {edition_day(edition.starts_at)} {edition_time(edition.starts_at)}
-          </span>
-          <span :if={is_nil(edition)} class="text-xs text-dim">edição em breve</span>
-        </a>
-      </li>
-    </ul>
+    <section class="stack-3">
+      <h2 class="section-label">O que tá rolando em Campos</h2>
+      <ul :if={@orgs != []} class="home-orgs">
+        <li :for={{org, edition} <- @orgs}>
+          <a href={~p"/#{org.slug}"} class="edition-card" style={"--accent: #{org.accent_color}"}>
+            <div class="edition-card-logo">
+              <img :if={org_logo(org)} src={org_logo(org)} alt="" />
+              <span :if={is_nil(org_logo(org))} aria-hidden="true">{org_initial(org)}</span>
+            </div>
+            <div class="edition-card-main">
+              <p :if={edition} class="date-duo edition-card-date">
+                <span>{edition_time(edition.starts_at)}</span>
+                <span>{edition_day(edition.starts_at)}</span>
+              </p>
+              <span :if={edition} class="edition-card-name">{edition.name}</span>
+              <span :if={edition} class="edition-card-org">{org.name} · {edition.venue}</span>
+              <span :if={is_nil(edition)} class="edition-card-name">{org.name}</span>
+              <span :if={is_nil(edition)} class="edition-card-org">edição em breve</span>
+            </div>
+          </a>
+        </li>
+      </ul>
 
-    <p :if={@orgs == []} class="text-sm text-dim">Nenhum rolê no ar ainda. Volta logo.</p>
-  </section>
+      <div :if={@orgs == []} class="stack-2">
+        <p class="text-sm text-dim">Nenhum rolê no ar ainda. Volta logo.</p>
+        <p class="text-sm text-dim">
+          Enquanto isso, cola no Instagram:
+          <a href="https://instagram.com/aponteprodutoras" target="_blank" rel="noopener">
+            @aponteprodutoras
+          </a>
+        </p>
+      </div>
+
+      <p :if={@orgs != []} class="shell-footnote">
+        cada rolê tem sua página e sua chave pix.
+        <a href={~p"/sobre"}>qual é a da Aponte? -&gt;</a>
+      </p>
+    </section>
+  </div>
 </Layouts.app>

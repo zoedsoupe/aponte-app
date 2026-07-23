@@ -21,15 +21,20 @@ defmodule AponteWeb.Admin.EditionFormLive do
   def handle_event("validate", %{"edition" => params}, socket) do
     changeset =
       socket.assigns.edition
-      |> Editions.change_edition(to_utc(params))
+      |> Editions.change_edition(munge_params(params))
       |> Map.put(:action, :validate)
 
-    {:noreply, assign(socket, form: to_form(changeset), starts_at_local: params["starts_at"])}
+    {:noreply,
+     assign(socket,
+       form: to_form(changeset),
+       starts_at_local: params["starts_at"],
+       price_inputs: price_inputs(params)
+     )}
   end
 
   def handle_event("save", %{"edition" => params}, %{assigns: %{live_action: :new}} = socket) do
     org = socket.assigns.org
-    params = params |> to_utc() |> put_logo(socket, params["number"])
+    params = params |> munge_params() |> put_logo(socket, params["number"])
 
     case Editions.create_edition(org, params) do
       {:ok, edition} ->
@@ -48,7 +53,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
 
   def handle_event("save", %{"edition" => params}, socket) do
     edition = socket.assigns.edition
-    params = params |> to_utc() |> put_logo(socket, to_string(edition.number))
+    params = params |> munge_params() |> put_logo(socket, to_string(edition.number))
 
     case Editions.update_edition(edition, params) do
       {:ok, _edition} ->
@@ -130,6 +135,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
       edition: edition,
       page_title: edition.name || "Nova edição",
       starts_at_local: starts_at_local(edition.starts_at),
+      price_inputs: %{},
       form: to_form(Editions.change_edition(edition))
     )
     |> assign_featured_merch(edition)
@@ -147,7 +153,10 @@ defmodule AponteWeb.Admin.EditionFormLive do
     )
   end
 
-  # The datetime-local input is BRT; storage is UTC. Convert on the way in.
+  # The datetime-local input is BRT; storage is UTC. Price inputs are reais
+  # ("35", "35,00", "35.00"); storage is cents. Convert both on the way in.
+  defp munge_params(params), do: params |> to_utc() |> prices_to_cents()
+
   defp to_utc(%{"starts_at" => v} = params) when is_binary(v) and v != "" do
     case parse_local(v) do
       {:ok, utc} -> Map.put(params, "starts_at", DateTime.to_iso8601(utc))
@@ -156,6 +165,77 @@ defmodule AponteWeb.Admin.EditionFormLive do
   end
 
   defp to_utc(params), do: params
+
+  # Preço digitado em reais vira centavos dentro de cada lote. Valor inválido
+  # passa cru — o changeset marca o erro no campo.
+  defp prices_to_cents(%{"ticket_types" => types} = params) when is_map(types) do
+    Map.put(params, "ticket_types", Map.new(types, fn {k, v} -> {k, price_to_cents(v)} end))
+  end
+
+  defp prices_to_cents(params), do: params
+
+  defp price_to_cents(%{"price_cents" => raw} = type) when is_binary(raw) do
+    case parse_price(raw) do
+      {:ok, cents} -> Map.put(type, "price_cents", cents)
+      :error -> type
+    end
+  end
+
+  defp price_to_cents(type), do: type
+
+  # Raw digitado por lote (index inteiro, como lot.index), pro input continuar
+  # mostrando o que o admin escreveu em vez dos centavos normalizados.
+  defp price_inputs(%{"ticket_types" => types}) when is_map(types) do
+    Map.new(types, fn {k, v} ->
+      case Integer.parse(k) do
+        {index, ""} -> {index, Map.get(v, "price_cents")}
+        _ -> {k, Map.get(v, "price_cents")}
+      end
+    end)
+  end
+
+  defp price_inputs(_params), do: %{}
+
+  # Aceita "35", "35,00" ou "35.00" e devolve centavos.
+  defp parse_price(raw) do
+    s = raw |> String.trim() |> String.replace(~r/^R\$\s*/i, "") |> String.trim()
+
+    case Regex.run(~r/^(\d+)(?:[.,](\d{1,2}))?$/, s) do
+      [_, reais] ->
+        {:ok, String.to_integer(reais) * 100}
+
+      [_, reais, cents] ->
+        cents = cents |> String.pad_trailing(2, "0") |> String.to_integer()
+        {:ok, String.to_integer(reais) * 100 + cents}
+
+      _ ->
+        :error
+    end
+  end
+
+  defp price_display(inputs, lot) do
+    case Map.fetch(inputs, lot.index) do
+      {:ok, raw} when is_binary(raw) -> raw
+      _ -> format_price(lot[:price_cents].value)
+    end
+  end
+
+  defp price_preview(inputs, lot) do
+    with {:ok, raw} when is_binary(raw) <- Map.fetch(inputs, lot.index),
+         {:ok, cents} <- parse_price(raw) do
+      money(cents)
+    else
+      _ -> nil
+    end
+  end
+
+  defp format_price(cents) when is_integer(cents) do
+    reais = div(cents, 100)
+    rest = cents |> rem(100) |> abs() |> Integer.to_string() |> String.pad_leading(2, "0")
+    "#{reais},#{rest}"
+  end
+
+  defp format_price(value), do: to_string(value || "")
 
   defp parse_local(v) do
     iso = if String.length(v) == 16, do: v <> ":00", else: v
@@ -237,7 +317,13 @@ defmodule AponteWeb.Admin.EditionFormLive do
         >
           <.form_section title="Edição">
             <div class="field-row">
-              <.input field={@form[:number]} type="number" label="Número" required inputmode="numeric" />
+              <.input
+                field={@form[:number]}
+                type="number"
+                label="Número"
+                required
+                inputmode="numeric"
+              />
               <.input field={@form[:name]} label={"Nome (vazio = “#{@org.name} #N”)"} />
             </div>
 
@@ -330,7 +416,10 @@ defmodule AponteWeb.Admin.EditionFormLive do
           </.form_section>
 
           <%!-- lotes inline (cast_assoc + sort/drop) --%>
-          <.form_section title="Lotes" hint="Cada lote é um tipo de ingresso com preço e capacidade próprios.">
+          <.form_section
+            title="Lotes"
+            hint="Cada lote é um tipo de ingresso com preço e capacidade próprios."
+          >
             <fieldset class="stack-3">
               <legend class="sr-only">Lotes</legend>
 
@@ -346,13 +435,19 @@ defmodule AponteWeb.Admin.EditionFormLive do
                     rows="2"
                   />
                   <div class="field-row">
-                    <.input
-                      field={lot[:price_cents]}
-                      type="number"
-                      label="Preço (centavos)"
-                      required
-                      inputmode="numeric"
-                    />
+                    <div class="field-stack stack-1">
+                      <.input
+                        field={lot[:price_cents]}
+                        type="text"
+                        label="Preço (R$)"
+                        value={price_display(@price_inputs, lot)}
+                        required
+                        inputmode="decimal"
+                      />
+                      <p :if={price_preview(@price_inputs, lot)} class="text-xs text-dim">
+                        = {price_preview(@price_inputs, lot)}
+                      </p>
+                    </div>
                     <.input
                       field={lot[:capacity]}
                       type="number"

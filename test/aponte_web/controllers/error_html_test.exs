@@ -17,6 +17,17 @@ defmodule AponteWeb.ErrorHTMLTest do
     assert body =~ "Voltar pro início"
   end
 
+  test "404.html with an org in assigns links back to the org vitrine" do
+    body =
+      "404.html"
+      |> ErrorHTML.render(%{__changed__: nil, org: %{slug: "sesh", name: "SESH"}})
+      |> Phoenix.HTML.Safe.to_iodata()
+      |> IO.iodata_to_binary()
+
+    assert body =~ "Voltar pra SESH"
+    assert body =~ ~s(href="/sesh")
+  end
+
   test "renders 401.html with custom page" do
     body = render_str("401.html")
     assert body =~ "401"

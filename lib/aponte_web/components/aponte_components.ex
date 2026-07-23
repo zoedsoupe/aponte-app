@@ -10,17 +10,21 @@ defmodule AponteWeb.AponteComponents do
   use AponteWeb, :verified_routes
 
   @doc """
-  Bottom tab bar for org pages (mobile chrome; hidden on desktop by CSS).
-  Tabs: Inicio (vitrine), Sobre, Galeria, Loja, Ingressos (meus-ingressos).
-  The active tab is derived server-side from `current_path`
-  (conn.request_path).
+  Bottom tab bar for org pages (mobile chrome; docked top bar on desktop).
+  Tabs: Inicio (vitrine), Galeria, Loja, Pedidos (meus-ingressos), Sobre —
+  Sobre trailing. Galeria hides when the org has no gallery images (the count
+  rides on the org map, assigned by Plugs.LoadOrg). The active tab is derived
+  server-side from `current_path` (conn.request_path).
   """
   attr :org, :map, required: true
   attr :current_path, :string, default: nil
 
   def tab_bar(assigns) do
+    assigns = assign(assigns, :show_gallery, Map.get(assigns.org, :gallery_count, 1) > 0)
+
     ~H"""
-    <nav class="tab-bar" aria-label="Navegação da organização">
+    <nav class="tab-bar" aria-label={"Navegação, #{@org.name}"}>
+      <span class="tab-bar-wordmark" aria-hidden="true">{@org.name}</span>
       <.tab_item
         href={~p"/#{@org.slug}"}
         icon={:home}
@@ -28,12 +32,7 @@ defmodule AponteWeb.AponteComponents do
         active={active_tab?(@current_path, ~p"/#{@org.slug}", :exact)}
       />
       <.tab_item
-        href={~p"/#{@org.slug}/sobre"}
-        icon={:info}
-        label="Sobre"
-        active={active_tab?(@current_path, ~p"/#{@org.slug}/sobre", :prefix)}
-      />
-      <.tab_item
+        :if={@show_gallery}
         href={~p"/#{@org.slug}/galeria"}
         icon={:image}
         label="Galeria"
@@ -48,8 +47,18 @@ defmodule AponteWeb.AponteComponents do
       <.tab_item
         href={~p"/#{@org.slug}/meus-ingressos"}
         icon={:ticket}
-        label="Ingressos"
-        active={active_tab?(@current_path, ~p"/#{@org.slug}/meus-ingressos", :prefix)}
+        label="Pedidos"
+        active={
+          active_tab?(@current_path, ~p"/#{@org.slug}/meus-ingressos", :prefix) or
+            active_tab?(@current_path, ~p"/#{@org.slug}/comprar", :prefix) or
+            active_tab?(@current_path, "/#{@org.slug}/compra", :prefix)
+        }
+      />
+      <.tab_item
+        href={~p"/#{@org.slug}/sobre"}
+        icon={:info}
+        label="Sobre"
+        active={active_tab?(@current_path, ~p"/#{@org.slug}/sobre", :prefix)}
       />
     </nav>
     """

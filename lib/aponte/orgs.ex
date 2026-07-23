@@ -92,6 +92,12 @@ defmodule Aponte.Orgs do
     |> Repo.all()
   end
 
+  @doc "How many gallery images the org has (cheap gallery-tab visibility check)."
+  @spec count_images(Ecto.UUID.t()) :: non_neg_integer()
+  def count_images(org_id) do
+    Repo.one(from i in OrgImage, where: i.org_id == ^org_id, select: count(i.id))
+  end
+
   @doc """
   Inserts a gallery image. Re-uploading the same file (same content hash)
   returns `{:error, :duplicate}`. Position defaults to the end of the gallery.

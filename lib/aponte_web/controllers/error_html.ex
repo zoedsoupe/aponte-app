@@ -21,7 +21,15 @@ defmodule AponteWeb.ErrorHTML do
     # Plain merge (not Phoenix.Component.assign/3): this view is also rendered
     # from plugs (LoadOrg, UploadController) with conn.assigns, which has no
     # change-tracking metadata.
-    assigns = Map.merge(assigns, %{code: code, message: message})
+    {back_href, back_label} = back_target(assigns[:org])
+
+    assigns =
+      Map.merge(assigns, %{
+        code: code,
+        message: message,
+        back_href: back_href,
+        back_label: back_label
+      })
 
     ~H"""
     <!DOCTYPE html>
@@ -39,10 +47,15 @@ defmodule AponteWeb.ErrorHTML do
           <img src="/images/aponte-logo.jpg" alt="Aponte" class="aponte-logo aponte-logo--hero" />
           <p class="text-2xl date-duo-time text-mono">{@code}</p>
           <p class="text-base text-muted">{@message}</p>
-          <a href="/" class="btn btn--blob btn--block">Voltar pro início</a>
+          <a href={@back_href} class="btn btn--blob btn--block">{@back_label}</a>
         </main>
       </body>
     </html>
     """
   end
+
+  # Org-scoped 404s (e.g. an order from another org) send the user back to the
+  # org's vitrine; org-less errors keep the Aponte home.
+  defp back_target(%{slug: slug, name: name}), do: {"/#{slug}", "Voltar pra #{name}"}
+  defp back_target(_), do: {"/", "Voltar pro início"}
 end

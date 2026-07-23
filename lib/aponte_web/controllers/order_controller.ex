@@ -39,47 +39,47 @@ defmodule AponteWeb.OrderController do
           {:error, {:sold_out, type_id}} ->
             type = Editions.get_ticket_type!(type_id)
 
-            conn
-            |> put_flash(:error, "Ingressos esgotados para #{type.name}.")
-            |> render_form(reload(edition), changeset(order_params), items_params)
+            render_form(conn, reload(edition), changeset(order_params), items_params,
+              form_error: "Ingressos esgotados para #{type.name}."
+            )
 
           {:error, {:not_on_sale, _id}} ->
-            conn
-            |> put_flash(:error, "Esse lote não está mais à venda.")
-            |> render_form(reload(edition), changeset(order_params), items_params)
+            render_form(conn, reload(edition), changeset(order_params), items_params,
+              form_error: "Esse lote não está mais à venda."
+            )
 
           {:error, :empty_cart} ->
-            conn
-            |> put_flash(:error, "Escolha pelo menos um ingresso.")
-            |> render_form(reload(edition), changeset(order_params), items_params)
+            render_form(conn, reload(edition), changeset(order_params), items_params,
+              form_error: "Escolha pelo menos um ingresso."
+            )
 
           {:error, {:unknown_merch_item, _id}} ->
-            conn
-            |> put_flash(:error, "Produto indisponível.")
-            |> render_form(reload(edition), changeset(order_params), items_params)
+            render_form(conn, reload(edition), changeset(order_params), items_params,
+              form_error: "Produto indisponível."
+            )
 
           {:error, {:merch_unavailable, _id}} ->
-            conn
-            |> put_flash(:error, "Produto indisponível.")
-            |> render_form(reload(edition), changeset(order_params), items_params)
+            render_form(conn, reload(edition), changeset(order_params), items_params,
+              form_error: "Produto indisponível."
+            )
 
           {:error, {:merch_sold_out, _id}} ->
-            conn
-            |> put_flash(:error, "Produto esgotado.")
-            |> render_form(reload(edition), changeset(order_params), items_params)
+            render_form(conn, reload(edition), changeset(order_params), items_params,
+              form_error: "Produto esgotado."
+            )
 
           {:error, {:coupon, reason}} ->
-            conn
-            |> put_flash(:error, coupon_error(reason))
-            |> render_form(reload(edition), changeset(order_params), items_params)
+            render_form(conn, reload(edition), changeset(order_params), items_params,
+              form_error: coupon_error(reason)
+            )
 
           {:error, %Ecto.Changeset{} = cs} ->
             render_form(conn, reload(edition), %{cs | action: :insert}, items_params)
 
           {:error, _} ->
-            conn
-            |> put_flash(:error, "Não foi possível registrar o pedido.")
-            |> render_form(reload(edition), changeset(order_params), items_params)
+            render_form(conn, reload(edition), changeset(order_params), items_params,
+              form_error: "Não foi possível registrar o pedido."
+            )
         end
 
       _ ->
@@ -105,8 +105,9 @@ defmodule AponteWeb.OrderController do
         org: org,
         order: order,
         edition: edition,
-        pix: pix_payload(order),
+        pix: pix_payload(order, org),
         earned: Coupons.earned_for_order(order.id),
+        can_rebuy: can_rebuy?(edition),
         page_title: "Ingresso"
       )
     else
@@ -144,7 +145,7 @@ defmodule AponteWeb.OrderController do
 
   defp changeset(order_params), do: Order.changeset(%Order{}, order_params)
 
-  defp render_form(conn, edition, changeset, items) do
+  defp render_form(conn, edition, changeset, items, opts \\ []) do
     conn
     |> Plugs.Accent.assign_edition_accent(edition)
     |> render(:new,
@@ -154,9 +155,17 @@ defmodule AponteWeb.OrderController do
       lots: lots_on_sale(edition),
       merch: Merch.list_featured_items(edition.id),
       items: normalize_items_param(items),
+      # Form errors render inline in the template (a layout toast on top of the
+      # form duplicated the message); flash stays for redirects only.
+      form_error: Keyword.get(opts, :form_error),
       page_title: "Comprar — #{edition.name}"
     )
   end
+
+  # "Comprar de novo" on cancelled/expired orders only makes sense while the
+  # edition still has lots on sale.
+  defp can_rebuy?(%Edition{} = edition), do: lots_on_sale(edition) != []
+  defp can_rebuy?(_), do: false
 
   defp lots_on_sale(%Edition{ticket_types: types}) do
     now = Clock.now_utc()
@@ -208,20 +217,28 @@ defmodule AponteWeb.OrderController do
 
   defp coupon_error(_), do: "Cupom inválido."
 
-  defp pix_payload(%Order{status: :pending} = order) do
-    cfg = Application.fetch_env!(:aponte, :pix)
+  # PIX do checkout cobra na chave da org (mesma fonte do balcão); merchant_name
+  # é o nome da org - Pix.build sanitiza. merchant_city segue o default global
+  # do env. Sem chave cadastrada, não gera EMV/QR: a página aponta o comprador
+  # pro Instagram da org em vez de mostrar um QR pra lugar nenhum.
+  defp pix_payload(%Order{status: :pending} = order, org) do
+    if org.pix_key in [nil, ""] do
+      nil
+    else
+      cfg = Application.fetch_env!(:aponte, :pix)
 
-    emv =
-      Pix.build(
-        pix_key: order.pix_key || cfg[:key],
-        amount_cents: order.total_cents,
-        merchant_name: cfg[:merchant_name],
-        merchant_city: cfg[:merchant_city],
-        txid: order.id |> String.replace("-", "") |> String.slice(0, 25)
-      )
+      emv =
+        Pix.build(
+          pix_key: org.pix_key,
+          amount_cents: order.total_cents,
+          merchant_name: org.name,
+          merchant_city: cfg[:merchant_city],
+          txid: order.id |> String.replace("-", "") |> String.slice(0, 25)
+        )
 
-    %{emv: emv, svg: Pix.to_svg(emv)}
+      %{emv: emv, svg: Pix.to_svg(emv)}
+    end
   end
 
-  defp pix_payload(_), do: nil
+  defp pix_payload(_, _), do: nil
 end

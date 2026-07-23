@@ -1944,12 +1944,6 @@ body:has(.aponte-logo--hero) .brand {
   border: 1px solid var(--border);
 }
 
-/* whole-card link (Aponte home org cards) */
-.card--link {
-  display: block;
-  color: var(--fg);
-}
-
 /* ════════════════════════════════════════════════════════════════════════
    Aponte design system — chrome (tab bar, floating CTA) + vitrine.
    Everything derives from --bg/--ink/--accent so the same markup serves the
@@ -2118,6 +2112,189 @@ body:has(.aponte-logo--hero) .brand {
     /* ...and points right, into the content column, on desktop */
     --hand-aim: 100deg;
     width: 12rem;
+  }
+}
+
+/* ── Aponte shell pages (/ e /sobre): a casa da marca ──────────────────────
+   Org pages carry zero Aponte branding; aqui a marca fala. Hero em grid de
+   duas colunas: título à esquerda, hand print à direita NA MESMA LINHA do
+   título (nunca por cima de texto); tagline e ações ocupam a largura toda
+   embaixo. Sem navbar: o hero carrega a marca (ver Layouts.app site_header). */
+.shell-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--s-4);
+  row-gap: var(--s-3);
+}
+
+.shell-hero .hand-print {
+  grid-column: 2;
+  grid-row: 1;
+  width: 6rem;
+  --hand-tilt: 3deg;
+}
+
+/* home: a mão mira a tagline e o botão, embaixo à esquerda */
+.hand-print--home {
+  --hand-aim: 238deg;
+}
+
+/* sobre: a mão aponta pra história logo abaixo ("a gente aponta"). A imagem
+   mira ~34° a oeste do norte; a rotação final é aim - 34°. */
+.hand-print--sobre {
+  --hand-aim: 216deg;
+}
+
+/* sobre: mão menor que a da home, o destaque é o nome da produtora */
+.shell-hero .hand-print--sobre {
+  width: 6rem;
+}
+
+.shell-tagline,
+.shell-hero-cta {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+/* a tagline é conteúdo (a promessa da plataforma), não metadado: cor cheia */
+.shell-tagline {
+  color: var(--fg);
+}
+
+/* /sobre: o título é link de volta pra home (a marca leva pra casa), sem
+   pegar a cor de link global */
+.shell-hero .flyer-title a {
+  color: inherit;
+}
+
+/* wordmark da plataforma: o display cut no maior tamanho do sistema. Uso
+   único (a home da Aponte); a parcimônia do display segue valendo. */
+.shell-wordmark {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 620;
+  font-size: clamp(2.5rem, 11vw, 4.5rem);
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+}
+
+/* ── home: edition cards, o destaque da página ─────────────────────────────
+   Edição primeiro (data/hora no date-duo, nome da edição em seguida), org
+   como linha secundária. A borda segue o --accent inline de cada org. */
+.edition-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-3);
+  height: 100%;
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--accent-soft);
+  border-radius: var(--radius-lg);
+  color: var(--fg);
+  transition: border-color var(--motion, 200ms) ease;
+}
+
+.edition-card:hover,
+.edition-card:focus-visible {
+  border-color: var(--accent);
+  /* bate o global `a:hover { color: --accent }`: o card inteiro é link */
+  color: var(--fg);
+}
+
+/* slot do logo: ocupa a coluna esquerda INTEIRA do card (stretch), com ou sem
+   upload (sem logo entra a inicial da org), então todos os cards guardam a
+   mesma caixa de logo */
+.edition-card-logo {
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--fg);
+  font-weight: 700;
+  font-size: var(--text-xl);
+  overflow: hidden;
+}
+
+.edition-card-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* coluna direita do card: data, nome da edição e org+local empilhados */
+.edition-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.edition-card .date-duo {
+  font-size: var(--text-xl);
+}
+
+.edition-card-name {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+/* org + local: linha própria e legível, não metadado apagado. Presa no rodapé
+   do card (margin auto) pra alinhar os cards da mesma linha do grid. */
+.edition-card-org {
+  margin-block-start: auto;
+  color: var(--fg-muted);
+  font-size: var(--text-base);
+}
+
+/* auto-fill com largura mínima generosa: no mobile cada card ocupa a linha
+   toda (empilha); telas maiores encaixam 2 por linha sem media queries
+   nem casos especiais por card; os itens esticam (stretch) por linha */
+.home-orgs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
+  gap: var(--s-3);
+}
+
+/* rodapé quieto da home: aponta pro /sobre sem disputar com os cards */
+.shell-footnote {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+
+.sobre-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+@media (min-width: 960px) {
+  body:has(.shell-page) .shell {
+    max-width: 60rem;
+  }
+
+  .shell-hero {
+    column-gap: var(--s-7);
+  }
+
+  .shell-hero .hand-print {
+    width: 9rem;
+    --hand-tilt: 2deg;
+  }
+
+  .shell-hero .hand-print--sobre {
+    /* o `--hand-aim: 100deg` genérico acima perde pra regra base do sobre
+       (mesma especificidade, depois no arquivo): aqui a mira desktop fica
+       explícita, apontando pra coluna da história alinhada à esquerda */
+    --hand-aim: 224deg;
+    width: 8rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  body:has(.shell-page) .shell {
+    max-width: 66rem;
   }
 }
 
@@ -2358,5 +2535,114 @@ a.inset-row:hover {
 @media (min-width: 1280px) {
   body:has(.vitrine) .shell {
     max-width: 68rem;
+  }
+}
+/* ── admin UX fixes (product review 2026-07) ─────────────────────────────── */
+
+/* door name search (S1): big touch rows, one "Validar" target per match */
+.door-matches {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.door-match {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: 3.5rem;
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.door-match-name {
+  font-size: var(--text-base);
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* price input + "= R$ 35,00" preview wrapper (S3): flexes like .field-row>.field */
+.field-row>.field-stack {
+  flex: 1 1 7rem;
+  min-width: 0;
+}
+
+/* ── purchase-flow UX fixes (product review 2026-07) ─────────────────────── */
+
+/* identity group ("Como a gente te acha"): label span behaves like a field label */
+.field-group>.field-label {
+  display: block;
+}
+
+/* form-gate blocker hint: sits above the submit inside the sticky bar */
+.gate-hint {
+  text-align: center;
+}
+
+/* PIX steps on /compra/:id: ordered list without browser chrome */
+.pix-steps {
+  list-style: none;
+}
+
+.pix-step-label {
+  display: block;
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+/* ── org-public UX fixes (product review 2026-07) ──────────────────────────
+   Appended section: org wordmark fallback, empty-vitrine gallery tease,
+   desktop tab-bar wordmark. Does not touch the selectors above. */
+
+/* org wordmark: last-resort identity on org pages with no logo art — the org
+   name in the Archivo Expanded display cut (chain: edition logo -> org logo
+   -> wordmark; the SESH vector only ever renders for SESH itself) */
+.org-wordmark {
+  font-family: var(--font-display);
+  font-stretch: 122%;
+  font-weight: 600;
+  font-size: var(--text-2xl);
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+}
+
+/* empty vitrine: row of gallery thumbs teasing /galeria */
+.vitrine-gallery-tease {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.vitrine-gallery-tease img {
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+/* desktop-only org wordmark at the left end of the docked tab bar; absolute
+   so the centered tabs keep their position */
+.tab-bar-wordmark {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .tab-bar-wordmark {
+    display: block;
+    position: absolute;
+    left: var(--s-4);
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-display);
+    font-stretch: 122%;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    color: var(--fg);
   }
 }

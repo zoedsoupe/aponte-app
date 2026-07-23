@@ -49,7 +49,7 @@ defmodule AponteWeb.Admin.ScannerLiveTest do
   test "manual unknown code is not found", %{conn: conn, auth: auth} do
     {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
 
-    html = view |> form("#scanner form", %{code: "ZZZZZZZZ"}) |> render_submit()
+    html = view |> form("#manual-code-form", %{code: "ZZZZZZZZ"}) |> render_submit()
     assert html =~ "scan-result--err"
     assert html =~ "Não encontrado"
   end
@@ -62,7 +62,31 @@ defmodule AponteWeb.Admin.ScannerLiveTest do
     {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
 
     noisy = String.downcase(String.slice(t.code, 0, 4) <> "-" <> String.slice(t.code, 4, 4))
-    html = view |> form("#scanner form", %{code: noisy}) |> render_submit()
+    html = view |> form("#manual-code-form", %{code: noisy}) |> render_submit()
     assert html =~ "scan-result--ok"
+  end
+
+  test "name search lists confirmed buyers and Validar checks them in", %{
+    conn: conn,
+    auth: auth
+  } do
+    {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
+
+    html = view |> element("#name-search-form") |> render_change(%{"name" => "fulano"})
+    assert html =~ "Fulano"
+    assert html =~ "Validar"
+
+    html = view |> element(".door-match button", "Validar") |> render_click()
+    assert html =~ "scan-result--ok"
+    assert html =~ "validadas 1 / vendidas 1"
+    # validated ticket drops out of the name results
+    refute html =~ "door-match-name"
+  end
+
+  test "name search with no match says so", %{conn: conn, auth: auth} do
+    {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
+
+    html = view |> element("#name-search-form") |> render_change(%{"name" => "ninguém"})
+    assert html =~ "Nenhum ingresso confirmado com esse nome."
   end
 end

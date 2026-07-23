@@ -6,7 +6,7 @@ defmodule AponteWeb.Admin.OrgGalleryLive do
   Upload flow (spec section 7), in-request inside `consume_uploaded_entries`:
   content hash -> soft quota check (flash warning when over, still inserts) ->
   configured `Images.Processor` -> `Orgs.add_image/2` (same file twice =
-  `{:error, :duplicate}`, flash "imagem ja enviada"). Reorder is up/down
+  `{:error, :duplicate}`, flash "imagem já enviada"). Reorder is up/down
   buttons emitting the full id list to `Orgs.reorder_images/2` (no drag).
   """
   use AponteWeb, :live_view
@@ -126,7 +126,7 @@ defmodule AponteWeb.Admin.OrgGalleryLive do
     socket
     |> maybe_flash(oks > 0, :info, "#{oks} imagem(ns) adicionada(s).")
     |> maybe_flash(over?, :info, "Atenção: a org passou da quota de armazenamento.")
-    |> maybe_flash(dups > 0, :error, "imagem ja enviada")
+    |> maybe_flash(dups > 0, :error, "imagem já enviada")
     |> maybe_flash(errs > 0, :error, "#{errs} imagem(ns) falharam (arquivo inválido?).")
   end
 

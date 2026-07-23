@@ -20,14 +20,23 @@ defmodule AponteWeb.Admin.ProductFormLive do
 
   @impl true
   def handle_event("validate", %{"item" => params}, socket) do
-    changeset = Merch.change_item(socket.assigns.item, params) |> Map.put(:action, :validate)
-    {:noreply, assign(socket, form: to_form(changeset))}
+    changeset =
+      socket.assigns.item
+      |> Merch.change_item(munge_params(params))
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     assign(socket,
+       form: to_form(changeset),
+       price_input: params["price_cents"],
+       price_preview: price_preview(params["price_cents"])
+     )}
   end
 
   def handle_event("save", %{"item" => params}, %{assigns: %{live_action: :new}} = socket) do
     org = socket.assigns.org
 
-    case Merch.create_item(org, put_image(params, socket)) do
+    case Merch.create_item(org, params |> munge_params() |> put_image(socket)) do
       {:ok, _item} ->
         {:noreply,
          socket
@@ -43,7 +52,7 @@ defmodule AponteWeb.Admin.ProductFormLive do
   end
 
   def handle_event("save", %{"item" => params}, socket) do
-    case Merch.update_item(socket.assigns.item, put_image(params, socket)) do
+    case Merch.update_item(socket.assigns.item, params |> munge_params() |> put_image(socket)) do
       {:ok, _item} ->
         {:noreply,
          socket
@@ -111,6 +120,8 @@ defmodule AponteWeb.Admin.ProductFormLive do
     assign(socket,
       item: item,
       page_title: item.name || "Novo produto",
+      price_input: nil,
+      price_preview: nil,
       form: to_form(Merch.change_item(item))
     )
   end
@@ -121,6 +132,54 @@ defmodule AponteWeb.Admin.ProductFormLive do
       [filename] -> Map.put(params, "image_path", filename)
     end
   end
+
+  # Preço digitado em reais ("35", "35,00", "35.00"); storage é centavos.
+  # Valor inválido passa cru — o changeset marca o erro no campo.
+  defp munge_params(%{"price_cents" => raw} = params) when is_binary(raw) do
+    case parse_price(raw) do
+      {:ok, cents} -> Map.put(params, "price_cents", cents)
+      :error -> params
+    end
+  end
+
+  defp munge_params(params), do: params
+
+  # Aceita "35", "35,00" ou "35.00" e devolve centavos.
+  defp parse_price(raw) do
+    s = raw |> String.trim() |> String.replace(~r/^R\$\s*/i, "") |> String.trim()
+
+    case Regex.run(~r/^(\d+)(?:[.,](\d{1,2}))?$/, s) do
+      [_, reais] ->
+        {:ok, String.to_integer(reais) * 100}
+
+      [_, reais, cents] ->
+        cents = cents |> String.pad_trailing(2, "0") |> String.to_integer()
+        {:ok, String.to_integer(reais) * 100 + cents}
+
+      _ ->
+        :error
+    end
+  end
+
+  defp price_preview(raw) when is_binary(raw) do
+    case parse_price(raw) do
+      {:ok, cents} -> money(cents)
+      :error -> nil
+    end
+  end
+
+  defp price_preview(_), do: nil
+
+  # Input mostra o raw digitado; sem raw (mount/reset) formata os centavos.
+  defp price_value(raw, _value) when is_binary(raw), do: raw
+
+  defp price_value(_raw, cents) when is_integer(cents) do
+    reais = div(cents, 100)
+    rest = cents |> rem(100) |> abs() |> Integer.to_string() |> String.pad_leading(2, "0")
+    "#{reais},#{rest}"
+  end
+
+  defp price_value(_raw, value), do: to_string(value || "")
 
   defp copy_image(%{path: tmp}, %{client_name: name}) do
     Merch.ensure_merch_dir!()
@@ -142,7 +201,13 @@ defmodule AponteWeb.Admin.ProductFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Produtos" back_to={~p"/admin/#{@org.slug}/produtos"}>
+    <Layouts.admin
+      flash={@flash}
+      org={@org}
+      current_path={assigns[:admin_path]}
+      back="Produtos"
+      back_to={~p"/admin/#{@org.slug}/produtos"}
+    >
       <section class="stack-5">
         <.admin_header
           title={if @live_action == :new, do: "Novo produto", else: @item.name}
@@ -173,13 +238,17 @@ defmodule AponteWeb.Admin.ProductFormLive do
             hint="Balcão sem controle de estoque vende livre (deixe desmarcado). Loja sempre controla."
           >
             <div class="field-row">
-              <.input
-                field={@form[:price_cents]}
-                type="number"
-                label="Preço (centavos)"
-                required
-                inputmode="numeric"
-              />
+              <div class="field-stack stack-1">
+                <.input
+                  field={@form[:price_cents]}
+                  type="text"
+                  label="Preço (R$)"
+                  value={price_value(@price_input, @form[:price_cents].value)}
+                  required
+                  inputmode="decimal"
+                />
+                <p :if={@price_preview} class="text-xs text-dim">= {@price_preview}</p>
+              </div>
               <.input field={@form[:stock]} type="number" label="Estoque total" inputmode="numeric" />
               <.input field={@form[:position]} type="number" label="Ordem" inputmode="numeric" />
             </div>

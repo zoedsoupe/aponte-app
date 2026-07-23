@@ -119,6 +119,9 @@ defmodule AponteWeb.Router do
     pipe_through [:browser, :load_org]
 
     get "/", OrgController, :show
+    # Per-org PWA manifest — a literal sibling of /sobre and /tocar inside the
+    # org scope; the root static manifest stays for the Aponte shell.
+    get "/manifest.webmanifest", OrgController, :manifest
     get "/sobre", OrgController, :about
     get "/galeria", OrgController, :gallery
     get "/comprar", OrderController, :new

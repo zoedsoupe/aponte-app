@@ -1,9 +1,7 @@
 <Layouts.app flash={@flash} org={@org} current_path={@conn.request_path}>
   <div class="vitrine">
     <section :if={@edition} class="vitrine-edition">
-      <%!-- fallback: org logo (perfil) when the edition has none; the SESH
-           vector is the last resort for orgs without either. --%>
-      <.sesh_logo src={edition_logo(@edition) || logo_url(@org)} class="vitrine-edition-logo" />
+      <.org_logo org={@org} edition={@edition} class="vitrine-edition-logo" />
 
       <div class="vitrine-edition-body stack-4">
         <div class="stack-2">
@@ -28,7 +26,7 @@
 
         <% lineup = lineup_lines(@edition.lineup) %>
         <section :if={lineup != []} class="stack-1">
-          <h2 class="section-label">Descrição</h2>
+          <h2 class="section-label">Quem toca</h2>
           <ul class="lineup stack-1">
             <li :for={name <- lineup} class="text-base">{name}</li>
           </ul>
@@ -56,12 +54,33 @@
     </section>
 
     <section :if={is_nil(@edition)} class="vitrine-edition">
-      <.sesh_logo src={logo_url(@org)} class="vitrine-edition-logo" />
+      <.org_logo org={@org} class="vitrine-edition-logo" />
       <div class="vitrine-edition-body stack-4">
         <h1 class="sr-only">{@org.name}</h1>
         <p class="text-base text-dim">Próxima edição em breve.</p>
+
+        <%!-- empty vitrine: tease the gallery (thumbs link to /galeria) and
+             the org's instagram; the avisos CTA stays the primary action --%>
+        <a
+          :if={@gallery_tease != []}
+          href={~p"/#{@org.slug}/galeria"}
+          class="vitrine-gallery-tease"
+          aria-label={"Galeria de #{@org.name}"}
+        >
+          <img :for={img <- @gallery_tease} src={image_url(@org, img.thumb_path)} alt="" />
+        </a>
+
         <a href={~p"/#{@org.slug}/sobre" <> "#avisos"} class="btn btn--blob btn--block">
           Quero ser avisade
+        </a>
+        <a
+          :if={@org.instagram}
+          href={AponteWeb.Instagram.profile_url(@org.instagram)}
+          target="_blank"
+          rel="noopener"
+          class="text-sm"
+        >
+          {instagram_handle(@org.instagram)}
         </a>
       </div>
     </section>

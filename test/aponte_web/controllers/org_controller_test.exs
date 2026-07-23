@@ -18,6 +18,7 @@ defmodule AponteWeb.OrgControllerTest do
     assert html =~ "--ink: #49422F"
     assert html =~ "--accent: #F07BC0"
     assert html =~ "color-scheme: light"
+    assert html =~ ~s(name="theme-color" content="#FEF8DA")
   end
 
   test "custom org bg/fg override the platform defaults", %{conn: conn} do
@@ -27,6 +28,7 @@ defmodule AponteWeb.OrgControllerTest do
     assert html =~ "--bg: #05070A"
     assert html =~ "--ink: #F3F3F3"
     assert html =~ "color-scheme: dark"
+    assert html =~ ~s(name="theme-color" content="#05070A")
   end
 
   describe "org chrome" do
@@ -38,23 +40,48 @@ defmodule AponteWeb.OrgControllerTest do
       end
     end
 
-    test "tab bar has 5 tabs with the org section hrefs", %{conn: conn} do
+    test "tab bar has the org section tabs, Sobre trailing", %{conn: conn} do
       html = conn |> get("/sesh/") |> html_response(200)
 
       assert html =~ ~s(class="tab-bar")
+      assert html =~ ~s(aria-label="Navegação, SESH")
 
-      for href <- ["/sesh", "/sesh/sobre", "/sesh/galeria", "/sesh/loja", "/sesh/meus-ingressos"] do
+      for href <- ["/sesh", "/sesh/loja", "/sesh/meus-ingressos", "/sesh/sobre"] do
         assert html =~ ~s(href="#{href}"), "tab bar missing #{href}"
       end
+
+      assert html =~ "Pedidos"
+      assert html =~ "tab-bar-wordmark"
     end
 
-    test "org pages have no top navbar; the Aponte shell keeps its own", %{conn: conn} do
+    test "Galeria tab hides when the org has no gallery images", %{conn: conn} do
+      html = conn |> get("/sesh/") |> html_response(200)
+      refute html =~ ~s(href="/sesh/galeria")
+    end
+
+    test "Galeria tab shows when the org has gallery images", %{conn: conn} do
+      {:ok, org} = Aponte.Orgs.get_org_by_slug("sesh")
+
+      {:ok, _img} =
+        Aponte.Orgs.add_image(org, %{
+          path: "web/abc.webp",
+          thumb_path: "thumbs/abc.webp",
+          content_hash: "abc",
+          byte_size: 1234
+        })
+
+      html = conn |> get("/sesh/") |> html_response(200)
+      assert html =~ ~s(href="/sesh/galeria")
+    end
+
+    test "org pages have no top navbar; the Aponte brand pages drop it too", %{conn: conn} do
       for path <- ["/sesh/", "/sesh/sobre", "/sesh/galeria", "/sesh/loja", "/sesh/meus-ingressos"] do
         refute conn |> get(path) |> html_response(200) =~ "site-header",
                "#{path} must not render the site header"
       end
 
-      assert conn |> get("/") |> html_response(200) =~ "site-header"
+      # the shell hero carries the brand; the nav is redundant with the page actions
+      refute conn |> get("/") |> html_response(200) =~ "site-header"
     end
   end
 
@@ -79,6 +106,13 @@ defmodule AponteWeb.OrgControllerTest do
       assert html =~ "Festa comunitária."
       assert html =~ "@coletivo.sesh"
       assert html =~ "YouTube"
+    end
+
+    test "empty about copy names the org", %{conn: conn} do
+      org_fixture(%{slug: "arena", name: "Arena"})
+
+      html = conn |> get("/arena/sobre") |> html_response(200)
+      assert html =~ "Arena ainda não escreveu sobre si."
     end
 
     test "renders the avisos section with the org-scoped push endpoints", %{conn: conn} do
@@ -135,11 +169,19 @@ defmodule AponteWeb.OrgControllerTest do
         edition_fixture(%{
           org_id: org.id,
           name: "SESH DO FUTURO",
-          status: :draft,
+          status: :published,
           starts_at: DateTime.add(DateTime.utc_now(), 30 * 86_400) |> DateTime.truncate(:second)
         })
 
-      %{org: org, past: past, upcoming: upcoming}
+      draft =
+        edition_fixture(%{
+          org_id: org.id,
+          name: "SESH RASCUNHO",
+          status: :draft,
+          starts_at: DateTime.add(DateTime.utc_now(), 60 * 86_400) |> DateTime.truncate(:second)
+        })
+
+      %{org: org, past: past, upcoming: upcoming, draft: draft}
     end
 
     test "vitrine renders upcoming and past sections", %{conn: conn} do
@@ -151,12 +193,93 @@ defmodule AponteWeb.OrgControllerTest do
       assert html =~ "SESH DO PASSADO"
     end
 
-    test "non-current rows are plain text (no compra link)", %{conn: conn} do
-      # Setup has only draft/past editions — nothing published, no flyer — so
-      # any /comprar link could only come from the editions list.
+    test "draft editions never leak to the vitrine", %{conn: conn} do
+      html = conn |> get("/sesh/") |> html_response(200)
+      refute html =~ "SESH RASCUNHO"
+    end
+
+    test "only the current edition links to the compra flow", %{conn: conn} do
       html = conn |> get("/sesh/") |> html_response(200)
 
-      refute html =~ ~s(href="/sesh/comprar")
+      assert html =~ ~s(href="/sesh/comprar")
+      # the past row is plain text (no per-edition public pages in v1)
+      assert html =~ ~s(<span class="text-base text-dim">SESH DO PASSADO</span>)
+    end
+  end
+
+  describe "org identity artwork" do
+    test "SESH keeps its own vector when no art is uploaded", %{conn: conn} do
+      html = conn |> get("/sesh/") |> html_response(200)
+      assert html =~ "sesh-logo"
+      refute html =~ "org-wordmark"
+    end
+
+    test "other orgs fall back to the name wordmark, never the SESH vector", %{conn: conn} do
+      org_fixture(%{slug: "arena", name: "Arena"})
+
+      html = conn |> get("/arena/") |> html_response(200)
+      assert html =~ "org-wordmark"
+      assert html =~ "Arena"
+      refute html =~ "sesh-logo"
+    end
+
+    test "uploaded org logo renders with the org name as alt", %{conn: conn} do
+      {:ok, org} = Aponte.Orgs.get_org_by_slug("sesh")
+      {:ok, _org} = Aponte.Orgs.update_org(org, %{logo_path: "web/logo.webp"})
+
+      html = conn |> get("/sesh/") |> html_response(200)
+      assert html =~ ~s(alt="SESH")
+      refute html =~ ~s(alt="SESH LAB.")
+    end
+  end
+
+  describe "empty vitrine" do
+    test "teases the gallery and instagram; the avisos CTA stays primary", %{conn: conn} do
+      {:ok, org} = Aponte.Orgs.get_org_by_slug("sesh")
+      {:ok, org} = Aponte.Orgs.update_org(org, %{instagram: "coletivo.sesh"})
+
+      {:ok, _img} =
+        Aponte.Orgs.add_image(org, %{
+          path: "web/abc.webp",
+          thumb_path: "thumbs/abc.webp",
+          content_hash: "abc",
+          byte_size: 1234
+        })
+
+      html = conn |> get("/sesh/") |> html_response(200)
+      assert html =~ "vitrine-gallery-tease"
+      assert html =~ "/uploads/orgs/#{org.id}/thumbs/abc.webp"
+      assert html =~ "@coletivo.sesh"
+      assert html =~ "Quero ser avisade"
+    end
+
+    test "no tease row without gallery images", %{conn: conn} do
+      html = conn |> get("/sesh/") |> html_response(200)
+      refute html =~ "vitrine-gallery-tease"
+      assert html =~ "Quero ser avisade"
+    end
+  end
+
+  describe "web app manifest" do
+    test "serves a per-org manifest with org name, colors and scope", %{conn: conn} do
+      conn = get(conn, "/sesh/manifest.webmanifest")
+
+      assert %{
+               "name" => "SESH",
+               "start_url" => "/sesh",
+               "scope" => "/sesh",
+               "theme_color" => "#FEF8DA",
+               "background_color" => "#FEF8DA",
+               "icons" => [%{"src" => "data:image/svg+xml," <> _rest}]
+             } = json_response(conn, 200)
+    end
+
+    test "org pages link the per-org manifest; the shell keeps the static one", %{conn: conn} do
+      assert conn |> get("/sesh/") |> html_response(200) =~ ~s(href="/sesh/manifest.webmanifest")
+
+      html = conn |> get("/") |> html_response(200)
+      assert html =~ ~s(href="/manifest.webmanifest")
+      refute html =~ ~s(href="/sesh/manifest.webmanifest")
     end
   end
 

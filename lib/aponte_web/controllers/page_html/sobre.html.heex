@@ -1,14 +1,18 @@
-<Layouts.app flash={@flash}>
-  <section class="stack-6">
-    <header class="stack-2">
-      <img src={~p"/images/aponte-logo.jpg"} alt="Aponte" class="aponte-logo aponte-logo--hero" />
-      <h1 class="flyer-title">Qual é a da Aponte?</h1>
+<Layouts.app flash={@flash} site_header={false}>
+  <div class="shell-page stack-6">
+    <header class="shell-hero">
+      <h1 class="flyer-title"><a href={~p"/"}>Aponte Produtoras</a></h1>
+      <.hand_motif class="hand-print--sobre" />
+      <p class="shell-tagline text-lg">Qual é a da Aponte?</p>
     </header>
 
-    <section class="stack-4">
+    <section class="stack-4 about-text">
       <p class="text-base">
         A Aponte Produtoras é uma ponte. O trocadilho é de propósito: a gente aponta
-        o que tá rolando e liga quem faz rolê a quem quer colar.
+        o que tá rolando e liga quem faz rolê a quem quer colar. A gente mantém este
+        app e produz a SESH e a Arena, que entram aqui como qualquer rolê. E o app é
+        também o agregador da cidade: o ponto principal é cada produtor ter sua
+        página e sua chave pix.
       </p>
       <p class="text-base">
         Somos de Campos dos Goytacazes e cansamos de ouvir que aqui "não tem nada
@@ -27,6 +31,16 @@
       </p>
     </section>
 
-    <a href={~p"/"} class="btn btn--ghost btn--block">Voltar</a>
-  </section>
+    <div class="sobre-actions">
+      <a href={~p"/"} class="btn btn--ghost">← Voltar</a>
+      <a
+        href="https://instagram.com/aponteprodutoras"
+        target="_blank"
+        rel="noopener"
+        class="btn btn--accent"
+      >
+        @aponteprodutoras
+      </a>
+    </div>
+  </div>
 </Layouts.app>

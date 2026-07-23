@@ -47,6 +47,10 @@ defmodule AponteWeb.Layouts do
     default: nil,
     doc: "conn.request_path, for the tab bar active state"
 
+  attr :site_header, :boolean,
+    default: true,
+    doc: "shell top bar; off on the Aponte brand pages, where the hero carries the brand"
+
   slot :inner_block, required: true
 
   def app(assigns) do
@@ -54,8 +58,10 @@ defmodule AponteWeb.Layouts do
     <div class="shell">
       <%!-- org pages carry zero Aponte branding and no top bar: navigation is
            the tab bar (bottom on mobile, slim top bar on desktop). The header
-           belongs to the Aponte shell only. --%>
-      <header :if={is_nil(@org)} class="site-header">
+           belongs to the Aponte shell only — and even there the brand pages
+           (home, /sobre) drop it: the hero carries the brand and the nav is
+           redundant with the page actions. --%>
+      <header :if={is_nil(@org) and @site_header} class="site-header">
         <a href={~p"/"} class="brand row gap-2 align-center">
           <img src={~p"/images/aponte-logo.jpg"} alt="Aponte" class="brand-logo" />
           <span class="brand-name">Aponte</span>
@@ -95,7 +101,10 @@ defmodule AponteWeb.Layouts do
       <%!-- slim in-shell header: breadcrumb + config links. Daily-ops nav is
            the admin tab bar below (same chrome as the public pages). --%>
       <header class="admin-top">
-        <a href={~p"/admin"} class="text-mono text-xs text-dim">
+        <a
+          href={if @org, do: ~p"/admin/#{@org.slug}", else: ~p"/admin"}
+          class="text-mono text-xs text-dim"
+        >
           {if @org, do: "/admin/#{@org.slug}", else: "/admin"}
         </a>
         <nav class="admin-top-nav">
@@ -108,6 +117,7 @@ defmodule AponteWeb.Layouts do
           </span>
           <a :if={@org} href={~p"/admin/#{@org.slug}/perfil"}>Perfil</a>
           <a :if={@org} href={~p"/admin/#{@org.slug}/galeria"}>Galeria</a>
+          <a :if={@org} href={~p"/admin/#{@org.slug}/tocar"}>Tocar</a>
           <a href={if @org, do: ~p"/#{@org.slug}", else: ~p"/"}>Site</a>
         </nav>
       </header>

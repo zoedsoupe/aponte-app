@@ -30,6 +30,8 @@ defmodule AponteWeb.Admin.ScannerLive do
            scanner: true,
            edition: edition,
            result: nil,
+           name_query: "",
+           name_matches: [],
            page_title: "Porta"
          )
          |> load_stats()}
@@ -56,14 +58,27 @@ defmodule AponteWeb.Admin.ScannerLive do
 
   def handle_event("manual", %{"code" => code}, socket), do: {:noreply, validate(socket, code)}
 
+  # Busca por nome (S1): comprador sem QR em mãos entra pelo nome — lista os
+  # confirmados não validados da edição e cada linha valida com um toque.
+  def handle_event("search_name", %{"name" => name}, socket) do
+    {:noreply, assign(socket, name_query: name, name_matches: door_matches(socket, name))}
+  end
+
+  def handle_event("validate_name", %{"code" => code}, socket) do
+    {:noreply,
+     socket
+     |> validate(code)
+     |> assign(name_matches: door_matches(socket, socket.assigns.name_query))}
+  end
+
   def handle_event("clear", _params, socket), do: {:noreply, assign(socket, result: nil)}
 
   def handle_event("camera_error", %{"name" => name}, socket) do
     msg =
       case name do
-        "NotAllowedError" -> "Câmera negada. use o código manual abaixo."
-        "NotFoundError" -> "Nenhuma câmera encontrada. use o código manual."
-        _ -> "Não foi possível abrir a câmera. use o código manual."
+        "NotAllowedError" -> "Câmera negada. Use o código manual abaixo."
+        "NotFoundError" -> "Nenhuma câmera encontrada. Use o código manual."
+        _ -> "Não foi possível abrir a câmera. Use o código manual."
       end
 
     {:noreply, put_flash(socket, :error, msg)}
@@ -109,6 +124,11 @@ defmodule AponteWeb.Admin.ScannerLive do
   defp load_stats(%{assigns: %{edition: edition}} = socket),
     do: assign(socket, stats: Tickets.stats(edition.id))
 
+  defp door_matches(%{assigns: %{edition: nil}}, _name), do: []
+
+  defp door_matches(%{assigns: %{edition: edition, org: org}}, name),
+    do: Tickets.search_door_tickets(org.id, edition.id, name)
+
   # ── render ──────────────────────────────────────────────────────────────────
 
   @impl true
@@ -139,7 +159,7 @@ defmodule AponteWeb.Admin.ScannerLive do
             Ativar câmera
           </button>
 
-          <form phx-submit="manual" class="stack-2">
+          <form phx-submit="manual" id="manual-code-form" class="stack-2">
             <label class="field stack-1">
               <span class="field-label text-xs text-muted">Código manual</span>
               <input
@@ -153,6 +173,40 @@ defmodule AponteWeb.Admin.ScannerLive do
             </label>
             <.button type="submit" variant={:ghost} class="btn--block">Validar código</.button>
           </form>
+
+          <%!-- busca por nome: comprador sem QR entra pelo nome, um toque valida --%>
+          <form
+            phx-change="search_name"
+            phx-submit="search_name"
+            id="name-search-form"
+            class="stack-2"
+          >
+            <label class="field stack-1">
+              <span class="field-label text-xs text-muted">Buscar por nome</span>
+              <input
+                type="text"
+                name="name"
+                value={@name_query}
+                phx-debounce="300"
+                autocomplete="off"
+                placeholder="nome de quem comprou"
+                class="input"
+              />
+            </label>
+          </form>
+
+          <ul :if={@name_matches != []} class="door-matches">
+            <li :for={t <- @name_matches} class="door-match">
+              <span class="door-match-name">{t.order.customer_name}</span>
+              <.button phx-click="validate_name" phx-value-code={t.code}>Validar</.button>
+            </li>
+          </ul>
+          <p
+            :if={@name_matches == [] and String.length(String.trim(@name_query)) >= 2}
+            class="text-sm text-dim"
+          >
+            Nenhum ingresso confirmado com esse nome.
+          </p>
         <% end %>
 
         <%!-- painel de resultado fullscreen --%>

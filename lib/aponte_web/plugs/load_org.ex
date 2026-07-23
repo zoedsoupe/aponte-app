@@ -22,7 +22,10 @@ defmodule AponteWeb.Plugs.LoadOrg do
   def call(conn, _opts) do
     case fetch_org(conn) do
       {:ok, org} ->
-        assign(conn, :org, org)
+        # The gallery count rides on the org map so the tab bar (rendered by
+        # the layout, which only receives @org) can hide the Galeria tab when
+        # the org has no images. Cheap count query, once per org page.
+        assign(conn, :org, Map.put(org, :gallery_count, Orgs.count_images(org.id)))
 
       {:error, :not_found} ->
         conn

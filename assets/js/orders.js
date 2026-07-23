@@ -26,7 +26,7 @@ export function bindOrderRecord() {
   const id = el?.dataset.id;
   if (!id) return;
 
-  const entry = { id, label: el.dataset.label || id };
+  const entry = { id, label: el.dataset.label || id, slug: el.dataset.orgSlug };
   const list = read().filter((o) => o.id !== id);
   list.unshift(entry);
   write(list);
@@ -45,13 +45,17 @@ export function renderOrderHistory() {
   if (!root) return;
 
   const slug = root.dataset.orgSlug;
-  const list = read();
+  // Entries carry the org slug they were created under. Slugless legacy
+  // entries are ambiguous (they 404 under the wrong org), so they stay in
+  // storage but out of the list; visiting the order's real link re-records
+  // it with the slug.
+  const list = read().filter((o) => o.slug === slug);
   root.replaceChildren();
 
   if (!list.length) {
     const p = document.createElement("p");
     p.className = "text-xs text-dim";
-    p.textContent = "nenhum pedido neste aparelho ainda.";
+    p.textContent = "Nenhum pedido neste aparelho ainda.";
     root.appendChild(p);
     return;
   }
@@ -62,7 +66,7 @@ export function renderOrderHistory() {
   for (const o of list) {
     const li = document.createElement("li");
     const a = document.createElement("a");
-    a.href = orderUrl(slug, o.id);
+    a.href = orderUrl(o.slug || slug, o.id);
     a.className = "inset-row";
 
     const label = document.createElement("span");
@@ -89,8 +93,9 @@ function orderUrl(slug, id) {
 
 // Accepts both org-scoped (/<slug>/compra/<uuid>) and legacy bare
 // (/compra/<uuid>) links buyers saved, with or without scheme+host.
+// Group 1 = optional org slug, group 2 = order id.
 const COMPRA_LINK = new RegExp(
-  `(?:/[a-z0-9][a-z0-9-]*)?/compra/(${UUID.source})`,
+  `(?:/([a-z0-9][a-z0-9-]*))?/compra/(${UUID.source})`,
   "i",
 );
 
@@ -107,15 +112,17 @@ export function bindOrderImport() {
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const id = input.value.match(COMPRA_LINK)?.[1];
+    const m = input.value.match(COMPRA_LINK);
+    const id = m?.[2];
     if (!id) {
       input.setCustomValidity("link inválido — cole o /compra/... que você recebeu.");
       input.reportValidity();
       return;
     }
     // In-scope navigation: stays in the PWA context, so the order is recorded
-    // in this store on arrival.
-    location.assign(orderUrl(form.dataset.orgSlug, id));
+    // in this store on arrival. The link's own org wins — rewriting it to the
+    // current org would 404 (orders are org-scoped).
+    location.assign(orderUrl(m[1] || form.dataset.orgSlug, id));
   });
 
   input.addEventListener("input", () => input.setCustomValidity(""));

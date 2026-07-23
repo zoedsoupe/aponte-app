@@ -56,7 +56,7 @@ defmodule AponteWeb.Admin.OrgGalleryLiveTest do
     upload(view, "festa2.jpg", "mesmos bytes")
     html = view |> form("#gallery-form") |> render_submit()
 
-    assert html =~ "imagem ja enviada"
+    assert html =~ "imagem já enviada"
     assert length(Orgs.list_images(org.id)) == 1
   end
 

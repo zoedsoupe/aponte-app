@@ -12,8 +12,10 @@ defmodule AponteWeb.OrgController do
   def show(conn, _params) do
     org = conn.assigns.org
     edition = Editions.current_edition(org.id)
-    {upcoming, past} = split_editions(Editions.list_editions(org.id))
+    {upcoming, past} = split_editions(Editions.list_public_editions(org.id))
     image_url = edition && SEO.abs_url(Editions.logo_url(edition.logo_path))
+    # Empty vitrine only: a row of gallery thumbs teasing /galeria.
+    gallery_tease = if edition, do: [], else: Orgs.list_images(org.id) |> Enum.take(4)
 
     conn
     |> assign(:seo_description, seo_description(org))
@@ -25,8 +27,35 @@ defmodule AponteWeb.OrgController do
       edition: edition,
       upcoming_editions: upcoming,
       past_editions: past,
+      gallery_tease: gallery_tease,
       page_title: org.name
     )
+  end
+
+  @doc """
+  Per-org PWA manifest: the installed app is the org's, not Aponte's. Name,
+  colors, start_url/scope and icon all come from the org; org-less pages keep
+  the static Aponte manifest. Without an uploaded logo the icon is a letter
+  tile (org initial on the org accent, inline SVG).
+  """
+  def manifest(conn, _params) do
+    org = conn.assigns.org
+    bg = org_color(org, :bg_color, "#FEF8DA")
+
+    conn
+    |> put_resp_content_type("application/manifest+json")
+    |> json(%{
+      name: org.name,
+      short_name: org.name,
+      lang: "pt-br",
+      start_url: "/#{org.slug}",
+      scope: "/#{org.slug}",
+      display: "standalone",
+      orientation: "portrait",
+      background_color: bg,
+      theme_color: bg,
+      icons: [manifest_icon(org)]
+    })
   end
 
   def about(conn, params) do
@@ -63,6 +92,34 @@ defmodule AponteWeb.OrgController do
   end
 
   defp dj_assigns(_conn, _org, _params), do: []
+
+  defp manifest_icon(%{logo_path: path} = org) when is_binary(path) and path != "" do
+    src = "/uploads/orgs/#{org.id}/#{path}"
+    %{src: src, type: MIME.from_path(src), sizes: "any", purpose: "any"}
+  end
+
+  defp manifest_icon(org) do
+    letter = org.name |> String.first() |> String.upcase()
+    tile = org_color(org, :accent_color, "#BF7262")
+    fg = org_color(org, :bg_color, "#FEF8DA")
+
+    svg =
+      ~s|<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#{tile}"/><text x="50%" y="50%" dy="0.36em" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="280" fill="#{fg}">#{letter}</text></svg>|
+
+    %{
+      src: "data:image/svg+xml," <> URI.encode(svg),
+      type: "image/svg+xml",
+      sizes: "any",
+      purpose: "any"
+    }
+  end
+
+  defp org_color(org, field, fallback) do
+    case Map.get(org, field) do
+      color when is_binary(color) and color != "" -> color
+      _ -> fallback
+    end
+  end
 
   # Upcoming (starts_at >= now, soonest first) vs past (most recent first).
   defp split_editions(editions) do

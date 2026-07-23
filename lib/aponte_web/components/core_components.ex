@@ -40,7 +40,7 @@ defmodule AponteWeb.CoreComponents do
   attr :required, :boolean, default: false
   attr :prompt, :string, default: nil
   attr :options, :list, default: []
-  attr :rest, :global, include: ~w(autocomplete inputmode min max minlength maxlength
+  attr :rest, :global, include: ~w(autocomplete autofocus inputmode min max minlength maxlength
                                    pattern placeholder readonly step rows)
 
   def input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
@@ -138,15 +138,19 @@ defmodule AponteWeb.CoreComponents do
     """
   end
 
+  @doc "Rótulo pt-BR de status de pedido e de edição (átomo → texto curto)."
   # Order statuses
-  defp status_label(:pending), do: "Aguardando"
-  defp status_label(:confirmed), do: "Confirmado"
-  defp status_label(:cancelled), do: "Cancelado"
-  defp status_label(:expired), do: "Expirado"
+  def status_label(:pending), do: "Aguardando"
+  def status_label(:confirmed), do: "Confirmado"
+  def status_label(:cancelled), do: "Cancelado"
+  def status_label(:expired), do: "Expirado"
   # Edition statuses
-  defp status_label(:draft), do: "Rascunho"
-  defp status_label(:published), do: "Publicada"
-  defp status_label(:past), do: "Encerrada"
+  def status_label(:draft), do: "Rascunho"
+  def status_label(:published), do: "Publicada"
+  def status_label(:past), do: "Encerrada"
+
+  def status_label(:active), do: "Ativa"
+  def status_label(:suspended), do: "Suspensa"
 
   @doc "Formata `total_cents` como `R$ 12,34`."
   @spec money(integer()) :: String.t()
@@ -167,15 +171,18 @@ defmodule AponteWeb.CoreComponents do
   rosa-escuro). SESH usa `currentColor` (`--accent` por edição); "LAB." usa um
   gradiente verde→ciano. Inline pra que `currentColor` resolva.
 
-  `src` (arte custom enviada por edição) renderiza como `<img>` cru — sem
-  recolor nem tema, só redimensiona. Nil/ausente → cai no vetor oficial.
+  `src` (arte custom enviada por edição/org) renderiza como `<img>` cru — sem
+  recolor nem tema, só redimensiona. O `alt` vem do caller (nome da org/edição);
+  nil/ausente → cai no vetor oficial, que é a logo da SESH e só faz sentido
+  nas páginas dela.
   """
   attr :class, :string, default: nil
   attr :src, :string, default: nil
+  attr :alt, :string, default: ""
 
   def sesh_logo(%{src: src} = assigns) when is_binary(src) and src != "" do
     ~H"""
-    <img src={@src} alt="SESH LAB." class={["sesh-logo sesh-logo--custom", @class]} />
+    <img src={@src} alt={@alt} class={["sesh-logo sesh-logo--custom", @class]} />
     """
   end
 

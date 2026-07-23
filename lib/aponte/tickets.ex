@@ -638,6 +638,7 @@ defmodule Aponte.Tickets do
           {:ok, Order.t()} | {:error, :not_found}
   def lookup_order(org_id, phone, order_id) do
     phone = Order.normalize_phone(phone)
+    order_id = extract_order_id(order_id)
 
     with true <- phone not in [nil, ""],
          {:ok, uuid} <- Ecto.UUID.cast(order_id),
@@ -648,6 +649,20 @@ defmodule Aponte.Tickets do
       _ -> {:error, :not_found}
     end
   end
+
+  # Buyers paste the whole /compra/:id link (what they actually have) instead
+  # of the bare UUID. Accepts org-scoped and legacy bare links, with or without
+  # scheme+host - same shape as the client-side regex in assets/js/orders.js.
+  @compra_link ~r/(?:\/[a-z0-9][a-z0-9-]*)?\/compra\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+
+  defp extract_order_id(order_id) when is_binary(order_id) do
+    case Regex.run(@compra_link, order_id) do
+      [_, uuid] -> uuid
+      _ -> order_id
+    end
+  end
+
+  defp extract_order_id(_), do: ""
 
   @spec list_recent(Ecto.UUID.t(), non_neg_integer()) :: [Order.t()]
   def list_recent(org_id, limit \\ 50) do
@@ -669,9 +684,11 @@ defmodule Aponte.Tickets do
   end
 
   @doc """
-  Busca pedidos por handle do Instagram (prefixo, já normalizado lowercase/sem @)
-  ou por nome (substring, case-insensitive ASCII). Não filtra por edição — o ponto
-  é achar pedidos antigos/de outra edição (ex: alguém manda DM pedindo o link).
+  Busca pedidos por handle do Instagram (prefixo, já normalizado lowercase/sem @),
+  por nome (substring, case-insensitive ASCII) ou por telefone (substring dos
+  dígitos — o termo é reduzido a dígitos, então "(22) 987" casa). Não filtra por
+  edição — o ponto é achar pedidos antigos/de outra edição (ex: alguém manda DM
+  pedindo o link).
 
   Termo < 2 chars devolve `[]`, pra não varrer a tabela inteira a cada tecla.
 
@@ -691,13 +708,57 @@ defmodule Aponte.Tickets do
       handle = Order.normalize_handle(term) <> "%"
       name_pat = "%" <> term <> "%"
 
+      search =
+        dynamic([o], like(o.customer_name, ^name_pat) or like(o.customer_instagram, ^handle))
+
+      search =
+        case phone_pattern(term) do
+          nil -> search
+          pat -> dynamic([o], ^search or like(o.customer_phone, ^pat))
+        end
+
       Order
       |> where([o], o.org_id == ^org_id)
-      |> where([o], like(o.customer_name, ^name_pat) or like(o.customer_instagram, ^handle))
+      |> where(^search)
       |> order_by(desc: :inserted_at)
       |> limit(^limit)
       |> Repo.all()
       |> Repo.preload(:items)
+    end
+  end
+
+  # Phone arm só entra com 2+ dígitos — menos que isso casa metade da tabela.
+  defp phone_pattern(term) do
+    digits = String.replace(term, ~r/\D/, "")
+    if String.length(digits) >= 2, do: "%" <> digits <> "%", else: nil
+  end
+
+  @doc """
+  Ingressos confirmados e ainda não validados cujo nome do comprador contém
+  `name`, escopados à org + edição. Busca da porta (S1): alguém sem o QR em
+  mãos entra pelo nome. Substring case-insensitive ASCII, mesmo teto do
+  `search_orders/3`.
+  """
+  @spec search_door_tickets(Ecto.UUID.t(), Ecto.UUID.t(), String.t()) :: [Ticket.t()]
+  def search_door_tickets(org_id, edition_id, name) when is_binary(name) do
+    name = String.trim(name)
+
+    if String.length(name) < 2 do
+      []
+    else
+      pat = "%" <> name <> "%"
+
+      Repo.all(
+        from t in Ticket,
+          join: o in assoc(t, :order),
+          where: t.org_id == ^org_id,
+          where: t.edition_id == ^edition_id,
+          where: is_nil(t.used_at),
+          where: like(o.customer_name, ^pat),
+          order_by: [asc: o.customer_name],
+          limit: 10,
+          preload: [order: o]
+      )
     end
   end
 

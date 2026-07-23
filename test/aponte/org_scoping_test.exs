@@ -205,6 +205,12 @@ defmodule Aponte.OrgScopingTest do
     test "garbage id is not_found, not a cast error", %{org: org} do
       assert {:error, :not_found} = Tickets.lookup_order(org.id, "22998765432", "not-a-uuid")
     end
+
+    test "pasted /compra/ link is accepted, extracting the uuid", %{org: org, order: order} do
+      link = "https://aponte.live/sesh/compra/#{order.id}"
+      assert {:ok, found} = Tickets.lookup_order(org.id, "22998765432", link)
+      assert found.id == order.id
+    end
   end
 
   describe "coupons across orgs" do

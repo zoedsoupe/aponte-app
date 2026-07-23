@@ -31,13 +31,17 @@
         />
       </.field>
 
-      <.field for="lookup-code" label="Código do pedido">
+      <.field
+        for="lookup-code"
+        label="Código ou link do pedido"
+        hint="Tá no link que você recebeu, depois de /compra/."
+      >
         <input
           id="lookup-code"
           type="text"
           name="code"
           required
-          placeholder="código do pedido"
+          placeholder="código ou link do pedido"
           class="input text-mono"
           autocapitalize="off"
           autocomplete="off"

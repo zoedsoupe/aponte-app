@@ -82,10 +82,30 @@ window.addEventListener("phx:page-loading-stop", (_info) => topbar.hide());
 // connect if there are any LiveViews on the page
 liveSocket.connect();
 
+// data-confirm: native confirm() gate for destructive actions (admin delete/
+// cancel buttons). Delegated + capture phase so it runs before LiveView's own
+// click dispatch; declining swallows the event entirely. Covers any current or
+// future [data-confirm] without per-page wiring.
+document.addEventListener(
+  "click",
+  (e) => {
+    const el = e.target.closest("[data-confirm]");
+    if (!el) return;
+    if (!window.confirm(el.dataset.confirm)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  },
+  true,
+);
+
 function init() {
   const orderForm = document.getElementById("order-form");
+  const lojaForm = document.getElementById("loja-form");
   bindForm(orderForm);
+  bindForm(lojaForm);
   bindFormGate(orderForm);
+  bindFormGate(lojaForm);
   bindSteppers();
   bindPresets();
   bindCopyButtons();
