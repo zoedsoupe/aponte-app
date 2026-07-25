@@ -209,13 +209,10 @@ defmodule AponteWeb.Admin.DashboardLive do
             <section class="stack-3">
               <div class="admin-section-head">
                 <h2 class="section-label">{@edition.name}</h2>
+                <%!-- só links que exigem a edição na URL; o resto vive na
+                     tab bar (Produtos, Porta, Balcão) e no header (Cupons, DJ). --%>
                 <nav class="admin-quicklinks">
-                  <a href={~p"/admin/#{@org.slug}/validar/#{@edition.id}"}>Porta</a>
-                  <a href={~p"/admin/#{@org.slug}/balcao"}>Balcão</a>
                   <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}/cortesia"}>Cortesia</a>
-                  <a href={~p"/admin/#{@org.slug}/tocar"}>Aplicações DJ</a>
-                  <a href={~p"/admin/#{@org.slug}/cupons"}>Cupons</a>
-                  <a href={~p"/admin/#{@org.slug}/produtos"}>Produtos</a>
                   <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}"}>Editar</a>
                 </nav>
               </div>

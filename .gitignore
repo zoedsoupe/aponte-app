@@ -50,3 +50,5 @@ pix.svg
 
 # dev uploads (served by UploadController, not Plug.Static)
 /uploads/
+
+/graphify-out/

@@ -117,6 +117,7 @@ defmodule AponteWeb.Layouts do
           </span>
           <a :if={@org} href={~p"/admin/#{@org.slug}/perfil"}>Perfil</a>
           <a :if={@org} href={~p"/admin/#{@org.slug}/galeria"}>Galeria</a>
+          <a :if={@org} href={~p"/admin/#{@org.slug}/cupons"}>Cupons</a>
           <a :if={@org} href={~p"/admin/#{@org.slug}/tocar"}>Tocar</a>
           <a href={if @org, do: ~p"/#{@org.slug}", else: ~p"/"}>Site</a>
         </nav>

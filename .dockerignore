@@ -33,3 +33,5 @@ test/
 # fly cache
 .fly/
 fly.toml
+
+/graphify-out/

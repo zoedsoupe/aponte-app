@@ -125,6 +125,23 @@ defmodule AponteWeb.AponteComponents do
     """
   end
 
+  defp tab_icon(%{name: :tag} = assigns) do
+    ~H"""
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 4h6.5L20 13.5a1.5 1.5 0 0 1 0 2.1l-4.4 4.4a1.5 1.5 0 0 1-2.1 0L4 10.5V4Z" />
+      <circle cx="8.5" cy="8.5" r="1.2" />
+    </svg>
+    """
+  end
+
   defp tab_icon(%{name: :ticket} = assigns) do
     ~H"""
     <svg
@@ -201,10 +218,11 @@ defmodule AponteWeb.AponteComponents do
   end
 
   @doc """
-  Admin tab bar: the daily-ops surfaces (Painel, Pedidos, Porta, Balcão).
-  Same chrome language as the public tab bar — bottom bar on mobile, slim
-  frosted top bar on desktop. Config pages (Perfil, Galeria) stay in the
-  admin header; the tab bar is for what a tenant touches every day.
+  Admin tab bar: the daily-ops surfaces (Painel, Pedidos, Porta, Balcão,
+  Produtos). Same chrome language as the public tab bar — bottom bar on
+  mobile, slim frosted top bar on desktop. Config pages (Perfil, Galeria,
+  Cupons, DJ) stay in the admin header; edition-scoped actions (Cortesia,
+  Editar) live in the dashboard's edition section.
   """
   attr :org, :map, required: true
   attr :current_path, :string, default: nil
@@ -238,6 +256,12 @@ defmodule AponteWeb.AponteComponents do
         icon={:bag}
         label="Balcão"
         active={active_tab?(@current_path, ~p"/admin/#{@org.slug}/balcao", :exact)}
+      />
+      <.tab_item
+        href={~p"/admin/#{@org.slug}/produtos"}
+        icon={:tag}
+        label="Produtos"
+        active={active_tab?(@current_path, ~p"/admin/#{@org.slug}/produtos", :prefix)}
       />
     </nav>
     """
