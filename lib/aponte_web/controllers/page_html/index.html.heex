@@ -1,13 +1,20 @@
 <Layouts.app flash={@flash} site_header={false}>
   <div class="shell-page stack-6">
-    <section class="shell-hero">
-      <h1 class="shell-wordmark">Aponte</h1>
+    <nav class="home-topnav text-sm">
+      <a href={~p"/sobre"}>Qual é da Aponte?</a>
+      <a href={~p"/sobre#produzir"}>Divulga teu rolê</a>
+    </nav>
+
+    <section class="shell-hero shell-hero--home">
       <.hand_motif class="hand-print--home" />
-      <p class="shell-tagline text-lg">a ponte entre quem faz rolê e quem quer colar</p>
+      <div class="shell-hero-brand">
+        <h1 class="shell-wordmark">Aponte</h1>
+        <p class="shell-tagline text-sm">a ponte entre quem faz rolê e quem quer colar</p>
+      </div>
     </section>
 
     <section class="stack-3">
-      <h2 class="section-label">O que tá rolando em Campos</h2>
+      <h2 class="section-label section-label--home">O que tá rolando em Campos</h2>
       <ul :if={@orgs != []} class="home-orgs">
         <li :for={{org, edition} <- @orgs}>
           <a href={~p"/#{org.slug}"} class="edition-card" style={"--accent: #{org.accent_color}"}>
@@ -16,11 +23,14 @@
               <span :if={is_nil(org_logo(org))} aria-hidden="true">{org_initial(org)}</span>
             </div>
             <div class="edition-card-main">
+              <span :if={edition} class="edition-card-name">{edition.name}</span>
               <p :if={edition} class="date-duo edition-card-date">
                 <span>{edition_time(edition.starts_at)}</span>
                 <span>{edition_day(edition.starts_at)}</span>
+                <span :if={edition_chip(edition.starts_at)} class="edition-chip">
+                  {edition_chip(edition.starts_at)}
+                </span>
               </p>
-              <span :if={edition} class="edition-card-name">{edition.name}</span>
               <span :if={edition} class="edition-card-org">{org.name} · {edition.venue}</span>
               <span :if={is_nil(edition)} class="edition-card-name">{org.name}</span>
               <span :if={is_nil(edition)} class="edition-card-org">edição em breve</span>
@@ -38,11 +48,6 @@
           </a>
         </p>
       </div>
-
-      <p :if={@orgs != []} class="shell-footnote">
-        cada rolê tem sua página e sua chave pix.
-        <a href={~p"/sobre"}>qual é a da Aponte? -&gt;</a>
-      </p>
     </section>
   </div>
 </Layouts.app>

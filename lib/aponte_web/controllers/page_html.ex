@@ -38,6 +38,18 @@ defmodule AponteWeb.PageHTML do
     end
   end
 
+  @doc ~S/Chip de urgência do card: "hoje" | "amanhã" | nil (compara datas em BRT)./
+  def edition_chip(starts_at) do
+    today = Clock.now_brt() |> DateTime.to_date()
+    day = starts_at |> Clock.to_brt() |> DateTime.to_date()
+
+    case Date.diff(day, today) do
+      0 -> "hoje"
+      1 -> "amanhã"
+      _ -> nil
+    end
+  end
+
   @doc "Lineup é texto livre, um nome por linha. Quebra em lista limpa."
   def lineup_lines(nil), do: []
 

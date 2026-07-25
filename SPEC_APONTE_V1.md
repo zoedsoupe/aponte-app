@@ -32,7 +32,7 @@ These do **not** block the build; defaults are stated and the implementer should
 
 ### 2.1 Aponte brand palette
 
-Extracted from the watercolor hand logo (`aponte-logo.jpg`, pointing finger — the "aponte"/point gesture) via histogram + region sampling, approved 2026-07-20. These are the **Aponte platform defaults** (org-less pages + base app theme); org accents override only the accent var.
+Extracted from the watercolor hand logo (`aponte-logo.png`, pointing finger — the "aponte"/point gesture) via histogram + region sampling, approved 2026-07-20. These are the **Aponte platform defaults** (org-less pages + base app theme); org accents override only the accent var.
 
 | Token | Hex | Source region | Use |
 |---|---|---|---|

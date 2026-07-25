@@ -433,7 +433,7 @@ defmodule AponteWeb.AponteComponents do
   def hand_motif(assigns) do
     ~H"""
     <div class={["hand-print", @class]} aria-hidden="true">
-      <img src={~p"/images/aponte-logo.jpg"} alt="" loading="lazy" />
+      <img src={~p"/images/aponte-logo.png"} alt="" loading="lazy" />
     </div>
     """
   end

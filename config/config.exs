@@ -19,7 +19,7 @@ config :aponte, :image_processor, Aponte.Images.Vips
 # org-less pages and for org levers left unset. Org pages override via
 # AponteWeb.Plugs.Accent.
 config :aponte, :default_accent, "#BF7262"
-config :aponte, :default_bg, "#FEF8DA"
+config :aponte, :default_bg, "#FAF5EC"
 config :aponte, :default_ink, "#49422F"
 
 # VAPID keys for Web Push. Generate with: mix web_push.gen.vapid

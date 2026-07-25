@@ -40,7 +40,7 @@ defmodule AponteWeb.OrgController do
   """
   def manifest(conn, _params) do
     org = conn.assigns.org
-    bg = org_color(org, :bg_color, "#FEF8DA")
+    bg = org_color(org, :bg_color, "#FAF5EC")
 
     conn
     |> put_resp_content_type("application/manifest+json")
@@ -101,7 +101,7 @@ defmodule AponteWeb.OrgController do
   defp manifest_icon(org) do
     letter = org.name |> String.first() |> String.upcase()
     tile = org_color(org, :accent_color, "#BF7262")
-    fg = org_color(org, :bg_color, "#FEF8DA")
+    fg = org_color(org, :bg_color, "#FAF5EC")
 
     svg =
       ~s|<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#{tile}"/><text x="50%" y="50%" dy="0.36em" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="280" fill="#{fg}">#{letter}</text></svg>|

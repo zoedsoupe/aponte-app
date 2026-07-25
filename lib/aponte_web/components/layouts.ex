@@ -63,7 +63,7 @@ defmodule AponteWeb.Layouts do
            redundant with the page actions. --%>
       <header :if={is_nil(@org) and @site_header} class="site-header">
         <a href={~p"/"} class="brand row gap-2 align-center">
-          <img src={~p"/images/aponte-logo.jpg"} alt="Aponte" class="brand-logo" />
+          <img src={~p"/images/aponte-logo.png"} alt="Aponte" class="brand-logo" />
           <span class="brand-name">Aponte</span>
         </a>
         <nav class="site-nav row gap-3 align-center">
@@ -102,14 +102,14 @@ defmodule AponteWeb.Layouts do
            the admin tab bar below (same chrome as the public pages). --%>
       <header class="admin-top">
         <a
-          href={if @org, do: ~p"/admin/#{@org.slug}", else: ~p"/admin"}
+          href={~p"/admin/"}
           class="text-mono text-xs text-dim"
         >
-          {if @org, do: "/admin/#{@org.slug}", else: "/admin"}
+          /admin
         </a>
         <nav class="admin-top-nav">
           <span :if={@org} class="admin-swatches" title={"tema de #{@org.name}"}>
-            <span class="swatch" style={"background-color:#{theme_color(@org, :bg_color, "#FEF8DA")}"}>
+            <span class="swatch" style={"background-color:#{theme_color(@org, :bg_color, "#FAF5EC")}"}>
             </span>
             <span class="swatch" style={"background-color:#{theme_color(@org, :fg_color, "#49422F")}"}>
             </span>
@@ -118,7 +118,7 @@ defmodule AponteWeb.Layouts do
           <a :if={@org} href={~p"/admin/#{@org.slug}/perfil"}>Perfil</a>
           <a :if={@org} href={~p"/admin/#{@org.slug}/galeria"}>Galeria</a>
           <a :if={@org} href={~p"/admin/#{@org.slug}/cupons"}>Cupons</a>
-          <a :if={@org} href={~p"/admin/#{@org.slug}/tocar"}>Tocar</a>
+          <a :if={@org && @org.slug == "sesh"} href={~p"/admin/#{@org.slug}/tocar"}>Tocar</a>
           <a href={if @org, do: ~p"/#{@org.slug}", else: ~p"/"}>Site</a>
         </nav>
       </header>

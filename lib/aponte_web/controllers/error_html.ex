@@ -37,14 +37,14 @@ defmodule AponteWeb.ErrorHTML do
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#FEF8DA" />
+        <meta name="theme-color" content="#FAF5EC" />
         <title>{"#{@code} — Aponte"}</title>
         <link rel="icon" href="/images/favicon.png" type="image/png" />
         <link rel="stylesheet" href="/assets/css/app.css" />
       </head>
       <body class="bg-base text-fg text-sans">
         <main class="shell error-page stack-4">
-          <img src="/images/aponte-logo.jpg" alt="Aponte" class="aponte-logo aponte-logo--hero" />
+          <img src="/images/aponte-logo.png" alt="Aponte" class="aponte-logo aponte-logo--hero" />
           <p class="text-2xl date-duo-time text-mono">{@code}</p>
           <p class="text-base text-muted">{@message}</p>
           <a href={@back_href} class="btn btn--blob btn--block">{@back_label}</a>

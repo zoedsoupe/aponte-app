@@ -14,11 +14,11 @@ defmodule AponteWeb.OrgControllerTest do
 
   test "pages emit the theme as inline CSS vars (org accent, platform bg/ink)", %{conn: conn} do
     html = conn |> get("/sesh/") |> html_response(200)
-    assert html =~ "--bg: #FEF8DA"
+    assert html =~ "--bg: #FAF5EC"
     assert html =~ "--ink: #49422F"
     assert html =~ "--accent: #F07BC0"
     assert html =~ "color-scheme: light"
-    assert html =~ ~s(name="theme-color" content="#FEF8DA")
+    assert html =~ ~s(name="theme-color" content="#FAF5EC")
   end
 
   test "custom org bg/fg override the platform defaults", %{conn: conn} do
@@ -268,8 +268,8 @@ defmodule AponteWeb.OrgControllerTest do
                "name" => "SESH",
                "start_url" => "/sesh",
                "scope" => "/sesh",
-               "theme_color" => "#FEF8DA",
-               "background_color" => "#FEF8DA",
+               "theme_color" => "#FAF5EC",
+               "background_color" => "#FAF5EC",
                "icons" => [%{"src" => "data:image/svg+xml," <> _rest}]
              } = json_response(conn, 200)
     end

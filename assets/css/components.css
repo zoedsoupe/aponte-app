@@ -2085,26 +2085,18 @@ body:has(.aponte-logo--hero) .brand {
   }
 }
 
-/* ── hand motif: the watercolor pointing hand as a tilted print ──────────── */
+/* ── hand motif: the watercolor pointing hand, transparent PNG ───────────── */
 .hand-print {
   /* the finger aims down-right (toward the floating CTA) on mobile... */
   --hand-aim: 148deg;
   --hand-tilt: -3deg;
   width: 9.5rem;
-  padding: var(--s-2);
-  background: #fbf3d4;
-  /* paper of the original scan — constant across themes */
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-2);
   transform: rotate(var(--hand-tilt));
-  overflow: hidden;
 }
 
 .hand-print img {
   width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  transform: rotate(var(--hand-aim)) scale(1.32);
+  transform: scaleX(var(--hand-flip, 1)) rotate(var(--hand-aim));
 }
 
 @media (min-width: 960px) {
@@ -2135,9 +2127,23 @@ body:has(.aponte-logo--hero) .brand {
   --hand-tilt: 3deg;
 }
 
-/* home: a mão mira a tagline e o botão, embaixo à esquerda */
-.hand-print--home {
-  --hand-aim: 238deg;
+/* home: mão à esquerda do wordmark (na direita ficava solta). Espelhada pra
+   o dorso ficar pra fora e o dedo mirar a marca — no eixo espelhado a rotação
+   inverte o sentido, então a mira é 360 − aim da base. Como a mão fica na
+   mesma linha do wordmark em qualquer viewport, a mira é única: 260deg (360
+   − 100), dedo pra direita com leve inclinação */
+.shell-hero--home {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.shell-hero--home .hand-print {
+  grid-column: 1;
+  --hand-flip: -1;
+  --hand-aim: 260deg;
+}
+
+.shell-hero-brand {
+  min-width: 0;
 }
 
 /* sobre: a mão aponta pra história logo abaixo ("a gente aponta"). A imagem
@@ -2168,31 +2174,44 @@ body:has(.aponte-logo--hero) .brand {
   color: inherit;
 }
 
-/* wordmark da plataforma: o display cut no maior tamanho do sistema. Uso
-   único (a home da Aponte); a parcimônia do display segue valendo. */
+/* wordmark da plataforma: display cut, mas sem engolir o hero — a tagline
+   fica colada embaixo, em corpo menor. Uso único (a home da Aponte). */
 .shell-wordmark {
   font-family: var(--font-display);
   font-stretch: 125%;
   font-weight: 620;
-  font-size: clamp(2.5rem, 11vw, 4.5rem);
+  font-size: clamp(2rem, 8vw, 3.2rem);
   line-height: 1.02;
   letter-spacing: 0.01em;
 }
 
+/* nav quieto no topo da home: /sobre e o CTA de produtor */
+.home-topnav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
 /* ── home: edition cards, o destaque da página ─────────────────────────────
-   Edição primeiro (data/hora no date-duo, nome da edição em seguida), org
-   como linha secundária. A borda segue o --accent inline de cada org. */
+   Nome da edição primeiro e maior (é o que vende o rolê); data/hora como
+   metadado logo abaixo, org+local por último. A borda esquerda grossa carrega
+   o --accent inline de cada org. */
 .edition-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--s-3);
   height: 100%;
   padding: var(--s-4);
-  background: var(--surface);
+  /* a identidade da org tinge o card inteiro, não só a borda esquerda */
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
   border: 1px solid var(--accent-soft);
+  border-inline-start: 3px solid var(--accent);
   border-radius: var(--radius-lg);
   color: var(--fg);
-  transition: border-color var(--motion, 200ms) ease;
+  transition:
+    border-color var(--motion, 200ms) ease,
+    transform var(--motion, 200ms) ease,
+    box-shadow var(--motion, 200ms) ease;
 }
 
 .edition-card:hover,
@@ -2200,6 +2219,9 @@ body:has(.aponte-logo--hero) .brand {
   border-color: var(--accent);
   /* bate o global `a:hover { color: --accent }`: o card inteiro é link */
   color: var(--fg);
+  /* "pegar o flyer": sobe 2px e ganha sombra */
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
 }
 
 /* slot do logo: ocupa a coluna esquerda INTEIRA do card (stretch), com ou sem
@@ -2232,12 +2254,31 @@ body:has(.aponte-logo--hero) .brand {
 }
 
 .edition-card .date-duo {
-  font-size: var(--text-xl);
+  font-size: var(--text-base);
+  color: var(--fg-muted);
+}
+
+/* chip de urgência ("hoje" / "amanhã") dentro do date-duo: pill no accent da
+   org, sans pra contrastar com o display esticado da data */
+.edition-chip {
+  align-self: center;
+  padding: 0 var(--s-2);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-family: var(--font-sans, sans-serif);
+  font-stretch: normal;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  text-transform: uppercase;
 }
 
 .edition-card-name {
-  font-size: var(--text-lg);
-  font-weight: 600;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1.15;
 }
 
 /* org + local: linha própria e legível, não metadado apagado. Presa no rodapé
@@ -2257,10 +2298,23 @@ body:has(.aponte-logo--hero) .brand {
   gap: var(--s-3);
 }
 
-/* rodapé quieto da home: aponta pro /sobre sem disputar com os cards */
-.shell-footnote {
-  color: var(--fg-muted);
+/* section label da home em corpo maior e cor cheia: é o título da vitrine,
+   não metadado quieto */
+.section-label--home {
+  color: var(--fg);
   font-size: var(--text-sm);
+}
+
+/* título de seção no /sobre ("Pra quem faz rolê") */
+.about-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+/* âncora do CTA "quero divulgar meu rolê" da home */
+#produzir {
+  scroll-margin-top: var(--s-5);
 }
 
 .sobre-actions {

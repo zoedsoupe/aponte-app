@@ -28,7 +28,7 @@ defmodule AponteWeb.Plugs.Accent do
     accent = org_color(org, :accent_color) || default(:default_accent, "#BF7262")
 
     theme = %{
-      bg: org_color(org, :bg_color) || default(:default_bg, "#FEF8DA"),
+      bg: org_color(org, :bg_color) || default(:default_bg, "#FAF5EC"),
       ink: org_color(org, :fg_color) || default(:default_ink, "#49422F"),
       accent: accent
     }

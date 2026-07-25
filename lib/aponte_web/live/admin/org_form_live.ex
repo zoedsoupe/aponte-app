@@ -262,7 +262,7 @@ defmodule AponteWeb.Admin.OrgFormLive do
             hint="Fundo e texto sem customização herdam a paleta padrão da Aponte."
           >
             <.color_input field={@form[:accent_color]} label="Cor de destaque" fallback="#BF7262" />
-            <.color_input field={@form[:bg_color]} label="Cor de fundo" fallback="#FEF8DA" />
+            <.color_input field={@form[:bg_color]} label="Cor de fundo" fallback="#FAF5EC" />
             <.color_input field={@form[:fg_color]} label="Cor do texto" fallback="#49422F" />
           </.form_section>
 
