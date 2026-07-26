@@ -2185,27 +2185,72 @@ body:has(.aponte-logo--hero) .brand {
   letter-spacing: 0.01em;
 }
 
-/* nav quieto no topo da home: /sobre e o CTA de produtor */
-.home-topnav {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--s-3);
+/* topo da home: nav + hero. No mobile empilha (nav, hero); no desktop vira
+   masthead — hero no canto esquerdo, links no direito, MESMA faixa, pra marca
+   não ficar visualmente "embaixo" dos links */
+.home-top {
+  display: grid;
+  gap: var(--s-4);
 }
 
-/* ── home: edition cards, o destaque da página ─────────────────────────────
-   Nome da edição primeiro e maior (é o que vende o rolê); data/hora como
-   metadado logo abaixo, org+local por último. A borda esquerda grossa carrega
-   o --accent inline de cada org. */
+@media (min-width: 960px) {
+  .home-top {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .home-top .shell-hero {
+    grid-column: 1;
+    grid-row: 1;
+    /* wordmark nasce na mesma linha de topo dos links: sem isso o brand
+       centrava contra a caixa alta da mão e afundava abaixo da top-line */
+    align-items: start;
+  }
+
+  .home-top .home-topnav {
+    grid-column: 2;
+    grid-row: 1;
+    /* mesma linha de topo do hero: masthead e links nascem juntos */
+    align-self: start;
+  }
+}
+
+/* nav quieto no topo da home: /sobre e o CTA de produtor, agrupados no canto
+   direito — o canto esquerdo do topo é do hero (a marca), não de link solto */
+.home-topnav {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-4);
+}
+
+/* ── home: edition cards, flyer-style ─────────────────────────────────────
+   Stub de arte full-bleed à esquerda (quadrado, como flyer colado na parede);
+   conteúdo à direita: nome da edição grande, data em display font com o chip
+   de urgência colado no mesmo cluster, org+local como rodapé sob hairline.
+   A arte carrega o --accent da org (tinta do painel), então o card dispensa
+   a borda esquerda grossa. */
+/* cursor da casa: a mãozinha da marca é o pointer em TODO clicável do site
+   (hotspot na ponta do dedo; fallback pointer se a imagem falhar). Inputs de
+   texto ficam de fora — o I-beam é affordance, não se mexe nele */
+a,
+button,
+select,
+summary,
+input[type="submit"],
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: url("/images/aponte-cursor.png") 5 3, pointer;
+}
+
 .edition-card {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--s-3);
+  grid-template-columns: minmax(6.5rem, 2fr) minmax(0, 3fr);
+  gap: 0;
   height: 100%;
-  padding: var(--s-4);
-  /* a identidade da org tinge o card inteiro, não só a borda esquerda */
+  padding: 0;
+  overflow: hidden;
   background: color-mix(in srgb, var(--accent) 5%, var(--surface));
   border: 1px solid var(--accent-soft);
-  border-inline-start: 3px solid var(--accent);
   border-radius: var(--radius-lg);
   color: var(--fg);
   transition:
@@ -2224,38 +2269,46 @@ body:has(.aponte-logo--hero) .brand {
   box-shadow: var(--shadow-2);
 }
 
-/* slot do logo: ocupa a coluna esquerda INTEIRA do card (stretch), com ou sem
-   upload (sem logo entra a inicial da org), então todos os cards guardam a
-   mesma caixa de logo */
+/* painel de arte: quadrado full-bleed, colado nas bordas do card. Sem upload
+   entra a inicial da org grande, então todos os cards guardam a mesma caixa.
+   Conteúdo mais alto que o quadrado estica o painel (img cover aguenta). */
 .edition-card-logo {
   display: grid;
   place-items: center;
-  width: 6rem;
-  border-radius: var(--radius-sm);
+  width: 100%;
+  aspect-ratio: 1;
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
   color: var(--fg);
   font-weight: 700;
-  font-size: var(--text-xl);
+  font-size: var(--text-2xl);
   overflow: hidden;
 }
 
 .edition-card-logo img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
-/* coluna direita do card: data, nome da edição e org+local empilhados */
+/* coluna direita do card: nome, data e org+local empilhados, centrados na
+   altura do painel de arte */
 .edition-card-main {
   display: flex;
   flex-direction: column;
-  gap: var(--s-1);
+  justify-content: center;
+  gap: var(--s-2);
   min-width: 0;
+  padding: var(--s-4);
 }
 
+/* data no card: um cluster só — hora, dia e chip colados (gap s-2), quebra
+   de linha permitida pro chip nunca vazar da borda no mobile */
 .edition-card .date-duo {
-  font-size: var(--text-base);
-  color: var(--fg-muted);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  font-size: var(--text-lg);
+  color: var(--fg);
 }
 
 /* chip de urgência ("hoje" / "amanhã") dentro do date-duo: pill no accent da
@@ -2273,36 +2326,48 @@ body:has(.aponte-logo--hero) .brand {
   letter-spacing: 0.08em;
   line-height: 1.6;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .edition-card-name {
   font-size: var(--text-xl);
   font-weight: 700;
   line-height: 1.15;
+  text-wrap: balance;
 }
 
-/* org + local: linha própria e legível, não metadado apagado. Presa no rodapé
-   do card (margin auto) pra alinhar os cards da mesma linha do grid. */
+/* org + local: rodapé do card sob hairline, corpo menor e apagado — metadado
+   de quem assina, não protagonista */
 .edition-card-org {
-  margin-block-start: auto;
+  margin-block-start: var(--s-1);
+  padding-block-start: var(--s-2);
+  border-block-start: 1px solid var(--accent-soft);
   color: var(--fg-muted);
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
 }
 
-/* auto-fill com largura mínima generosa: no mobile cada card ocupa a linha
-   toda (empilha); telas maiores encaixam 2 por linha sem media queries
-   nem casos especiais por card; os itens esticam (stretch) por linha */
+/* auto-fit (não fill): trilhas vazias colapsam, então um card sozinho cresce
+   até o teto de 34rem e CENTRA no container em vez de ficar perdido à esquerda;
+   2+ cards dividem a linha (min 22rem cada) sem media query */
 .home-orgs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 34rem));
+  justify-content: center;
   gap: var(--s-3);
 }
 
 /* section label da home em corpo maior e cor cheia: é o título da vitrine,
-   não metadado quieto */
+   não metadado quieto. No desktop os cards centram no container, então o
+   título acompanha (solto à esquerda parecia desconectado dos cards) */
 .section-label--home {
   color: var(--fg);
   font-size: var(--text-sm);
+}
+
+@media (min-width: 960px) {
+  .section-label--home {
+    text-align: center;
+  }
 }
 
 /* título de seção no /sobre ("Pra quem faz rolê") */
@@ -2335,6 +2400,13 @@ body:has(.aponte-logo--hero) .brand {
   .shell-hero .hand-print {
     width: 9rem;
     --hand-tilt: 2deg;
+  }
+
+  /* home: com align-items:start a CAIXA da mão nasce na top-line, mas o PNG
+     tem ~8% de padding transparente — sobe a caixa pra ponta do dedo
+     acompanhar a cap-line do wordmark */
+  .shell-hero--home .hand-print {
+    margin-block-start: -0.75rem;
   }
 
   .shell-hero .hand-print--sobre {
