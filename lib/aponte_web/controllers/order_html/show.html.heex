@@ -25,8 +25,8 @@
         <span class="text-mono text-sm">{money(item.unit_price_cents * item.quantity)}</span>
       </li>
       <li :if={@order.discount_cents > 0} class="inset-row inset-row--static">
-        <span class="text-sm text-accent">Cupom {@order.coupon_code}</span>
-        <span class="text-mono text-sm text-accent">- {money(@order.discount_cents)}</span>
+        <span class="text-sm text-muted">Cupom {@order.coupon_code}</span>
+        <span class="text-mono text-sm text-muted">- {money(@order.discount_cents)}</span>
       </li>
       <li class="inset-row inset-row--static">
         <span class="text-sm text-muted">Total</span>
@@ -72,7 +72,7 @@
     </section>
 
     <section :if={@earned != []} class="stack-2 alert alert--info">
-      <h2 class="section-label">Você ganhou um cupom</h2>
+      <h2 class="section-label">Cupons na conta</h2>
       <ul class="stack-1">
         <li :for={c <- @earned} class="row space-between text-sm">
           <span class="text-mono">{c.code}</span>
@@ -102,12 +102,13 @@
 
         <li class="pix-step stack-2">
           <span class="pix-step-label">2. Paga no app do seu banco</span>
-          <p class="text-sm">
-            {money(@order.total_cents)} para a {@org.name}.
-          </p>
-          <p class="text-xs text-dim">
-            pra {@org.name}, chave {@org.pix_key}
-          </p>
+          <p class="text-sm">{money(@order.total_cents)} na chave pix de {@org.name}.</p>
+          <div class="stack-2">
+            <code class="pix-copy text-mono text-xs" id="pix-key">{@org.pix_key}</code>
+            <button type="button" class="btn btn--ghost btn--block" data-copy-target="#pix-key">
+              Copiar chave
+            </button>
+          </div>
         </li>
 
         <li class="pix-step stack-2">
@@ -120,7 +121,7 @@
             href={AponteWeb.Instagram.dm_url(@org.instagram)}
             class="btn btn--ghost btn--block"
           >
-            Avisar no Instagram
+            Chamar no Instagram
           </a>
         </li>
       </ol>
@@ -154,7 +155,7 @@
         href={AponteWeb.Instagram.dm_url(@org.instagram)}
         class="btn btn--ghost btn--block"
       >
-        Falar no Instagram
+        Chamar no Instagram
       </a>
       <a :if={@can_rebuy} href={~p"/#{@org.slug}/comprar"} class="btn btn--primary btn--block">
         Comprar de novo
