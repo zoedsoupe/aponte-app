@@ -264,6 +264,24 @@ defmodule AponteWeb.Admin.OrgFormLive do
             <.color_input field={@form[:accent_color]} label="Cor de destaque" fallback="#BF7262" />
             <.color_input field={@form[:bg_color]} label="Cor de fundo" fallback="#FAF5EC" />
             <.color_input field={@form[:fg_color]} label="Cor do texto" fallback="#49422F" />
+
+            <%!-- live preview + contrast guardrail: the picker drives the CTA fill,
+                 so show the producer the button they are creating. --%>
+            <div class="stack-2">
+              <span class="field-label">Prévia do botão</span>
+              <span
+                class="btn btn--blob"
+                style={"background-color:#{accent_value(@form)}; color:#{bg_value(@form)};"}
+              >
+                Garantir ingresso
+              </span>
+              <p
+                :if={low_contrast?(accent_value(@form), bg_value(@form))}
+                class="text-xs text-dim"
+              >
+                Destaque muito próximo do fundo: o botão fica difícil de ler. Escurece o destaque ou clareia o fundo.
+              </p>
+            </div>
           </.form_section>
 
           <.form_section title="Contato">
@@ -356,6 +374,42 @@ defmodule AponteWeb.Admin.OrgFormLive do
     </Layouts.admin>
     """
   end
+
+  # Theme guardrail: the accent fills the CTA, so a light accent on a light bg
+  # makes an unreadable button. Warn (do not block) below 3:1.
+  defp accent_value(form), do: form[:accent_color].value || "#BF7262"
+  defp bg_value(form), do: form[:bg_color].value || "#FAF5EC"
+
+  defp low_contrast?(accent, bg) do
+    l1 = luminance(accent)
+    l2 = luminance(bg)
+    {hi, lo} = if l1 >= l2, do: {l1, l2}, else: {l2, l1}
+    (hi + 0.05) / (lo + 0.05) < 3.0
+  end
+
+  defp luminance(hex) do
+    {r, g, b} = parse_hex(hex)
+
+    [r, g, b]
+    |> Enum.map(fn c ->
+      c = c / 255
+      if c <= 0.03928, do: c / 12.92, else: :math.pow((c + 0.055) / 1.055, 2.4)
+    end)
+    |> then(fn [r, g, b] -> 0.2126 * r + 0.7152 * g + 0.0722 * b end)
+  end
+
+  defp parse_hex(hex) when is_binary(hex) do
+    case Regex.run(~r/^#?([0-9a-fA-F]{6})$/, hex) do
+      [_, rgb] ->
+        <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = rgb
+        {String.to_integer(r, 16), String.to_integer(g, 16), String.to_integer(b, 16)}
+
+      _ ->
+        {0, 0, 0}
+    end
+  end
+
+  defp parse_hex(_), do: {0, 0, 0}
 
   attr :field, Phoenix.HTML.FormField, required: true
   attr :label, :string, required: true
