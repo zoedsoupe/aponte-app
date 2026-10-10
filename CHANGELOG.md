@@ -1,0 +1,57 @@
+# Changelog
+
+## [0.2.0](https://github.com/zoedsoupe/aponte-app/compare/v0.1.0...v0.2.0) (2026-10-10)
+
+
+### Features
+
+* admin revamp, data tables, door consoles ([578d401](https://github.com/zoedsoupe/aponte-app/commit/578d401e33cfe241e9cd57672b83c62ec585361c))
+* **admin:** comp tickets, dj toggle, order search, UI refresh ([c344d32](https://github.com/zoedsoupe/aponte-app/commit/c344d321b49d14e0f7221922d6190a60850fb8fb))
+* **admin:** live CTA preview and contrast warning in the theme picker ([7e4fb5d](https://github.com/zoedsoupe/aponte-app/commit/7e4fb5dacd388c76ce776a3cd3e61c6ab9f43039))
+* **backfill:** emit /compra link + links/2 lookup by handle ([e36b65c](https://github.com/zoedsoupe/aponte-app/commit/e36b65c021385fed46b794ddb0ea5191152e3de2))
+* balcao ([5a975d9](https://github.com/zoedsoupe/aponte-app/commit/5a975d952af5e10913b77c5113d4f25e666a5fd0))
+* **balcao:** confirm cash sales through the same sheet as pix ([8beb5ad](https://github.com/zoedsoupe/aponte-app/commit/8beb5ad7dc4316ecd5eff0a3bd286e11d17bed2a))
+* **dashboard:** inline two-tap confirm and relative age on pending orders ([603998a](https://github.com/zoedsoupe/aponte-app/commit/603998a16084a1fd05fb1adaae38605747dea41d))
+* delete merch items + fix delete ticket_type ([dd5915f](https://github.com/zoedsoupe/aponte-app/commit/dd5915fdb227d85c916ff1f8d5d83d8c7178bcb0))
+* **door:** ok/error scan tones with a persisted mute toggle ([1c65381](https://github.com/zoedsoupe/aponte-app/commit/1c653811c713e93ca7c55ac9e9516fc136c86a35))
+* **door:** show buyer and lote on the already-validated panel ([7561b15](https://github.com/zoedsoupe/aponte-app/commit/7561b15b20973981c6a5a00c4117261b3f558935))
+* home/sobre ux revamp, off-white bg, bare hand logo, edition card hierarchy ([e763530](https://github.com/zoedsoupe/aponte-app/commit/e7635301e64eb3ffd7626269971ecf0aa03ea426))
+* improvements by jhene + hand cursor ([cef5391](https://github.com/zoedsoupe/aponte-app/commit/cef5391019879aa265a738da7252d6c79a605030))
+* launch v1 ([e24a131](https://github.com/zoedsoupe/aponte-app/commit/e24a131b0128ca5f476b09a2d4f30f2f78c35a7a))
+* merch + seo ([ff18309](https://github.com/zoedsoupe/aponte-app/commit/ff183097da2f99d9e640ca28d4453faeee8889fc))
+* **orders:** paste-import order link on /meus-ingressos ([626b93e](https://github.com/zoedsoupe/aponte-app/commit/626b93e0d43f574f70750a2ea55195b59d5680bb))
+* **orders:** recover meus-ingressos lookup by ticket short code ([4a3ea63](https://github.com/zoedsoupe/aponte-app/commit/4a3ea6366bde8449452197fba74fe1d6108146cb))
+* org page restructure, tab bar chrome, archivo type system ([de87ed2](https://github.com/zoedsoupe/aponte-app/commit/de87ed22cf4ef66405e0829d32c81177c81e9a6a))
+* org-aware js/seo, editions list, derived theme vars, cross-org guards ([f1ccde2](https://github.com/zoedsoupe/aponte-app/commit/f1ccde270434456f726934d8af1504d5bf8ea8e5))
+* org-scoped admin, org management UI, theme colors, drop legacy redirects ([b379caa](https://github.com/zoedsoupe/aponte-app/commit/b379caa18364579508b7b6cadf7b4a31c931f512))
+* org-scoped contexts (editions, tickets, merch, coupons, notifications, dj) ([2b5c219](https://github.com/zoedsoupe/aponte-app/commit/2b5c21956aef1760d3f51201559443cd1fd4fa9e))
+* org-scoped public router, vitrine, uploads, aponte brand ([28cf533](https://github.com/zoedsoupe/aponte-app/commit/28cf533c7a56168d47339dce24d330a90dee9671))
+* orgs foundation (migrations M1-M8, Orgs context, uploads/images) ([ad1c73d](https://github.com/zoedsoupe/aponte-app/commit/ad1c73ddf286eb934075b5f2fb4f412723105624))
+* revamp public purchase flows, native form primitives ([d8dfdb2](https://github.com/zoedsoupe/aponte-app/commit/d8dfdb278d3c38903d1eeaa4925bb64285af2898))
+* simplify edition menu ([ce450ab](https://github.com/zoedsoupe/aponte-app/commit/ce450ab0b46da3fc55e1ac11101a1794dbdb0c72))
+* **ui:** offer push opt-in in the empty lots and loja states ([9a6ce34](https://github.com/zoedsoupe/aponte-app/commit/9a6ce34f6fd34f0fcf61c41f7d7aa07e9643694d))
+* **vitrine:** in-app gallery lightbox instead of raw file navigation ([4f804f2](https://github.com/zoedsoupe/aponte-app/commit/4f804f23b228c9e49ab7130ffa6d11dcc8688507))
+
+
+### Bug Fixes
+
+* **admin:** scope products toggle to the loaded org list ([b185ae1](https://github.com/zoedsoupe/aponte-app/commit/b185ae163cccc1529da316fc495380046e886d05))
+* **config:** derive check_origin from PHX_HOST for domain cutover ([1ee10d3](https://github.com/zoedsoupe/aponte-app/commit/1ee10d3c6039c50bccfa5dc5ca7b7d2fa0e6e7d4))
+* **config:** drop dead PIX_KEY env, default admin auth in dev/test ([5c88832](https://github.com/zoedsoupe/aponte-app/commit/5c88832b1fce0c63686ca6c3f38d6577b28b9b96))
+* **copy:** capitalize, drop curly quotes, clarify order and admin strings ([75dc97b](https://github.com/zoedsoupe/aponte-app/commit/75dc97b1f796d559cc79d89bf6ba784c30f2e0cc))
+* **copy:** replace em-dashes in user-visible strings with hyphens ([0988a3b](https://github.com/zoedsoupe/aponte-app/commit/0988a3b9286a782d575ca8b83d6faa804b3eaf9f))
+* **cortesia:** scope comp lote lookup to the edition ([a1d37e3](https://github.com/zoedsoupe/aponte-app/commit/a1d37e3a1d75238e4dcc423505a137b6e68f9b38))
+* **coupons:** reverse earned and spent coupons on order cancel ([fde6719](https://github.com/zoedsoupe/aponte-app/commit/fde6719ba8ee9cfd48db50988f7448b73093c878))
+* design improvements by jhjubunha ([301ee81](https://github.com/zoedsoupe/aponte-app/commit/301ee818a3bb78bf9e86a43d621f63da23f43fea))
+* design improvements on landing page ([6310371](https://github.com/zoedsoupe/aponte-app/commit/63103716a9718e89931dc68b074ca5925e22ca34))
+* dev uploads outside priv/static (Plug.Static 400) ([eeb7b12](https://github.com/zoedsoupe/aponte-app/commit/eeb7b121294dc0c38a7f47489ae2ce976454f6bc))
+* **notifications:** per-org push subscriptions and coupon announce scope ([a8a3731](https://github.com/zoedsoupe/aponte-app/commit/a8a373116514f4fae46ef17420d3b56d22ba4ff2))
+* **orders:** replace blind meta-refresh with visibility-aware status poll ([6714564](https://github.com/zoedsoupe/aponte-app/commit/67145642251badf5a186cf8a20646bebafa3cb5f))
+* **orders:** show the live org pix key, keep order snapshot as audit ([8649e00](https://github.com/zoedsoupe/aponte-app/commit/8649e00ad6709cd477fab351d6518d34e92e68a6))
+* **orgs:** validate pix_key format, length and trim ([4bdfb7a](https://github.com/zoedsoupe/aponte-app/commit/4bdfb7a30ba4f5b8829579a6bcf7bfcb475323ab))
+* **security:** constant-time auth, SVG sandbox, JSON-LD escape, http-only links ([6a763dc](https://github.com/zoedsoupe/aponte-app/commit/6a763dc5a9d1632063d05458fbf8fe552701d53e))
+* **tickets:** canonicalize +55 phone prefix for lookup ([7c49f1d](https://github.com/zoedsoupe/aponte-app/commit/7c49f1d0e43e1f5ef012daff3726627e7c9ddea7))
+* **tickets:** reject non-positive quantities on order creation ([4b547d0](https://github.com/zoedsoupe/aponte-app/commit/4b547d09672575dd59e2e9f011d11a5fc3ddf9e5))
+* **tickets:** scope door validation to the door's edition ([67b7093](https://github.com/zoedsoupe/aponte-app/commit/67b7093dea94ddbfe9caad9041b7a9f6138de54a))
+* **ui:** dedupe order CTAs, fix dead producer CTA, copyable pix key ([36f2d01](https://github.com/zoedsoupe/aponte-app/commit/36f2d01be43835df60d05e33bd0e06a07e193b98))
+* **ui:** raise dim/soft text contrast and bold accent CTAs to pass AA ([7055ae1](https://github.com/zoedsoupe/aponte-app/commit/7055ae1b49a411de50d3095d5fe41ca991f7a5e5))
