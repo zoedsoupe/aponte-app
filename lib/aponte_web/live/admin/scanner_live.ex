@@ -99,8 +99,13 @@ defmodule AponteWeb.Admin.ScannerLive do
         {:ok, ticket} ->
           %{kind: :ok, lote: lote_name(ticket), name: buyer_name(ticket), at: ticket.used_at}
 
-        {:error, {:already_used, at}} ->
-          %{kind: :already_used, at: at}
+        {:error, {:already_used, ticket}} ->
+          %{
+            kind: :already_used,
+            lote: lote_name(ticket),
+            name: buyer_name(ticket),
+            at: ticket.used_at
+          }
 
         {:error, :not_found} ->
           %{kind: :not_found}
@@ -198,7 +203,12 @@ defmodule AponteWeb.Admin.ScannerLive do
 
           <ul :if={@name_matches != []} class="door-matches">
             <li :for={t <- @name_matches} class="door-match">
-              <span class="door-match-name">{t.order.customer_name}</span>
+              <span class="door-match-name">
+                {t.order.customer_name}
+                <span class="text-mono text-xs text-dim">
+                  {Aponte.Tickets.Ticket.display_code(t)}
+                </span>
+              </span>
               <.button phx-click="validate_name" phx-value-code={t.code}>Validar</.button>
             </li>
           </ul>
@@ -227,7 +237,9 @@ defmodule AponteWeb.Admin.ScannerLive do
               <% :already_used -> %>
                 <span class="scan-result-mark">✕</span>
                 <span class="text-xl text-mono">Já validado</span>
-                <span class="text-sm">Às {Clock.format(@result.at, :time)}</span>
+                <span :if={@result.lote} class="text-base">{@result.lote}</span>
+                <span :if={@result.name not in [nil, ""]} class="text-base">{@result.name}</span>
+                <span class="text-sm">Entrou às {Clock.format(@result.at, :time)}</span>
               <% :not_found -> %>
                 <span class="scan-result-mark">✕</span>
                 <span class="text-xl text-mono">Não encontrado</span>

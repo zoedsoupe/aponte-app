@@ -535,7 +535,7 @@ defmodule Aponte.Tickets do
   """
   @spec validate_ticket(String.t(), Ecto.UUID.t()) ::
           {:ok, Ticket.t()}
-          | {:error, {:already_used, DateTime.t()}}
+          | {:error, {:already_used, Ticket.t()}}
           | {:error, :not_found}
   def validate_ticket(raw_code, edition_id) do
     code = normalize_code(raw_code)
@@ -554,9 +554,11 @@ defmodule Aponte.Tickets do
         {:ok, ticket}
 
       {0, _} ->
+        # Return the ticket itself, so the door can show who/which lote already
+        # came in (the screenshot-sharing argument), not just the timestamp.
         case Repo.get_by(Ticket, code: code, edition_id: edition_id) do
           nil -> {:error, :not_found}
-          %Ticket{used_at: at} -> {:error, {:already_used, at}}
+          %Ticket{} = ticket -> {:error, {:already_used, Repo.preload(ticket, [:order])}}
         end
     end
   end
