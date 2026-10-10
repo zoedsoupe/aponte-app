@@ -50,6 +50,22 @@ defmodule Aponte.TicketsTest do
       assert id == lot.id
     end
 
+    test "drops non-positive and unparseable quantities instead of trusting them" do
+      {edition, lot} = edition_with_lot(%{}, %{capacity: 5})
+
+      assert {:error, :empty_cart} =
+               create(
+                 edition,
+                 order_attrs(edition, lot, %{items: [%{ticket_type_id: lot.id, quantity: "-5"}]})
+               )
+
+      assert {:error, :empty_cart} =
+               create(
+                 edition,
+                 order_attrs(edition, lot, %{items: [%{ticket_type_id: lot.id, quantity: "abc"}]})
+               )
+    end
+
     test "rejects an inactive lot" do
       {edition, lot} = edition_with_lot(%{}, %{is_active: false})
       assert {:error, {:not_on_sale, _}} = create(edition, order_attrs(edition, lot))

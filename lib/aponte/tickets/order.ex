@@ -45,6 +45,9 @@ defmodule Aponte.Tickets.Order do
     |> blank_to_nil(:customer_instagram)
     |> blank_to_nil(:customer_phone)
     |> validate_required(@required)
+    # Belt to to_int/1's suspenders: no order can be created with a negative
+    # total regardless of the insert path used for its items.
+    |> validate_number(:total_cents, greater_than_or_equal_to: 0)
     |> validate_length(:customer_name, min: 2, max: 80)
     |> validate_length(:customer_instagram, min: 1, max: 30)
     |> validate_format(:customer_instagram, ~r/^[a-z0-9._]+$/,

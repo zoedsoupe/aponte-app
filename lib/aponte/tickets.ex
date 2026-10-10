@@ -156,8 +156,19 @@ defmodule Aponte.Tickets do
     |> Enum.reject(&(&1.quantity in [0, nil] or &1.kind == :unknown))
   end
 
-  defp to_int(n) when is_integer(n), do: n
-  defp to_int(s) when is_binary(s), do: String.to_integer(s)
+  # Non-positive and unparseable quantities collapse to 0 so the reject in
+  # normalize_items/1 drops them. Without the `> 0` guard a crafted "-5" would
+  # pass validation (available < -5 is never true), store a negative total and,
+  # on confirm, raise `available` while emitting zero tickets.
+  defp to_int(n) when is_integer(n) and n > 0, do: n
+
+  defp to_int(s) when is_binary(s) do
+    case Integer.parse(s) do
+      {n, _} when n > 0 -> n
+      _ -> 0
+    end
+  end
+
   defp to_int(_), do: 0
 
   defp preload_types(items) do
