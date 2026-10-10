@@ -1,4 +1,4 @@
-const CACHE = "aponte-v1";
+const CACHE = "aponte-v2";
 const SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -203,6 +203,15 @@ self.addEventListener("fetch", (event) => {
   const accept = req.headers.get("accept") || "";
   const isHTML = accept.includes("text/html");
 
+  // LiveView's transport (websocket and, crucially, longpoll) and Phoenix's
+  // internal sockets MUST bypass the SW entirely. `caches.match` on a longpoll
+  // GET hands LiveView a stale response, so the client never syncs and spins in
+  // a poll storm — the socket flaps and phx events (e.g. the confirm button)
+  // silently stop landing. Let the browser talk to the server directly.
+  if (url.pathname.startsWith("/live") || url.pathname.startsWith("/phoenix")) {
+    return;
+  }
+
   if (isHTML) {
     // Admin is ALWAYS network — never cache /admin HTML. A cached 401 served on
     // the scanner mid-event is the worst failure mode at the door.
@@ -247,6 +256,16 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+
+  // Static (images, fonts, manifest): cache-first. Everything else (JSON APIs,
+  // uploads, etc.) goes straight to the network — never cache a dynamic
+  // response under its URL.
+  const isStatic =
+    /\.(png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf)$/i.test(url.pathname) ||
+    url.pathname === "/manifest.webmanifest" ||
+    url.pathname === "/robots.txt";
+
+  if (!isStatic) return;
 
   event.respondWith(
     caches.match(req).then((cached) => {
