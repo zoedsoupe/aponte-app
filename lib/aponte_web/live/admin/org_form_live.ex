@@ -120,7 +120,7 @@ defmodule AponteWeb.Admin.OrgFormLive do
     |> assign(
       record: org,
       social_links: org.social_links,
-      page_title: if(org.id, do: "Perfil — #{org.name}", else: "Nova organização"),
+      page_title: if(org.id, do: "Perfil - #{org.name}", else: "Nova organização"),
       form: to_form(Orgs.change_org(org))
     )
     |> then(fn socket ->

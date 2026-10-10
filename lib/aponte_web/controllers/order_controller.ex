@@ -158,7 +158,7 @@ defmodule AponteWeb.OrderController do
       # Form errors render inline in the template (a layout toast on top of the
       # form duplicated the message); flash stays for redirects only.
       form_error: Keyword.get(opts, :form_error),
-      page_title: "Comprar — #{edition.name}"
+      page_title: "Comprar - #{edition.name}"
     )
   end
 

@@ -115,7 +115,7 @@ export function bindOrderImport() {
     const m = input.value.match(COMPRA_LINK);
     const id = m?.[2];
     if (!id) {
-      input.setCustomValidity("link inválido — cole o /compra/... que você recebeu.");
+      input.setCustomValidity("link inválido - cole o /compra/... que você recebeu.");
       input.reportValidity();
       return;
     }

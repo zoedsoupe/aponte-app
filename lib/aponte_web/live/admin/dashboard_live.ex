@@ -54,7 +54,7 @@ defmodule AponteWeb.Admin.DashboardLive do
 
   defp select_edition(socket, %Edition{} = edition) do
     socket
-    |> assign(edition: edition, page_title: "Painel — #{edition.name}")
+    |> assign(edition: edition, page_title: "Painel - #{edition.name}")
     |> refresh()
   end
 

@@ -511,7 +511,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
                 checked={item.id in @featured_ids}
                 class="checkbox"
               />
-              <span class="field-label">{item.name} — {money(item.price_cents)}</span>
+              <span class="field-label">{item.name} - {money(item.price_cents)}</span>
             </label>
             <.button type="submit" variant={:ghost} class="btn--block">Salvar destaques</.button>
           </form>

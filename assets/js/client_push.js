@@ -134,7 +134,7 @@ export async function bindPostPurchasePrompt() {
   const text = document.createElement("span");
   text.className = "text-base";
   text.textContent =
-    "Te avisamos quando seu PIX cair — e das próximas edições e cupons em primeira mão.";
+    "Te avisamos quando seu PIX cair - e das próximas edições e cupons em primeira mão.";
 
   const actions = document.createElement("div");
   actions.className = "row gap-2 align-center";

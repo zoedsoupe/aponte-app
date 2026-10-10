@@ -16,7 +16,7 @@ defmodule AponteWeb.Admin.CortesiaLive do
          assign(socket,
            edition: edition,
            comp_lotes: comp_lotes,
-           page_title: "Cortesia — #{edition.name}",
+           page_title: "Cortesia - #{edition.name}",
            emitted: nil,
            form: new_form()
          )}
