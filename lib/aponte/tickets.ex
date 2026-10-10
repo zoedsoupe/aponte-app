@@ -366,8 +366,17 @@ defmodule Aponte.Tickets do
   def issue_confirmed(input, opts \\ []) do
     notify? = Keyword.get(opts, :notify?, false)
     code_fun = Keyword.get(opts, :code_fun, &generate_code/0)
+
+    # Scope the lote to the input edition: a tampered ticket_type_id from the
+    # cortesia form must not emit against another edition's (or org's) stock.
+    case Editions.get_ticket_type_in_edition(input.edition_id, input.ticket_type_id) do
+      {:ok, type} -> issue_confirmed_order(type, input, notify?, code_fun)
+      {:error, :not_found} -> {:error, {:unknown_ticket_type, input.ticket_type_id}}
+    end
+  end
+
+  defp issue_confirmed_order(type, input, notify?, code_fun) do
     qty = input.quantity
-    type = Editions.get_ticket_type!(input.ticket_type_id)
 
     Repo.transaction(fn ->
       order =

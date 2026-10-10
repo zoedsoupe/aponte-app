@@ -167,6 +167,25 @@ defmodule Aponte.TicketsTest do
       assert Repo.get!(TicketType, lot.id).available == 8
     end
 
+    test "rejects a lote that belongs to another edition, without emitting" do
+      {_edition, lot_a} = edition_with_lot(%{}, %{capacity: 10, is_active: false})
+      {edition_b, _lot_b} = edition_with_lot(%{}, %{capacity: 10, is_active: false})
+
+      assert {:error, {:unknown_ticket_type, id}} =
+               Tickets.issue_confirmed(%{
+                 org_id: edition_b.org_id,
+                 edition_id: edition_b.id,
+                 ticket_type_id: lot_a.id,
+                 customer_name: "Maria",
+                 customer_instagram: "maria",
+                 quantity: 1
+               })
+
+      assert id == lot_a.id
+      assert Repo.aggregate(Ticket, :count, :id) == 0
+      assert Repo.get!(TicketType, lot_a.id).available == 10
+    end
+
     test "does not touch a sibling active paid lote's available" do
       edition = edition_fixture()
       paid = ticket_type_fixture(edition, %{name: "Lote 1", capacity: 5})
