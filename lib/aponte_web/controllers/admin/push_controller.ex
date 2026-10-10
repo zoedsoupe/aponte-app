@@ -39,7 +39,7 @@ defmodule AponteWeb.Admin.PushController do
   end
 
   def unsubscribe(conn, %{"endpoint" => endpoint}) when is_binary(endpoint) do
-    Notifications.unsubscribe(endpoint)
+    Notifications.unsubscribe(endpoint, :admin, nil)
     json(conn, %{ok: true})
   end
 

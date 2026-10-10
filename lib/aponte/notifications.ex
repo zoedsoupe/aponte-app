@@ -19,6 +19,9 @@ defmodule Aponte.Notifications do
 
   # ── Subscriptions ──────────────────────────────────────────────────────────
 
+  # A device holds one subscription per (audience, org): subscribing under a
+  # second org adds a row instead of overwriting the first. COALESCE collapses
+  # the NULL org of admin / Aponte-wide subs so they still dedupe by endpoint.
   @spec subscribe(map()) :: {:ok, PushSubscription.t()} | {:error, Ecto.Changeset.t()}
   def subscribe(attrs) do
     %PushSubscription{}
@@ -26,11 +29,12 @@ defmodule Aponte.Notifications do
     |> Repo.insert(
       on_conflict:
         {:replace, [:org_id, :p256dh, :auth, :user_agent, :audience, :topics, :updated_at]},
-      conflict_target: :endpoint,
+      conflict_target: {:unsafe_fragment, "(endpoint, audience, COALESCE(org_id, ''))"},
       returning: true
     )
   end
 
+  @doc "Drops every row for an endpoint (device gone), across orgs and audiences."
   @spec unsubscribe(endpoint :: String.t()) :: :ok
   def unsubscribe(endpoint) do
     PushSubscription
@@ -40,24 +44,45 @@ defmodule Aponte.Notifications do
     :ok
   end
 
-  @doc "Returns the opt-in topics for a client subscription by endpoint."
-  @spec get_client_topics(endpoint :: String.t()) ::
+  @doc "Drops only the given device's subscription for one audience/org."
+  @spec unsubscribe(endpoint :: String.t(), :admin | :client, Ecto.UUID.t() | nil) :: :ok
+  def unsubscribe(endpoint, audience, org_id) do
+    PushSubscription
+    |> where(endpoint: ^endpoint)
+    |> where(audience: ^audience)
+    |> for_org(org_id)
+    |> Repo.delete_all()
+
+    :ok
+  end
+
+  @doc "Returns the opt-in topics for a client subscription by endpoint + org."
+  @spec get_client_topics(endpoint :: String.t(), Ecto.UUID.t() | nil) ::
           {:ok, [String.t()]} | {:error, :not_found}
-  def get_client_topics(endpoint) do
-    case Repo.get_by(PushSubscription, endpoint: endpoint, audience: :client) do
+  def get_client_topics(endpoint, org_id) do
+    case client_sub(endpoint, org_id) do
       nil -> {:error, :not_found}
       %PushSubscription{topics: topics} -> {:ok, topics || []}
     end
   end
 
   @doc "Updates the opt-in topics of a client subscription (config panel)."
-  @spec update_topics(endpoint :: String.t(), [String.t()]) ::
+  @spec update_topics(endpoint :: String.t(), Ecto.UUID.t() | nil, [String.t()]) ::
           {:ok, PushSubscription.t()} | {:error, :not_found | Ecto.Changeset.t()}
-  def update_topics(endpoint, topics) when is_list(topics) do
-    case Repo.get_by(PushSubscription, endpoint: endpoint, audience: :client) do
+  def update_topics(endpoint, org_id, topics) when is_list(topics) do
+    case client_sub(endpoint, org_id) do
       nil -> {:error, :not_found}
       sub -> sub |> PushSubscription.changeset(%{topics: topics}) |> Repo.update()
     end
+  end
+
+  # The single client row for a device in a given org (nil = Aponte-wide).
+  defp client_sub(endpoint, org_id) do
+    PushSubscription
+    |> where(endpoint: ^endpoint)
+    |> where(audience: :client)
+    |> for_org(org_id)
+    |> Repo.one()
   end
 
   @spec list_subscriptions(audience :: :admin | :client | nil) :: [PushSubscription.t()]
@@ -132,8 +157,7 @@ defmodule Aponte.Notifications do
       when is_binary(endpoint) do
     order = preload_for_notify(order)
 
-    with %PushSubscription{topics: topics} = sub <-
-           Repo.get_by(PushSubscription, endpoint: endpoint, audience: :client),
+    with %PushSubscription{topics: topics} = sub <- client_sub(endpoint, order.org_id),
          true <- "order_status" in (topics || []) do
       payload = %{
         "t" => "order_status",
@@ -157,9 +181,9 @@ defmodule Aponte.Notifications do
   subscribed and opted into `coupons`. No-op otherwise.
   """
   @spec notify_coupon_expiring(%{client_endpoint: String.t() | nil, code: String.t()}) :: :ok
-  def notify_coupon_expiring(%{client_endpoint: endpoint, code: code}) when is_binary(endpoint) do
-    with %PushSubscription{topics: topics} = sub <-
-           Repo.get_by(PushSubscription, endpoint: endpoint, audience: :client),
+  def notify_coupon_expiring(%{client_endpoint: endpoint, code: code} = coupon)
+      when is_binary(endpoint) do
+    with %PushSubscription{topics: topics} = sub <- client_sub(endpoint, Map.get(coupon, :org_id)),
          true <- "coupons" in (topics || []) do
       payload = %{"t" => "coupon_expiring", "code" => code, "url" => "/"}
       Task.start(fn -> push_one(sub, payload, urgency: "normal", topic: "coupon-#{code}") end)
@@ -176,7 +200,7 @@ defmodule Aponte.Notifications do
     payload = %{
       "t" => "edition",
       "title" => "#{edition.name} anunciada",
-      "body" => "#{Clock.format(edition.starts_at, :date)} — #{edition.venue}",
+      "body" => "#{Clock.format(edition.starts_at, :date)} - #{edition.venue}",
       "url" => "/"
     }
 
@@ -194,28 +218,30 @@ defmodule Aponte.Notifications do
   defp for_org(query, nil), do: where(query, [s], is_nil(s.org_id))
   defp for_org(query, org_id), do: where(query, [s], s.org_id == ^org_id)
 
-  @doc "Announces a newly-created public coupon to every `coupons`-opted client."
+  @doc "Announces a newly-created public coupon to that org's `coupons`-opted clients."
   @spec announce_coupon(%{
+          org_id: Ecto.UUID.t() | nil,
           code: String.t(),
           discount_kind: atom(),
           discount_value: integer(),
           expires_at: DateTime.t() | nil
         }) :: :ok
-  def announce_coupon(%{code: code, discount_kind: kind, discount_value: value, expires_at: exp}) do
-    body = "Use #{code} — #{discount_label(kind, value)}#{expiry_suffix(exp)}"
+  def announce_coupon(%{
+        org_id: org_id,
+        code: code,
+        discount_kind: kind,
+        discount_value: value,
+        expires_at: exp
+      }) do
+    body = "Use #{code} - #{discount_label(kind, value)}#{expiry_suffix(exp)}"
 
-    broadcast_to_topic("coupons", %{
-      "t" => "coupon",
-      "title" => "Novo cupom",
-      "body" => body,
-      "url" => "/"
-    })
-  end
+    payload = %{"t" => "coupon", "title" => "Novo cupom", "body" => body, "url" => "/"}
 
-  defp broadcast_to_topic(topic, payload) do
-    :client
-    |> list_subscriptions()
-    |> Enum.filter(&(topic in (&1.topics || [])))
+    PushSubscription
+    |> where([s], s.audience == :client)
+    |> for_org(org_id)
+    |> Repo.all()
+    |> Enum.filter(&("coupons" in (&1.topics || [])))
     |> Enum.each(fn sub -> Task.start(fn -> push_one(sub, payload, urgency: "low") end) end)
 
     :ok
