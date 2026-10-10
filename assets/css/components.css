@@ -2626,6 +2626,60 @@ a.inset-row:hover {
   }
 }
 
+/* gallery lightbox: keeps the vitrine inside the app instead of ejecting to
+   the raw file. z-index 100 = overlay layer (see scan-result for the go-to). */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-4);
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+}
+
+.lightbox[hidden] {
+  display: none;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radius);
+}
+
+.lightbox-close,
+.lightbox-nav {
+  position: absolute;
+  padding: var(--s-3);
+  border: 0;
+  background: none;
+  color: #fff;
+  font-size: var(--text-2xl);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox-close {
+  top: var(--s-2);
+  right: var(--s-2);
+}
+
+.lightbox-prev,
+.lightbox-next {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.lightbox-prev {
+  left: var(--s-2);
+}
+
+.lightbox-next {
+  right: var(--s-2);
+}
+
 /* desktop vitrine: hero edition composed as art column + info column;
    upcoming/past as two side-by-side columns below */
 @media (min-width: 960px) {

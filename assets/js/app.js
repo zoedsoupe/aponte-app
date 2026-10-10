@@ -38,6 +38,7 @@ import {
   bindOrderEndpoint,
 } from "./client_push";
 import { bindVitrineStream } from "./vitrine_stream";
+import { bindGalleryLightbox } from "./lightbox";
 import { bindScrollFx } from "./scroll_fx";
 // Establish Phoenix Socket and LiveView configuration.
 import { Socket } from "phoenix";
@@ -123,6 +124,7 @@ function init() {
   bindAvisosToggle();
   bindOrderEndpoint();
   bindVitrineStream();
+  bindGalleryLightbox();
   bindScrollFx();
   bindFlash();
 }
