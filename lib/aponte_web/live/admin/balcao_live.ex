@@ -25,6 +25,7 @@ defmodule AponteWeb.Admin.BalcaoLive do
        edition: Editions.current_edition(org.id),
        cart: %{},
        pix: nil,
+       cash: nil,
        sale: nil,
        result: nil,
        # loads scanner.js (redeem mode reads QR with the same hook as the door)
@@ -37,24 +38,37 @@ defmodule AponteWeb.Admin.BalcaoLive do
 
   @impl true
   def handle_event("set-mode", %{"mode" => mode}, socket) do
-    {:noreply, assign(socket, mode: to_mode(mode), pix: nil, sale: nil, result: nil)}
+    {:noreply, assign(socket, mode: to_mode(mode), pix: nil, cash: nil, sale: nil, result: nil)}
   end
 
   # ── POS ─────────────────────────────────────────────────────────────────────
 
   def handle_event("add", %{"id" => id}, socket) do
-    {:noreply, assign(socket, cart: bump(socket.assigns, id, +1), sale: nil, pix: nil)}
+    {:noreply, assign(socket, cart: bump(socket.assigns, id, +1), sale: nil, pix: nil, cash: nil)}
   end
 
   def handle_event("sub", %{"id" => id}, socket) do
-    {:noreply, assign(socket, cart: bump(socket.assigns, id, -1), pix: nil)}
+    {:noreply, assign(socket, cart: bump(socket.assigns, id, -1), pix: nil, cash: nil)}
   end
 
   def handle_event("clear-cart", _params, socket) do
-    {:noreply, assign(socket, cart: %{}, pix: nil)}
+    {:noreply, assign(socket, cart: %{}, pix: nil, cash: nil)}
   end
 
-  def handle_event("pay-cash", _params, socket), do: {:noreply, checkout(socket, :cash)}
+  # Cash records with no digital trace, so it gets the same confirm step as PIX:
+  # a thumb slip at a busy counter must not create phantom revenue.
+  def handle_event("pay-cash", _params, socket) do
+    total = cart_total(socket.assigns)
+
+    if total <= 0 do
+      {:noreply, put_flash(socket, :error, "Carrinho vazio.")}
+    else
+      {:noreply, assign(socket, cash: %{total: total})}
+    end
+  end
+
+  def handle_event("confirm-cash", _params, socket), do: {:noreply, checkout(socket, :cash)}
+  def handle_event("cancel-cash", _params, socket), do: {:noreply, assign(socket, cash: nil)}
 
   def handle_event("pay-pix", _params, socket) do
     total = cart_total(socket.assigns)
@@ -106,7 +120,12 @@ defmodule AponteWeb.Admin.BalcaoLive do
     case Bar.record_sale(edition_id, method, socket.assigns.cart, org_id) do
       {:ok, sale} ->
         socket
-        |> assign(cart: %{}, pix: nil, sale: %{total: sale.total_cents, method: method})
+        |> assign(
+          cart: %{},
+          pix: nil,
+          cash: nil,
+          sale: %{total: sale.total_cents, method: method}
+        )
         |> assign(items: Merch.list_counter_items(org_id))
 
       {:error, :empty_cart} ->
@@ -237,6 +256,18 @@ defmodule AponteWeb.Admin.BalcaoLive do
             Recebido
           </.button>
           <button type="button" class="text-xs text-dim" phx-click="cancel-pix">cancelar</button>
+        </div>
+      </div>
+
+      <%!-- dinheiro: mesma confirmação do PIX, sem QR --%>
+      <div :if={@cash} class="sheet" role="dialog">
+        <div class="sheet-body stack-3">
+          <p class="text-sm text-dim">Dinheiro · {money(@cash.total)}</p>
+          <p class="text-base">Recebido {money(@cash.total)} em dinheiro?</p>
+          <.button type="button" variant={:primary} class="btn--block" phx-click="confirm-cash">
+            Recebido
+          </.button>
+          <button type="button" class="text-xs text-dim" phx-click="cancel-cash">cancelar</button>
         </div>
       </div>
 
