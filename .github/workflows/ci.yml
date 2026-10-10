@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  # Reused by release.yml (which runs on push to main) so the deploy is gated
+  # on the exact same checks. No standalone push trigger on purpose: main is
+  # covered by the release pipeline, which avoids running the suite twice.
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  MIX_ENV: test
+
+jobs:
+  test:
+    name: mix ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Match the versions the Dockerfile ships with, so CI validates the
+      # artifact that actually gets deployed.
+      - name: Set up Elixir/OTP
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.19.5"
+          otp-version: "28.1.1"
+
+      - name: Cache deps and _build
+        uses: actions/cache@v6
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Run checks
+        run: mix ci

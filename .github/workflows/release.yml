@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# release-please opens the release PR and cuts the tag/release.
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+# Never overlap two release-please runs on main.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Same checks as CI, on the commit about to be released. Deploy waits on this.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release-please:
+    name: release-please
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+
+  # Deploy only when release-please actually cut a tag/release. This runs in the
+  # same workflow because tags created with GITHUB_TOKEN do not trigger other
+  # workflows (no PAT needed).
+  deploy:
+    name: Deploy to Fly
+    needs: [ci, release-please]
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: fly-deploy-aponte
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
