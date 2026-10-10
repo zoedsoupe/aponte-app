@@ -26,7 +26,12 @@ import { bindPresets } from "./presets";
 import { bindFormGate } from "./form_gate";
 import { registerServiceWorker } from "./pwa";
 import { bindPushToggle } from "./push";
-import { bindOrderRecord, renderOrderHistory, bindOrderImport } from "./orders";
+import {
+  bindOrderRecord,
+  renderOrderHistory,
+  bindOrderImport,
+  watchPendingOrder,
+} from "./orders";
 import {
   bindPostPurchasePrompt,
   bindAvisosToggle,
@@ -111,6 +116,7 @@ function init() {
   bindCopyButtons();
   bindPushToggle();
   bindOrderRecord();
+  watchPendingOrder();
   renderOrderHistory();
   bindOrderImport();
   bindPostPurchasePrompt();

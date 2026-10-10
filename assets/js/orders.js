@@ -32,6 +32,66 @@ export function bindOrderRecord() {
   write(list);
 }
 
+// Pending order page: poll the same URL while the tab is visible and reload as
+// soon as the producer confirms. Replaces a blind <meta refresh> that reset
+// scroll while the buyer copied the PIX code and did nothing in the background.
+export function watchPendingOrder() {
+  const marker = document.querySelector("[data-order-watch]");
+  if (!marker) return;
+
+  const url = marker.dataset.url || location.href;
+  const current = marker.dataset.orderStatus || "";
+  const note = document.querySelector("[data-order-updating]");
+  let timer = null;
+  let checking = false;
+
+  async function check() {
+    if (document.hidden || checking) return;
+    checking = true;
+    if (note) note.hidden = false;
+
+    try {
+      const res = await fetch(url, { credentials: "same-origin" });
+      if (res.ok) {
+        const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+        const next = doc.querySelector("[data-order-watch]");
+        if (next && (next.dataset.orderStatus || "") !== current) {
+          location.reload();
+          return;
+        }
+      }
+    } catch {
+      // offline or flaky venue data: keep the last state, retry next tick
+    } finally {
+      checking = false;
+      if (note) note.hidden = true;
+    }
+  }
+
+  function start() {
+    if (!timer) timer = setInterval(check, 12000);
+  }
+
+  function stop() {
+    if (timer) clearInterval(timer);
+    timer = null;
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stop();
+    } else {
+      start();
+      check();
+    }
+  });
+
+  if (!document.hidden) {
+    start();
+    check();
+  }
+}
+
 // Static inline chevron (same mark as the server-rendered inset rows).
 const CHEV_SVG =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="inset-chev" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>';

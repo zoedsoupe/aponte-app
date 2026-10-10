@@ -1,11 +1,19 @@
 <Layouts.app flash={@flash} org={@org} current_path={@conn.request_path}>
-  <meta :if={@order.status == :pending} http-equiv="refresh" content="30" />
   <div
     hidden
     data-order-record
     data-id={@order.id}
     data-label={order_label(@order)}
     data-org-slug={@org.slug}
+  >
+  </div>
+  <%!-- Pending: orders.js polls and reloads on confirm; no blind meta-refresh. --%>
+  <div
+    :if={@order.status == :pending}
+    hidden
+    data-order-watch
+    data-order-status={@order.status}
+    data-url={@conn.request_path}
   >
   </div>
 
@@ -16,6 +24,9 @@
       <div class="row gap-3 align-center">
         <.status_badge status={@order.status} />
         <p class="text-xs text-dim">{status_message(@order.status)}</p>
+        <p :if={@order.status == :pending} data-order-updating hidden class="text-xs text-dim">
+          Atualizando...
+        </p>
       </div>
     </header>
 
