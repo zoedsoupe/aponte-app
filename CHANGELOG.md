@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/zoedsoupe/aponte-app/compare/v0.2.0...v0.2.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **admin:** make the two-tap confirm harder to miss ([3496ace](https://github.com/zoedsoupe/aponte-app/commit/3496aceca58161457f2f24d0315e0046ab239be7))
+* **sw:** never intercept the liveview transport ([dc94463](https://github.com/zoedsoupe/aponte-app/commit/dc94463d7a79c8f4c1a1a1888e83e81996dda3d4))
+
 ## [0.2.0](https://github.com/zoedsoupe/aponte-app/compare/v0.1.0...v0.2.0) (2026-10-10)
 
 
