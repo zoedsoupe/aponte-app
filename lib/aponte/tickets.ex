@@ -668,17 +668,36 @@ defmodule Aponte.Tickets do
   """
   @spec lookup_order(Ecto.UUID.t(), String.t(), String.t()) ::
           {:ok, Order.t()} | {:error, :not_found}
-  def lookup_order(org_id, phone, order_id) do
+  def lookup_order(org_id, phone, ref) do
     phone = Order.normalize_phone(phone)
-    order_id = extract_order_id(order_id)
 
     with true <- phone not in [nil, ""],
-         {:ok, uuid} <- Ecto.UUID.cast(order_id),
+         {:ok, uuid} <- resolve_order_ref(org_id, ref),
          %Order{} = order <-
            Repo.get_by(Order, id: uuid, org_id: org_id, customer_phone: phone) do
       {:ok, Repo.preload(order, [:items, :tickets, :merch_units])}
     else
       _ -> {:error, :not_found}
+    end
+  end
+
+  # The buyer may have the /compra/ link, the bare order UUID, or a ticket's
+  # short display code (the recovery key printed next to each ticket). All three
+  # resolve to an order id here; the phone match below still gates the result,
+  # so a code alone never leaks an order.
+  defp resolve_order_ref(org_id, ref) when is_binary(ref) do
+    case Ecto.UUID.cast(extract_order_id(ref)) do
+      {:ok, uuid} -> {:ok, uuid}
+      :error -> ticket_order_ref(org_id, ref)
+    end
+  end
+
+  defp resolve_order_ref(_org_id, _ref), do: :error
+
+  defp ticket_order_ref(org_id, ref) do
+    case Repo.get_by(Ticket, code: normalize_code(ref), org_id: org_id) do
+      %Ticket{order_id: order_id} -> Ecto.UUID.cast(order_id)
+      nil -> :error
     end
   end
 
@@ -693,8 +712,6 @@ defmodule Aponte.Tickets do
       _ -> order_id
     end
   end
-
-  defp extract_order_id(_), do: ""
 
   @spec list_recent(Ecto.UUID.t(), non_neg_integer()) :: [Order.t()]
   def list_recent(org_id, limit \\ 50) do
