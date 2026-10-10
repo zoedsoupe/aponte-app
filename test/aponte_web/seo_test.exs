@@ -19,6 +19,20 @@ defmodule AponteWeb.SEOTest do
       assert decoded["startDate"] == "2026-08-01T22:00:00Z"
     end
 
+    test "escapes < so a name cannot break out of the script tag" do
+      edition = %{
+        name: "rolê </script><script>alert(1)</script>",
+        starts_at: nil,
+        venue: "OCA",
+        venue_address: nil
+      }
+
+      json = SEO.music_event_jsonld(edition, nil, "SESH")
+
+      refute json =~ "<"
+      assert JSON.decode!(json)["name"] == "rolê </script><script>alert(1)</script>"
+    end
+
     test "nil edition renders nothing" do
       assert SEO.music_event_jsonld(nil, nil, "SESH") == nil
     end

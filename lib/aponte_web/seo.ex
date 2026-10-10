@@ -58,5 +58,9 @@ defmodule AponteWeb.SEO do
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
     |> JSON.encode!()
+    # JSON.encode! does not escape "<", so a name/venue containing "</script>"
+    # would break out of the JSON-LD script tag. \u003c is valid inside JSON
+    # strings and closes the hole.
+    |> String.replace("<", "\\u003c")
   end
 end

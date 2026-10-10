@@ -128,6 +128,44 @@ defmodule Aponte.Coupons do
   end
 
   @doc """
+  Reverses this order's coupon effects when it is cancelled:
+
+    * deletes the bound coupons it earned but never used (they die with the
+      order that created them);
+    * refunds the coupon it consumed: a bound one gets `used_at`/`used_order_id`
+      cleared, a public one gets `uses_count` decremented.
+
+  Runs inside the cancel transaction (both the pending and confirmed branches).
+  """
+  @spec release_for_order(Order.t()) :: :ok
+  def release_for_order(%Order{} = order) do
+    from(c in Coupon,
+      where: c.order_id == ^order.id and c.scope == :bound and is_nil(c.used_at)
+    )
+    |> Repo.delete_all()
+
+    if order.coupon_code in [nil, ""] do
+      :ok
+    else
+      from(c in Coupon,
+        where:
+          c.org_id == ^order.org_id and c.code == ^order.coupon_code and c.scope == :bound and
+            c.used_order_id == ^order.id
+      )
+      |> Repo.update_all(set: [used_at: nil, used_order_id: nil])
+
+      from(c in Coupon,
+        where:
+          c.org_id == ^order.org_id and c.code == ^order.coupon_code and c.scope == :public and
+            c.uses_count > 0
+      )
+      |> Repo.update_all(inc: [uses_count: -1])
+    end
+
+    :ok
+  end
+
+  @doc """
   Notifies (once) about bound coupons expiring within the next 24h. Stamps
   `notified_expiring_at` so a coupon is never re-notified. Driven hourly by
   `Aponte.Coupons.ExpiryWorker`. `now` is injectable for tests.

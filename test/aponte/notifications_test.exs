@@ -145,23 +145,78 @@ defmodule Aponte.NotificationsTest do
       assert length(Notifications.list_subscriptions()) == 2
     end
 
-    test "update_topics/2 changes a client sub's topics", %{client_attrs: attrs} do
+    test "update_topics/3 changes a client sub's topics", %{client_attrs: attrs} do
       {:ok, _} = Notifications.subscribe(attrs)
 
       assert {:ok, sub} =
-               Notifications.update_topics(attrs.endpoint, ["order_status", "editions"])
+               Notifications.update_topics(attrs.endpoint, nil, ["order_status", "editions"])
 
       assert Enum.sort(sub.topics) == ["editions", "order_status"]
     end
 
-    test "update_topics/2 returns :not_found for unknown or admin endpoints", %{
+    test "update_topics/3 returns :not_found for unknown or admin endpoints", %{
       client_attrs: client
     } do
       {:ok, _} = Notifications.subscribe(Map.put(@valid_attrs, :audience, :admin))
 
-      assert {:error, :not_found} = Notifications.update_topics("https://nope/x", ["editions"])
+      assert {:error, :not_found} =
+               Notifications.update_topics("https://nope/x", nil, ["editions"])
+
       # endpoint exists but is an admin sub — not addressable as a client
-      assert {:error, :not_found} = Notifications.update_topics(client.endpoint, ["editions"])
+      assert {:error, :not_found} =
+               Notifications.update_topics(client.endpoint, nil, ["editions"])
+    end
+  end
+
+  describe "per-org subscriptions" do
+    test "the same endpoint can subscribe to two orgs, one row each" do
+      org_a = Aponte.Fixtures.org_fixture()
+      org_b = Aponte.Fixtures.org_fixture()
+
+      {:ok, _} =
+        Notifications.subscribe(%{
+          endpoint: @valid_attrs.endpoint,
+          p256dh: @valid_attrs.p256dh,
+          auth: @valid_attrs.auth,
+          audience: :client,
+          org_id: org_a.id,
+          topics: ["order_status"]
+        })
+
+      {:ok, _} =
+        Notifications.subscribe(%{
+          endpoint: @valid_attrs.endpoint,
+          p256dh: @valid_attrs.p256dh,
+          auth: @valid_attrs.auth,
+          audience: :client,
+          org_id: org_b.id,
+          topics: ["editions"]
+        })
+
+      assert Notifications.subscription_count() == 2
+    end
+
+    test "unsubscribe/3 drops only that org's row" do
+      org_a = Aponte.Fixtures.org_fixture()
+      org_b = Aponte.Fixtures.org_fixture()
+
+      for org <- [org_a, org_b] do
+        {:ok, _} =
+          Notifications.subscribe(%{
+            endpoint: @valid_attrs.endpoint,
+            p256dh: @valid_attrs.p256dh,
+            auth: @valid_attrs.auth,
+            audience: :client,
+            org_id: org.id
+          })
+      end
+
+      assert :ok = Notifications.unsubscribe(@valid_attrs.endpoint, :client, org_a.id)
+      assert Notifications.subscription_count() == 1
+      assert {:ok, _} = Notifications.get_client_topics(@valid_attrs.endpoint, org_b.id)
+
+      assert {:error, :not_found} =
+               Notifications.get_client_topics(@valid_attrs.endpoint, org_a.id)
     end
   end
 

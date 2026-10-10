@@ -52,7 +52,7 @@ ed1 =
     name: "SESH #1",
     starts_at: ~U[2026-06-28 00:00:00Z],
     venue: "OCA ROOTS",
-    venue_address: "Campos dos Goytacazes — RJ",
+    venue_address: "Campos dos Goytacazes - RJ",
     lineup: "ANTUNIO\nBRED\nE CONVIDADOS",
     status: :draft,
     accent_color: "#F07BC0",
@@ -82,7 +82,7 @@ upsert.(%{
   ticket_types: [
     %{
       name: "Pré-venda",
-      description: "primeiro lote, preço amigo — corre que acaba",
+      description: "primeiro lote, preço amigo - corre que acaba",
       price_cents: 1200,
       capacity: 100,
       position: 0,

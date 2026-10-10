@@ -78,9 +78,9 @@ function renderNotification(data) {
     // ── admin ──────────────────────────────────────────────────────────────
     case "new_order":
       return {
-        title: `novo pedido — ${data.n || "cliente"}`,
+        title: `novo pedido - ${data.n || "cliente"}`,
         options: {
-          body: `${data.q} ${data.q === 1 ? "ingresso" : "ingressos"} · r$ ${data.v}`,
+          body: `${data.q} ${data.q === 1 ? "ingresso" : "ingressos"} · R$ ${data.v}`,
           icon,
           badge,
           tag: `order-${data.id}`,
@@ -103,7 +103,7 @@ function renderNotification(data) {
 
     case "dj_application":
       return {
-        title: `quer tocar — ${data.n || "alguém"}`,
+        title: `quer tocar - ${data.n || "alguém"}`,
         options: {
           body: "nova inscrição de DJ",
           icon,

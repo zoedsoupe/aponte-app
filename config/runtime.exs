@@ -23,14 +23,23 @@ end
 config :aponte, AponteWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# admin auth: fail fast in prod, usable defaults in dev/test without a .env.
 config :aponte, :admin_auth,
-  username: System.fetch_env!("ADMIN_USER"),
-  password: System.fetch_env!("ADMIN_PASS")
+  username:
+    if(config_env() == :prod,
+      do: System.fetch_env!("ADMIN_USER"),
+      else: System.get_env("ADMIN_USER", "admin")
+    ),
+  password:
+    if(config_env() == :prod,
+      do: System.fetch_env!("ADMIN_PASS"),
+      else: System.get_env("ADMIN_PASS", "admin")
+    )
 
-config :aponte, :pix,
-  key: System.fetch_env!("PIX_KEY"),
-  merchant_name: System.get_env("MERCHANT_NAME", "SESH LAB"),
-  merchant_city: System.get_env("MERCHANT_CITY", "CAMPOS")
+# The PIX key and merchant name are per-org (orgs.pix_key, org.name); only the
+# city default is still global. PIX_KEY/MERCHANT_NAME envs are gone - see the
+# cutover note in SPEC_APONTE_V1 (fly secrets unset PIX_KEY).
+config :aponte, :pix, merchant_city: System.get_env("MERCHANT_CITY", "CAMPOS")
 
 if vapid_pub = System.get_env("VAPID_PUBLIC_KEY") do
   config :web_push, :vapid,
@@ -77,7 +86,7 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0}
     ],
     secret_key_base: secret_key_base,
-    check_origin: ["https://aponte.fly.dev"]
+    check_origin: ["https://#{host}", "https://www.#{host}"]
 
   # ## SSL Support
   #

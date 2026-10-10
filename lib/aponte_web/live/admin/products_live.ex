@@ -12,9 +12,16 @@ defmodule AponteWeb.Admin.ProductsLive do
 
   @impl true
   def handle_event("toggle", %{"id" => id}, socket) do
-    item = Merch.get_item!(id)
-    {:ok, _} = Merch.toggle_active(item)
-    {:noreply, assign(socket, items: Merch.list_items(socket.assigns.org.id))}
+    # Look the item up in the already org-scoped list: a tampered id from another
+    # org must not toggle someone else's product.
+    case Enum.find(socket.assigns.items, &(&1.id == id)) do
+      nil ->
+        {:noreply, socket}
+
+      item ->
+        {:ok, _} = Merch.toggle_active(item)
+        {:noreply, assign(socket, items: Merch.list_items(socket.assigns.org.id))}
+    end
   end
 
   @impl true

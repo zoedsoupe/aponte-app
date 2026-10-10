@@ -80,7 +80,7 @@ defmodule AponteWeb.Admin.CouponsLive do
             <div class="stack-1">
               <h2 class="section-label">Cupons públicos</h2>
               <p class="text-xs text-dim">
-                Código que qualquer cliente usa. inscritos recebem aviso ao criar.
+                Código que qualquer cliente usa. Inscritos recebem aviso ao criar.
               </p>
             </div>
             <a href={~p"/admin/#{@org.slug}/cupons/novo"} class="admin-action admin-action--primary">

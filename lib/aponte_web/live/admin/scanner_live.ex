@@ -2,7 +2,8 @@ defmodule AponteWeb.Admin.ScannerLive do
   @moduledoc """
   Validação na porta. LiveView + hook de câmera (`assets/js/scanner.js`):
   o cliente lê o QR e dá `pushEvent("scan", %{code})`; o servidor valida
-  atomicamente via `Tickets.validate_ticket/1` e devolve painel verde/vermelho.
+  atomicamente via `Tickets.validate_ticket/2` (escopado à edição da porta) e
+  devolve painel verde/vermelho.
 
   Cada validação faz broadcast em `"door:<edition_id>"`, então vários celulares
   na porta veem o contador `validadas / vendidas` em tempo real.
@@ -94,12 +95,17 @@ defmodule AponteWeb.Admin.ScannerLive do
 
   defp validate(socket, code) do
     result =
-      case Tickets.validate_ticket(code) do
+      case Tickets.validate_ticket(code, socket.assigns.edition.id) do
         {:ok, ticket} ->
           %{kind: :ok, lote: lote_name(ticket), name: buyer_name(ticket), at: ticket.used_at}
 
-        {:error, {:already_used, at}} ->
-          %{kind: :already_used, at: at}
+        {:error, {:already_used, ticket}} ->
+          %{
+            kind: :already_used,
+            lote: lote_name(ticket),
+            name: buyer_name(ticket),
+            at: ticket.used_at
+          }
 
         {:error, :not_found} ->
           %{kind: :not_found}
@@ -137,7 +143,7 @@ defmodule AponteWeb.Admin.ScannerLive do
     <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section id="scanner" phx-hook="Scanner" data-scanner class="scanner stack-4">
         <p :if={is_nil(@edition)} class="text-sm text-dim">
-          Nenhuma edição publicada. publique uma edição pra abrir a porta.
+          Nenhuma edição publicada. Publique uma edição pra abrir a porta.
         </p>
 
         <%= if @edition do %>
@@ -157,6 +163,10 @@ defmodule AponteWeb.Admin.ScannerLive do
 
           <button type="button" data-scanner-activate class="btn btn--primary btn--block">
             Ativar câmera
+          </button>
+
+          <button type="button" data-scanner-mute class="btn btn--ghost btn--sm">
+            Som ligado
           </button>
 
           <form phx-submit="manual" id="manual-code-form" class="stack-2">
@@ -197,7 +207,12 @@ defmodule AponteWeb.Admin.ScannerLive do
 
           <ul :if={@name_matches != []} class="door-matches">
             <li :for={t <- @name_matches} class="door-match">
-              <span class="door-match-name">{t.order.customer_name}</span>
+              <span class="door-match-name">
+                {t.order.customer_name}
+                <span class="text-mono text-xs text-dim">
+                  {Aponte.Tickets.Ticket.display_code(t)}
+                </span>
+              </span>
               <.button phx-click="validate_name" phx-value-code={t.code}>Validar</.button>
             </li>
           </ul>
@@ -226,7 +241,9 @@ defmodule AponteWeb.Admin.ScannerLive do
               <% :already_used -> %>
                 <span class="scan-result-mark">✕</span>
                 <span class="text-xl text-mono">Já validado</span>
-                <span class="text-sm">Às {Clock.format(@result.at, :time)}</span>
+                <span :if={@result.lote} class="text-base">{@result.lote}</span>
+                <span :if={@result.name not in [nil, ""]} class="text-base">{@result.name}</span>
+                <span class="text-sm">Entrou às {Clock.format(@result.at, :time)}</span>
               <% :not_found -> %>
                 <span class="scan-result-mark">✕</span>
                 <span class="text-xl text-mono">Não encontrado</span>

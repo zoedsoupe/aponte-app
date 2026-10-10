@@ -26,13 +26,19 @@ import { bindPresets } from "./presets";
 import { bindFormGate } from "./form_gate";
 import { registerServiceWorker } from "./pwa";
 import { bindPushToggle } from "./push";
-import { bindOrderRecord, renderOrderHistory, bindOrderImport } from "./orders";
+import {
+  bindOrderRecord,
+  renderOrderHistory,
+  bindOrderImport,
+  watchPendingOrder,
+} from "./orders";
 import {
   bindPostPurchasePrompt,
   bindAvisosToggle,
   bindOrderEndpoint,
 } from "./client_push";
 import { bindVitrineStream } from "./vitrine_stream";
+import { bindGalleryLightbox } from "./lightbox";
 import { bindScrollFx } from "./scroll_fx";
 // Establish Phoenix Socket and LiveView configuration.
 import { Socket } from "phoenix";
@@ -111,12 +117,14 @@ function init() {
   bindCopyButtons();
   bindPushToggle();
   bindOrderRecord();
+  watchPendingOrder();
   renderOrderHistory();
   bindOrderImport();
   bindPostPurchasePrompt();
   bindAvisosToggle();
   bindOrderEndpoint();
   bindVitrineStream();
+  bindGalleryLightbox();
   bindScrollFx();
   bindFlash();
 }

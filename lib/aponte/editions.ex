@@ -75,6 +75,16 @@ defmodule Aponte.Editions do
   @spec get_ticket_type!(Ecto.UUID.t()) :: TicketType.t()
   def get_ticket_type!(id), do: Repo.get!(TicketType, id)
 
+  @doc "Ticket type by id, scoped to an edition (guards against cross-edition ids)."
+  @spec get_ticket_type_in_edition(Ecto.UUID.t(), Ecto.UUID.t()) ::
+          {:ok, TicketType.t()} | {:error, :not_found}
+  def get_ticket_type_in_edition(edition_id, id) do
+    case Repo.get_by(TicketType, id: id, edition_id: edition_id) do
+      nil -> {:error, :not_found}
+      %TicketType{} = type -> {:ok, type}
+    end
+  end
+
   # ── Mutations ───────────────────────────────────────────────────────────────
 
   def change_edition(%Edition{} = edition, attrs \\ %{}), do: Edition.changeset(edition, attrs)

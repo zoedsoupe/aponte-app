@@ -71,6 +71,17 @@ defmodule Aponte.Tickets.OrderTest do
       assert Order.normalize_phone("(22) 99876-5432") == "22998765432"
       assert Order.normalize_phone(nil) == nil
     end
+
+    test "collapses the +55 country prefix to the local form" do
+      assert Order.normalize_phone("+55 22 99876-5432") == "22998765432"
+      assert Order.normalize_phone("5522998765432") == "22998765432"
+    end
+
+    test "keeps a local number whose DDD is 55" do
+      # DDD 55 is Santa Maria/RS: stripping "55" here would corrupt the number.
+      assert Order.normalize_phone("(55) 3222-1100") == "5532221100"
+      assert Order.normalize_phone("5599998888") == "5599998888"
+    end
   end
 
   describe "masked_name/1" do

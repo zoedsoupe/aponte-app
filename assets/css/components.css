@@ -172,18 +172,6 @@ body:has(.sesh-logo--hero) .brand {
 }
 
 /* product list / card */
-.product-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--s-3);
-}
-
-@media (min-width: 640px) {
-  .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 .product-card {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -303,16 +291,6 @@ body:has(.sesh-logo--hero) .brand {
 }
 
 /* promo + encomenda sections */
-.promo-section {
-  padding: var(--s-4);
-  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
-  border-radius: 14px;
-  background:
-    linear-gradient(160deg, color-mix(in srgb, var(--accent) 32%, transparent), transparent 78%),
-    color-mix(in srgb, var(--accent) 8%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-
 .promo-card {
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
   background: color-mix(in srgb, var(--bg) 55%, transparent);
@@ -400,7 +378,9 @@ body:has(.sesh-logo--hero) .brand {
   border-color: var(--accent);
   /* text on the accent fill: --bg contrasts it on both cream and dark orgs */
   color: var(--bg);
-  font-weight: 500;
+  /* 700 (not 500): at mobile sizes the accent-on-cream pair only clears WCAG
+     AA-large for bold text */
+  font-weight: 700;
 }
 
 .btn--primary:hover {
@@ -1077,9 +1057,9 @@ select.input {
   align-items: stretch;
   gap: var(--s-3);
   text-align: center;
-  font-size: 0.72rem;
-  /* avisos box = rosa (accent), não verde */
-  color: var(--accent);
+  /* avisos box = rosa (accent), não verde; borda e botão já carregam o accent,
+     o texto fica em ink pra passar contraste */
+  color: var(--fg);
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
@@ -1110,46 +1090,6 @@ select.input {
   color: var(--ok);
   border-color: color-mix(in srgb, var(--accent-green) 4%, transparent);
   background: color-mix(in srgb, var(--accent-green) 6%, transparent);
-}
-
-.alert--warning {
-  color: var(--cinnamon-3);
-  border-color: color-mix(in srgb, var(--accent-yellow) 55%, transparent);
-  background: color-mix(in srgb, var(--accent-yellow) 8%, transparent);
-}
-
-.alert--demand {
-  color: var(--cinnamon-3);
-  border: 1.5px solid color-mix(in srgb, var(--accent-yellow) 70%, transparent);
-  background: linear-gradient(135deg,
-      color-mix(in srgb, var(--accent-yellow) 14%, transparent),
-      color-mix(in srgb, var(--accent-warm) 12%, transparent));
-  padding: var(--s-4) var(--s-5);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-yellow) 12%, transparent);
-  animation: demand-pulse 2.4s ease-in-out infinite;
-}
-
-.alert--demand strong {
-  color: var(--cinnamon-3);
-  letter-spacing: 0.02em;
-}
-
-@keyframes demand-pulse {
-
-  0%,
-  100% {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-yellow) 12%, transparent);
-  }
-
-  50% {
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-yellow) 22%, transparent);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .alert--demand {
-    animation: none;
-  }
 }
 
 /* flash */
@@ -1501,8 +1441,9 @@ body::after {
   font-family: var(--font-display);
   font-stretch: 100%;
   font-size: var(--text-lg);
-  border-radius: 12px;
-  font-weight: 500;
+  border-radius: var(--radius-lg);
+  /* bold: accent-on-cream clears AA-large only at 700 on mobile (see .btn--primary) */
+  font-weight: 700;
 }
 
 .btn--blob:hover {
@@ -2621,6 +2562,60 @@ a.inset-row:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-2);
   }
+}
+
+/* gallery lightbox: keeps the vitrine inside the app instead of ejecting to
+   the raw file. z-index 100 = overlay layer (see scan-result for the go-to). */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-4);
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+}
+
+.lightbox[hidden] {
+  display: none;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radius);
+}
+
+.lightbox-close,
+.lightbox-nav {
+  position: absolute;
+  padding: var(--s-3);
+  border: 0;
+  background: none;
+  color: #fff;
+  font-size: var(--text-2xl);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox-close {
+  top: var(--s-2);
+  right: var(--s-2);
+}
+
+.lightbox-prev,
+.lightbox-next {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.lightbox-prev {
+  left: var(--s-2);
+}
+
+.lightbox-next {
+  right: var(--s-2);
 }
 
 /* desktop vitrine: hero edition composed as art column + info column;

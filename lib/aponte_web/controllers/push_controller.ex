@@ -22,7 +22,7 @@ defmodule AponteWeb.PushController do
   end
 
   def show(conn, %{"endpoint" => endpoint}) when is_binary(endpoint) do
-    case Notifications.get_client_topics(endpoint) do
+    case Notifications.get_client_topics(endpoint, org_id(conn)) do
       {:ok, topics} -> json(conn, %{topics: topics})
       {:error, :not_found} -> conn |> put_status(:not_found) |> json(%{error: "not found"})
     end
@@ -54,7 +54,7 @@ defmodule AponteWeb.PushController do
 
   def update(conn, %{"endpoint" => endpoint, "topics" => topics})
       when is_binary(endpoint) and is_list(topics) do
-    case Notifications.update_topics(endpoint, topics) do
+    case Notifications.update_topics(endpoint, org_id(conn), topics) do
       {:ok, _sub} -> json(conn, %{ok: true})
       {:error, :not_found} -> conn |> put_status(:not_found) |> json(%{error: "not found"})
       {:error, _cs} -> conn |> put_status(:unprocessable_entity) |> json(%{error: "invalid"})
@@ -64,7 +64,7 @@ defmodule AponteWeb.PushController do
   def update(conn, _), do: conn |> put_status(:bad_request) |> json(%{error: "bad request"})
 
   def unsubscribe(conn, %{"endpoint" => endpoint}) when is_binary(endpoint) do
-    Notifications.unsubscribe(endpoint)
+    Notifications.unsubscribe(endpoint, :client, org_id(conn))
     json(conn, %{ok: true})
   end
 

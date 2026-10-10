@@ -45,6 +45,9 @@ defmodule Aponte.Tickets.Order do
     |> blank_to_nil(:customer_instagram)
     |> blank_to_nil(:customer_phone)
     |> validate_required(@required)
+    # Belt to to_int/1's suspenders: no order can be created with a negative
+    # total regardless of the insert path used for its items.
+    |> validate_number(:total_cents, greater_than_or_equal_to: 0)
     |> validate_length(:customer_name, min: 2, max: 80)
     |> validate_length(:customer_instagram, min: 1, max: 30)
     |> validate_format(:customer_instagram, ~r/^[a-z0-9._]+$/,
@@ -79,10 +82,22 @@ defmodule Aponte.Tickets.Order do
     handle |> String.trim() |> String.trim_leading("@") |> String.downcase()
   end
 
-  @doc "Phone as digits only (strips formatting like `(22) 99876-5432`)."
+  @doc """
+  Phone as digits only (strips formatting like `(22) 99876-5432`).
+
+  A `+55` country prefix on a 12/13-digit number collapses to the local form, so
+  a buyer who typed `+55` at purchase still matches a local-number lookup (and
+  vice versa). The 10/11 guard protects real DDD 55 numbers from being mangled.
+  """
   @spec normalize_phone(String.t() | nil) :: String.t() | nil
   def normalize_phone(nil), do: nil
-  def normalize_phone(phone), do: String.replace(phone, ~r/\D/, "")
+
+  def normalize_phone(phone) do
+    case String.replace(phone, ~r/\D/, "") do
+      "55" <> rest when byte_size(rest) in [10, 11] -> rest
+      digits -> digits
+    end
+  end
 
   @doc ~S|Nome mascarado pra exibição pública: "Maria Silva" -> "M. S."|
   @spec masked_name(String.t()) :: String.t()

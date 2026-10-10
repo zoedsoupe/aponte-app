@@ -14,8 +14,10 @@ defmodule Aponte.Tickets do
   admins agindo no mesmo pedido nunca brigam.
 
   Ingressos só existem após confirmação — a validação na porta
-  (`validate_ticket/1`) opera numa tabela só, também via `update_all` atômico,
+  (`validate_ticket/2`) opera numa tabela só, também via `update_all` atômico,
   garantindo entrada única mesmo com dois porteiros escaneando o mesmo QR.
+  A validação é escopada à edição da porta: um código de outra org/edição
+  responde "não encontrado" em vez de queimar o ingresso de quem não é dali.
   """
 
   import Ecto.Query
@@ -156,8 +158,19 @@ defmodule Aponte.Tickets do
     |> Enum.reject(&(&1.quantity in [0, nil] or &1.kind == :unknown))
   end
 
-  defp to_int(n) when is_integer(n), do: n
-  defp to_int(s) when is_binary(s), do: String.to_integer(s)
+  # Non-positive and unparseable quantities collapse to 0 so the reject in
+  # normalize_items/1 drops them. Without the `> 0` guard a crafted "-5" would
+  # pass validation (available < -5 is never true), store a negative total and,
+  # on confirm, raise `available` while emitting zero tickets.
+  defp to_int(n) when is_integer(n) and n > 0, do: n
+
+  defp to_int(s) when is_binary(s) do
+    case Integer.parse(s) do
+      {n, _} when n > 0 -> n
+      _ -> 0
+    end
+  end
+
   defp to_int(_), do: 0
 
   defp preload_types(items) do
@@ -353,8 +366,17 @@ defmodule Aponte.Tickets do
   def issue_confirmed(input, opts \\ []) do
     notify? = Keyword.get(opts, :notify?, false)
     code_fun = Keyword.get(opts, :code_fun, &generate_code/0)
+
+    # Scope the lote to the input edition: a tampered ticket_type_id from the
+    # cortesia form must not emit against another edition's (or org's) stock.
+    case Editions.get_ticket_type_in_edition(input.edition_id, input.ticket_type_id) do
+      {:ok, type} -> issue_confirmed_order(type, input, notify?, code_fun)
+      {:error, :not_found} -> {:error, {:unknown_ticket_type, input.ticket_type_id}}
+    end
+  end
+
+  defp issue_confirmed_order(type, input, notify?, code_fun) do
     qty = input.quantity
-    type = Editions.get_ticket_type!(input.ticket_type_id)
 
     Repo.transaction(fn ->
       order =
@@ -504,30 +526,39 @@ defmodule Aponte.Tickets do
   # ── Validação na porta ──────────────────────────────────────────────────────
 
   @doc """
-  Valida (e queima) um ingresso pelo código. Entrada única: o `update_all`
-  condicional em `used_at IS NULL` garante exatamente uma validação por
-  código, mesmo com scanners concorrentes.
+  Valida (e queima) um ingresso pelo código, escopado à edição da porta.
+
+  O `edition_id` é obrigatório: sem ele um código de outra edição (ou outra
+  org) atravessaria a porta errada e seria queimado silenciosamente. Entrada
+  única: o `update_all` condicional em `used_at IS NULL` garante exatamente uma
+  validação por código, mesmo com scanners concorrentes.
   """
-  @spec validate_ticket(String.t()) ::
+  @spec validate_ticket(String.t(), Ecto.UUID.t()) ::
           {:ok, Ticket.t()}
-          | {:error, {:already_used, DateTime.t()}}
+          | {:error, {:already_used, Ticket.t()}}
           | {:error, :not_found}
-  def validate_ticket(raw_code) do
+  def validate_ticket(raw_code, edition_id) do
     code = normalize_code(raw_code)
     now = Clock.now_utc()
 
-    query = from t in Ticket, where: t.code == ^code and is_nil(t.used_at)
+    query =
+      from t in Ticket,
+        where: t.code == ^code and t.edition_id == ^edition_id and is_nil(t.used_at)
 
     case Repo.update_all(query, set: [used_at: now, updated_at: now]) do
       {1, _} ->
-        ticket = Repo.get_by!(Ticket, code: code) |> Repo.preload([:order])
+        ticket =
+          Repo.get_by!(Ticket, code: code, edition_id: edition_id) |> Repo.preload([:order])
+
         broadcast_door(ticket.edition_id)
         {:ok, ticket}
 
       {0, _} ->
-        case Repo.get_by(Ticket, code: code) do
+        # Return the ticket itself, so the door can show who/which lote already
+        # came in (the screenshot-sharing argument), not just the timestamp.
+        case Repo.get_by(Ticket, code: code, edition_id: edition_id) do
           nil -> {:error, :not_found}
-          %Ticket{used_at: at} -> {:error, {:already_used, at}}
+          %Ticket{} = ticket -> {:error, {:already_used, Repo.preload(ticket, [:order])}}
         end
     end
   end
@@ -557,7 +588,9 @@ defmodule Aponte.Tickets do
     Repo.transaction(fn ->
       cond do
         transition(id, from: :pending, to: :cancelled) == :ok ->
-          get_order!(id)
+          order = get_order!(id)
+          Coupons.release_for_order(order)
+          order
 
         transition(id, from: :confirmed, to: :cancelled) == :ok ->
           order = get_order!(id)
@@ -565,6 +598,7 @@ defmodule Aponte.Tickets do
           restore_merch(order)
           from(t in Ticket, where: t.order_id == ^order.id) |> Repo.delete_all()
           from(u in Aponte.Merch.Unit, where: u.order_id == ^order.id) |> Repo.delete_all()
+          Coupons.release_for_order(order)
           order
 
         true ->
@@ -636,17 +670,36 @@ defmodule Aponte.Tickets do
   """
   @spec lookup_order(Ecto.UUID.t(), String.t(), String.t()) ::
           {:ok, Order.t()} | {:error, :not_found}
-  def lookup_order(org_id, phone, order_id) do
+  def lookup_order(org_id, phone, ref) do
     phone = Order.normalize_phone(phone)
-    order_id = extract_order_id(order_id)
 
     with true <- phone not in [nil, ""],
-         {:ok, uuid} <- Ecto.UUID.cast(order_id),
+         {:ok, uuid} <- resolve_order_ref(org_id, ref),
          %Order{} = order <-
            Repo.get_by(Order, id: uuid, org_id: org_id, customer_phone: phone) do
       {:ok, Repo.preload(order, [:items, :tickets, :merch_units])}
     else
       _ -> {:error, :not_found}
+    end
+  end
+
+  # The buyer may have the /compra/ link, the bare order UUID, or a ticket's
+  # short display code (the recovery key printed next to each ticket). All three
+  # resolve to an order id here; the phone match below still gates the result,
+  # so a code alone never leaks an order.
+  defp resolve_order_ref(org_id, ref) when is_binary(ref) do
+    case Ecto.UUID.cast(extract_order_id(ref)) do
+      {:ok, uuid} -> {:ok, uuid}
+      :error -> ticket_order_ref(org_id, ref)
+    end
+  end
+
+  defp resolve_order_ref(_org_id, _ref), do: :error
+
+  defp ticket_order_ref(org_id, ref) do
+    case Repo.get_by(Ticket, code: normalize_code(ref), org_id: org_id) do
+      %Ticket{order_id: order_id} -> Ecto.UUID.cast(order_id)
+      nil -> :error
     end
   end
 
@@ -661,8 +714,6 @@ defmodule Aponte.Tickets do
       _ -> order_id
     end
   end
-
-  defp extract_order_id(_), do: ""
 
   @spec list_recent(Ecto.UUID.t(), non_neg_integer()) :: [Order.t()]
   def list_recent(org_id, limit \\ 50) do

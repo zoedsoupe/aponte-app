@@ -134,7 +134,7 @@ export async function bindPostPurchasePrompt() {
   const text = document.createElement("span");
   text.className = "text-base";
   text.textContent =
-    "Te avisamos quando seu PIX cair — e das próximas edições e cupons em primeira mão.";
+    "Te avisamos quando seu PIX cair - e das próximas edições e cupons em primeira mão.";
 
   const actions = document.createElement("div");
   actions.className = "row gap-2 align-center";
@@ -237,17 +237,17 @@ async function refreshToggle(btn) {
   const state = await getState();
   if (!state.supported) {
     btn.disabled = true;
-    btn.textContent = "avisos não suportados neste navegador";
+    btn.textContent = "Avisos não suportados neste navegador";
     return;
   }
   if (state.permission === "denied") {
     btn.disabled = true;
-    btn.textContent = "avisos bloqueados no navegador";
+    btn.textContent = "Avisos bloqueados no navegador";
     return;
   }
   btn.disabled = false;
   btn.dataset.state = state.subscribed ? "on" : "off";
-  btn.textContent = state.subscribed ? "desativar avisos" : "ativar avisos";
+  btn.textContent = state.subscribed ? "Desativar avisos" : "Ativar avisos";
 }
 
 // Order form: stamp the hidden client_endpoint field with this device's

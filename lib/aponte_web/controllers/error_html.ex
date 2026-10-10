@@ -38,7 +38,7 @@ defmodule AponteWeb.ErrorHTML do
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#FAF5EC" />
-        <title>{"#{@code} — Aponte"}</title>
+        <title>{"#{@code} - Aponte"}</title>
         <link rel="icon" href="/images/favicon.png" type="image/png" />
         <link rel="stylesheet" href="/assets/css/app.css" />
       </head>

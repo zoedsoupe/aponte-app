@@ -158,7 +158,7 @@ defmodule AponteWeb.OrderController do
       # Form errors render inline in the template (a layout toast on top of the
       # form duplicated the message); flash stays for redirects only.
       form_error: Keyword.get(opts, :form_error),
-      page_title: "Comprar — #{edition.name}"
+      page_title: "Comprar - #{edition.name}"
     )
   end
 
@@ -210,7 +210,7 @@ defmodule AponteWeb.OrderController do
   defp coupon_error(:inactive), do: "Esse cupom não está mais ativo."
   defp coupon_error(:exhausted), do: "Esse cupom atingiu o limite de usos."
   defp coupon_error(:wrong_customer), do: "Esse cupom é de outra pessoa."
-  defp coupon_error(:coupon_taken), do: "Esse cupom acabou de ser usado. tente outro."
+  defp coupon_error(:coupon_taken), do: "Esse cupom acabou de ser usado. Tente outro."
 
   defp coupon_error({:min_order, cents}),
     do: "Esse cupom exige pedido mínimo de #{AponteWeb.CoreComponents.money(cents)}."

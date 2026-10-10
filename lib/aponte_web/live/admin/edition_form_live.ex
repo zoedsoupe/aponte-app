@@ -40,7 +40,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
       {:ok, edition} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Edição “#{edition.name}” criada. Publique quando estiver pronta.")
+         |> put_flash(:info, "Edição \"#{edition.name}\" criada. Publique quando estiver pronta.")
          |> push_navigate(to: ~p"/admin/#{org.slug}")}
 
       {:error, changeset} ->
@@ -324,7 +324,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
                 required
                 inputmode="numeric"
               />
-              <.input field={@form[:name]} label={"Nome (vazio = “#{@org.name} #N”)"} />
+              <.input field={@form[:name]} label={"Nome (vazio = \"#{@org.name} #N\")"} />
             </div>
 
             <label class="field stack-1">
@@ -511,7 +511,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
                 checked={item.id in @featured_ids}
                 class="checkbox"
               />
-              <span class="field-label">{item.name} — {money(item.price_cents)}</span>
+              <span class="field-label">{item.name} - {money(item.price_cents)}</span>
             </label>
             <.button type="submit" variant={:ghost} class="btn--block">Salvar destaques</.button>
           </form>
@@ -521,7 +521,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
           <.button
             :if={@edition.status != :published}
             phx-click="publish"
-            data-confirm="Publicar esta edição? a landing passa a mostrá-la e qualquer outra publicada é arquivada."
+            data-confirm="Publicar esta edição? A landing passa a mostrá-la e qualquer outra publicada é arquivada."
             class="btn--block"
           >
             Publicar
@@ -530,7 +530,7 @@ defmodule AponteWeb.Admin.EditionFormLive do
           <.button
             :if={@edition.status == :published}
             phx-click="archive"
-            data-confirm="Despublicar? a landing volta pro teaser."
+            data-confirm="Despublicar? A landing volta pro teaser."
             variant={:danger}
             class="btn--block"
           >

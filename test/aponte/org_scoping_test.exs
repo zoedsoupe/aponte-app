@@ -211,6 +211,45 @@ defmodule Aponte.OrgScopingTest do
       assert {:ok, found} = Tickets.lookup_order(org.id, "22998765432", link)
       assert found.id == order.id
     end
+
+    test "a ticket's short display code resolves to its order", %{org: org, order: order} do
+      {:ok, _} = Tickets.confirm_order(order.id)
+      [ticket] = Repo.all(Aponte.Tickets.Ticket)
+
+      assert {:ok, found} =
+               Tickets.lookup_order(
+                 org.id,
+                 "22998765432",
+                 Aponte.Tickets.Ticket.display_code(ticket)
+               )
+
+      assert found.id == order.id
+    end
+
+    test "a ticket code only helps with the matching phone", %{org: org, order: order} do
+      {:ok, _} = Tickets.confirm_order(order.id)
+      [ticket] = Repo.all(Aponte.Tickets.Ticket)
+
+      assert {:error, :not_found} =
+               Tickets.lookup_order(
+                 org.id,
+                 "11988887777",
+                 Aponte.Tickets.Ticket.display_code(ticket)
+               )
+    end
+
+    test "a ticket code from another org is not_found", %{order: order} do
+      {:ok, _} = Tickets.confirm_order(order.id)
+      [ticket] = Repo.all(Aponte.Tickets.Ticket)
+      other = org_fixture()
+
+      assert {:error, :not_found} =
+               Tickets.lookup_order(
+                 other.id,
+                 "22998765432",
+                 Aponte.Tickets.Ticket.display_code(ticket)
+               )
+    end
   end
 
   describe "coupons across orgs" do

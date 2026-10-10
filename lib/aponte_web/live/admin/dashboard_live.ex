@@ -13,7 +13,10 @@ defmodule AponteWeb.Admin.DashboardLive do
     org = socket.assigns.org
     editions = Editions.list_editions(org.id)
 
-    {:ok, socket |> assign(editions: editions) |> select_edition(default_edition(editions))}
+    {:ok,
+     socket
+     |> assign(editions: editions, armed_id: nil)
+     |> select_edition(default_edition(editions))}
   end
 
   @impl true
@@ -22,12 +25,52 @@ defmodule AponteWeb.Admin.DashboardLive do
     {:noreply, select_edition(socket, edition)}
   end
 
+  # Two-tap confirm straight on the pending card (the producer's main loop).
+  # First tap arms this order ("tocar de novo"); the second within ~4s confirms.
+  @impl true
+  def handle_event("confirm_order", %{"id" => id}, %{assigns: %{armed_id: id}} = socket) do
+    confirm_order(socket, id)
+  end
+
+  def handle_event("confirm_order", %{"id" => id}, socket) do
+    Process.send_after(self(), :disarm_confirm, 4_000)
+    {:noreply, assign(socket, armed_id: id)}
+  end
+
   @impl true
   def handle_info({event, _id}, socket) when event in [:new_order, :order_updated, :soldout] do
     {:noreply, refresh(socket)}
   end
 
+  def handle_info(:disarm_confirm, socket), do: {:noreply, assign(socket, armed_id: nil)}
   def handle_info(_msg, socket), do: {:noreply, socket}
+
+  defp confirm_order(socket, id) do
+    case Tickets.confirm_order(id) do
+      {:ok, order} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Pagamento confirmado. #{length(order.tickets)} ingresso(s).")
+         |> assign(armed_id: nil)
+         |> refresh()}
+
+      {:error, :not_pending} ->
+        {:noreply, flash_and_refresh(socket, "Pedido não está mais pendente.")}
+
+      {:error, {:sold_out, _}} ->
+        {:noreply, flash_and_refresh(socket, "Ingressos esgotaram antes da confirmação.")}
+
+      {:error, {:merch_sold_out, _}} ->
+        {:noreply, flash_and_refresh(socket, "Produto esgotou antes da confirmação.")}
+
+      {:error, _} ->
+        {:noreply, flash_and_refresh(socket, "Não foi possível confirmar.")}
+    end
+  end
+
+  defp flash_and_refresh(socket, msg) do
+    socket |> put_flash(:error, msg) |> assign(armed_id: nil) |> refresh()
+  end
 
   # ── data ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +85,7 @@ defmodule AponteWeb.Admin.DashboardLive do
 
     assign(socket,
       edition: nil,
+      armed_id: nil,
       stats: nil,
       bar: nil,
       by_type: %{},
@@ -54,7 +98,7 @@ defmodule AponteWeb.Admin.DashboardLive do
 
   defp select_edition(socket, %Edition{} = edition) do
     socket
-    |> assign(edition: edition, page_title: "Painel — #{edition.name}")
+    |> assign(edition: edition, armed_id: nil, page_title: "Painel - #{edition.name}")
     |> refresh()
   end
 
@@ -97,6 +141,19 @@ defmodule AponteWeb.Admin.DashboardLive do
   defp contact_label(%{customer_instagram: ig}) when is_binary(ig), do: "@#{ig}"
   defp contact_label(%{customer_phone: phone}) when is_binary(phone), do: phone
   defp contact_label(_), do: nil
+
+  # Relative age on pending rows: confirm-or-cancel depends on how stale a hold
+  # is ("did they just pay?"), which a raw clock time hides.
+  defp age_label(inserted_at) do
+    minutes = DateTime.diff(Clock.now_utc(), Clock.to_brt(inserted_at), :minute)
+
+    cond do
+      minutes < 1 -> "agora"
+      minutes < 60 -> "há #{minutes} min"
+      minutes < 1440 -> "há #{div(minutes, 60)} h"
+      true -> "há #{div(minutes, 1440)} d"
+    end
+  end
 
   defp lote_stats(by_type, type) do
     s = Map.get(by_type, type.id, %{held: 0, sold: 0, validated: 0})
@@ -188,18 +245,30 @@ defmodule AponteWeb.Admin.DashboardLive do
                       &"#{&1.quantity}× #{Aponte.Tickets.OrderItem.line_name(&1)}"
                     )}
                   </span>
-                  <span>{Clock.format(o.inserted_at, :time)}</span>
+                  <span>{age_label(o.inserted_at)}</span>
                 </div>
               </a>
-              <%!-- ponytail: inline onclick clipboard — LiveView-diffed rows
-                    aren't re-bound by copy.js. UUID url has no quotes to escape. --%>
-              <button
-                type="button"
-                onclick={"navigator.clipboard.writeText('#{url(~p"/#{@org.slug}/compra/#{o.id}")}')"}
-                class="btn btn--ghost btn--sm btn--block"
-              >
-                Copiar link
-              </button>
+              <div class="row gap-2">
+                <button
+                  type="button"
+                  phx-click="confirm_order"
+                  phx-value-id={o.id}
+                  class={["btn btn--sm flex-1", @armed_id == o.id && "btn--primary"]}
+                >
+                  {if @armed_id == o.id,
+                    do: "Tocar de novo: #{money(o.total_cents)}",
+                    else: "Confirmar pagamento"}
+                </button>
+                <%!-- ponytail: inline onclick clipboard — LiveView-diffed rows
+                      aren't re-bound by copy.js. UUID url has no quotes to escape. --%>
+                <button
+                  type="button"
+                  onclick={"navigator.clipboard.writeText('#{url(~p"/#{@org.slug}/compra/#{o.id}")}')"}
+                  class="btn btn--ghost btn--sm"
+                >
+                  Copiar link
+                </button>
+              </div>
             </li>
           </ul>
         </section>
