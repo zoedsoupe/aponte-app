@@ -400,7 +400,9 @@ body:has(.sesh-logo--hero) .brand {
   border-color: var(--accent);
   /* text on the accent fill: --bg contrasts it on both cream and dark orgs */
   color: var(--bg);
-  font-weight: 500;
+  /* 700 (not 500): at mobile sizes the accent-on-cream pair only clears WCAG
+     AA-large for bold text */
+  font-weight: 700;
 }
 
 .btn--primary:hover {
@@ -1077,9 +1079,9 @@ select.input {
   align-items: stretch;
   gap: var(--s-3);
   text-align: center;
-  font-size: 0.72rem;
-  /* avisos box = rosa (accent), não verde */
-  color: var(--accent);
+  /* avisos box = rosa (accent), não verde; borda e botão já carregam o accent,
+     o texto fica em ink pra passar contraste */
+  color: var(--fg);
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
@@ -1501,8 +1503,9 @@ body::after {
   font-family: var(--font-display);
   font-stretch: 100%;
   font-size: var(--text-lg);
-  border-radius: 12px;
-  font-weight: 500;
+  border-radius: var(--radius-lg);
+  /* bold: accent-on-cream clears AA-large only at 700 on mobile (see .btn--primary) */
+  font-weight: 700;
 }
 
 .btn--blob:hover {

@@ -16,7 +16,10 @@
   --ink-muted: color-mix(in srgb, var(--ink) 75%, var(--bg));
   --fg: var(--ink);
   --fg-muted: var(--ink-muted);
-  --fg-dim: color-mix(in srgb, var(--ink-muted), var(--bg) 40%);
+  /* Same as muted: the extra 40% step dropped small hints to ~2.3:1, below the
+     AA floor this palette already fixes one derivation up. Hierarchy between
+     hint and body text now comes from size/weight, not a sub-AA color. */
+  --fg-dim: var(--fg-muted);
 
   /* --accent is overridden per-org via inline style on <html> */
   --accent: #bf7262;
@@ -26,7 +29,7 @@
   --accent-mauve: #967577;
   /* softer accent for links/quiet emphasis: derived so it follows the org
      theme instead of pinning the platform terracotta */
-  --accent-soft: color-mix(in srgb, var(--accent), var(--ink) 25%);
+  --accent-soft: color-mix(in srgb, var(--accent), var(--ink) 35%);
 
   --cyan: var(--accent-mauve);
   --green: color-mix(in srgb, var(--accent-green), var(--ink) 40%);
