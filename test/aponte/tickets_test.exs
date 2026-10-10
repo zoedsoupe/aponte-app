@@ -354,7 +354,10 @@ defmodule Aponte.TicketsTest do
         })
 
       {:ok, order} =
-        create(edition, order_attrs(edition, lot, %{items: [%{ticket_type_id: lot.id, quantity: 1}]}))
+        create(
+          edition,
+          order_attrs(edition, lot, %{items: [%{ticket_type_id: lot.id, quantity: 1}]})
+        )
 
       assert [_] = Aponte.Coupons.earned_for_order(order.id)
 
