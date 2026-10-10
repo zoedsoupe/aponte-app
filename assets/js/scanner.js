@@ -8,6 +8,39 @@ import jsQR from "../vendor/jsqr.js";
 
 const FRAME_INTERVAL_MS = 100; // ~10 fps — enough for QR, easy on the battery
 const DEBOUNCE_MS = 3000; // same code within 3s = one scan
+const MUTE_KEY = "aponte.scanner.mute"; // persisted sound preference
+
+// Door ergonomics: two distinct tones so the operator can tell ok from error by
+// ear, without looking down at the screen while a queue is waiting. Oscillator
+// only (no assets); the AudioContext is created on the "Ativar câmera" gesture
+// so autoplay policies don't block it.
+function audioCtx() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return null;
+  if (!audioCtx._ctx) audioCtx._ctx = new Ctx();
+  if (audioCtx._ctx.state === "suspended") audioCtx._ctx.resume();
+  return audioCtx._ctx;
+}
+
+function beep(kind) {
+  if (localStorage.getItem(MUTE_KEY) === "1") return;
+  const ctx = audioCtx();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.connect(gain).connect(ctx.destination);
+
+  const [freq, dur, peak] = kind === "ok" ? [880, 0.18, 0.2] : [220, 0.32, 0.25];
+  osc.frequency.setValueAtTime(freq, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(peak, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  osc.start(now);
+  osc.stop(now + dur + 0.02);
+}
 
 const Scanner = {
   mounted() {
@@ -23,8 +56,20 @@ const Scanner = {
     this.tick = this.tick.bind(this);
 
     if (this.activateBtn) {
-      this.activateBtn.addEventListener("click", () => this.start());
+      this.activateBtn.addEventListener("click", () => {
+        audioCtx(); // unlock audio on this gesture
+        this.start();
+      });
     }
+
+    this.bindMute();
+
+    // The result panel is server-rendered (inside this.el on the door page,
+    // beside it on the counter), so watch the DOM and beep when one appears.
+    this.lastResult = "";
+    this.resultObserver = new MutationObserver(() => this.checkResult());
+    this.resultObserver.observe(document.body, { childList: true, subtree: true });
+    this.checkResult();
 
     // iOS/Android: stop the camera loop when the tab is backgrounded.
     this.onVisibility = () => {
@@ -32,6 +77,34 @@ const Scanner = {
       else if (this.stream) this.resume();
     };
     document.addEventListener("visibilitychange", this.onVisibility);
+  },
+
+  checkResult() {
+    const el = document.querySelector(".scan-result");
+    const sig = el ? `${el.className}|${(el.textContent || "").trim().slice(0, 40)}` : "";
+    if (sig === this.lastResult) return;
+    this.lastResult = sig;
+    if (!el) return;
+    beep(el.classList.contains("scan-result--ok") ? "ok" : "err");
+  },
+
+  bindMute() {
+    this.muteBtn = this.el.querySelector("[data-scanner-mute]");
+    if (!this.muteBtn) return;
+
+    const sync = () => {
+      const muted = localStorage.getItem(MUTE_KEY) === "1";
+      this.muteBtn.textContent = muted ? "Som desligado" : "Som ligado";
+      this.muteBtn.setAttribute("aria-pressed", String(muted));
+    };
+
+    this.muteBtn.addEventListener("click", () => {
+      const muted = localStorage.getItem(MUTE_KEY) === "1";
+      localStorage.setItem(MUTE_KEY, muted ? "0" : "1");
+      sync();
+    });
+
+    sync();
   },
 
   async start() {
@@ -100,6 +173,7 @@ const Scanner = {
   destroyed() {
     this.pause();
     document.removeEventListener("visibilitychange", this.onVisibility);
+    if (this.resultObserver) this.resultObserver.disconnect();
     if (this.stream) this.stream.getTracks().forEach((t) => t.stop());
   },
 };

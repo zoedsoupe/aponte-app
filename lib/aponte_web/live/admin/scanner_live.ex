@@ -165,6 +165,10 @@ defmodule AponteWeb.Admin.ScannerLive do
             Ativar câmera
           </button>
 
+          <button type="button" data-scanner-mute class="btn btn--ghost btn--sm">
+            Som ligado
+          </button>
+
           <form phx-submit="manual" id="manual-code-form" class="stack-2">
             <label class="field stack-1">
               <span class="field-label text-xs text-muted">Código manual</span>
