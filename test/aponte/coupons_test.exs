@@ -132,6 +132,67 @@ defmodule Aponte.CouponsTest do
     end
   end
 
+  describe "release_for_order/1" do
+    test "deletes bound coupons the order earned but never used" do
+      org = org_fixture()
+      order = insert_order(org, %{total_cents: 9000, customer_instagram: "fulano"})
+
+      _coupon =
+        insert_coupon(org, %{scope: :bound, order_id: order.id, customer_instagram: "fulano"})
+
+      assert [_] = Coupons.earned_for_order(order.id)
+      assert :ok = Coupons.release_for_order(order)
+      assert Coupons.earned_for_order(order.id) == []
+    end
+
+    test "keeps a bound coupon the order earned and already used" do
+      org = org_fixture()
+      order = insert_order(org, %{total_cents: 9000, customer_instagram: "fulano"})
+
+      _coupon =
+        insert_coupon(org, %{
+          scope: :bound,
+          order_id: order.id,
+          customer_instagram: "fulano",
+          used_at: Aponte.Clock.now_utc(),
+          used_order_id: Ecto.UUID.generate()
+        })
+
+      assert :ok = Coupons.release_for_order(order)
+      assert [_] = Coupons.earned_for_order(order.id)
+    end
+
+    test "refunds a bound coupon the order consumed" do
+      org = org_fixture()
+      code = "APO-BOUND1"
+      order = insert_order(org, %{total_cents: 5000, coupon_code: code})
+
+      coupon =
+        insert_coupon(org, %{
+          scope: :bound,
+          code: code,
+          customer_instagram: "fulano",
+          used_at: Aponte.Clock.now_utc(),
+          used_order_id: order.id
+        })
+
+      assert :ok = Coupons.release_for_order(order)
+      refunded = Repo.get!(Coupon, coupon.id)
+      assert refunded.used_at == nil
+      assert refunded.used_order_id == nil
+    end
+
+    test "decrements a public coupon's uses_count" do
+      org = org_fixture()
+      code = "APO-PUB1"
+      order = insert_order(org, %{total_cents: 5000, coupon_code: code})
+      coupon = insert_coupon(org, %{scope: :public, code: code, uses_count: 3})
+
+      assert :ok = Coupons.release_for_order(order)
+      assert Repo.get!(Coupon, coupon.id).uses_count == 2
+    end
+  end
+
   describe "preview/2" do
     setup do
       {:ok, org: org_fixture()}

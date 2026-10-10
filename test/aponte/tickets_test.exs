@@ -320,6 +320,28 @@ defmodule Aponte.TicketsTest do
       assert Repo.get!(TicketType, lot.id).available == 5
       assert {:error, :not_found} = Tickets.validate_ticket(ticket.code, ticket.edition_id)
     end
+
+    test "cancelling a pending order revokes the coupons it earned" do
+      org = org_fixture()
+      {edition, lot} = edition_with_lot(%{org_id: org.id}, %{capacity: 5, price_cents: 9000})
+
+      {:ok, _rule} =
+        Aponte.Coupons.create_rule(org, %{
+          name: "premia",
+          min_order_cents: 8000,
+          discount_kind: :percent,
+          discount_value: 10,
+          expires_in_days: 7
+        })
+
+      {:ok, order} =
+        create(edition, order_attrs(edition, lot, %{items: [%{ticket_type_id: lot.id, quantity: 1}]}))
+
+      assert [_] = Aponte.Coupons.earned_for_order(order.id)
+
+      assert {:ok, _} = Tickets.cancel_order(order.id)
+      assert Aponte.Coupons.earned_for_order(order.id) == []
+    end
   end
 
   describe "generate_code/0" do

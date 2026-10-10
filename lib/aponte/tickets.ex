@@ -577,7 +577,9 @@ defmodule Aponte.Tickets do
     Repo.transaction(fn ->
       cond do
         transition(id, from: :pending, to: :cancelled) == :ok ->
-          get_order!(id)
+          order = get_order!(id)
+          Coupons.release_for_order(order)
+          order
 
         transition(id, from: :confirmed, to: :cancelled) == :ok ->
           order = get_order!(id)
@@ -585,6 +587,7 @@ defmodule Aponte.Tickets do
           restore_merch(order)
           from(t in Ticket, where: t.order_id == ^order.id) |> Repo.delete_all()
           from(u in Aponte.Merch.Unit, where: u.order_id == ^order.id) |> Repo.delete_all()
+          Coupons.release_for_order(order)
           order
 
         true ->
