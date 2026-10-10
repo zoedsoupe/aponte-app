@@ -68,7 +68,7 @@ defmodule AponteWeb.Admin.CortesiaLive do
         {:noreply, assign(socket, form: to_form(cs, as: :comp))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Não deu pra emitir. confere o lote.")}
+        {:noreply, put_flash(socket, :error, "Não deu pra emitir. Confere o lote.")}
     end
   end
 
@@ -104,7 +104,7 @@ defmodule AponteWeb.Admin.CortesiaLive do
         </p>
 
         <p :if={@comp_lotes == []} class="text-sm text-dim">
-          Nenhum lote de cortesia. crie um lote inativo na edição primeiro.
+          Nenhum lote de cortesia. Crie um lote inativo na edição primeiro.
           <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}"} class="text-accent">
             Editar edição →
           </a>

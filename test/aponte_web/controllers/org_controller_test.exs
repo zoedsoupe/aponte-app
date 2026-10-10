@@ -250,13 +250,13 @@ defmodule AponteWeb.OrgControllerTest do
       assert html =~ "vitrine-gallery-tease"
       assert html =~ "/uploads/orgs/#{org.id}/thumbs/abc.webp"
       assert html =~ "@coletivo.sesh"
-      assert html =~ "Quero ser avisade"
+      assert html =~ "Quero receber avisos"
     end
 
     test "no tease row without gallery images", %{conn: conn} do
       html = conn |> get("/sesh/") |> html_response(200)
       refute html =~ "vitrine-gallery-tease"
-      assert html =~ "Quero ser avisade"
+      assert html =~ "Quero receber avisos"
     end
   end
 

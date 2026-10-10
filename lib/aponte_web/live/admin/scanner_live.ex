@@ -138,7 +138,7 @@ defmodule AponteWeb.Admin.ScannerLive do
     <Layouts.admin flash={@flash} org={@org} current_path={assigns[:admin_path]} back="Painel">
       <section id="scanner" phx-hook="Scanner" data-scanner class="scanner stack-4">
         <p :if={is_nil(@edition)} class="text-sm text-dim">
-          Nenhuma edição publicada. publique uma edição pra abrir a porta.
+          Nenhuma edição publicada. Publique uma edição pra abrir a porta.
         </p>
 
         <%= if @edition do %>

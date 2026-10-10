@@ -80,7 +80,7 @@ function renderNotification(data) {
       return {
         title: `novo pedido - ${data.n || "cliente"}`,
         options: {
-          body: `${data.q} ${data.q === 1 ? "ingresso" : "ingressos"} · r$ ${data.v}`,
+          body: `${data.q} ${data.q === 1 ? "ingresso" : "ingressos"} · R$ ${data.v}`,
           icon,
           badge,
           tag: `order-${data.id}`,

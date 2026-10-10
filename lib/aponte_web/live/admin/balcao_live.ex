@@ -291,7 +291,7 @@ defmodule AponteWeb.Admin.BalcaoLive do
       <div :if={@items == []} class="text-sm text-dim">
         Nenhum item de balcão. Cadastre em
         <.link navigate={~p"/admin/#{@org.slug}/produtos/novo"} class="text-accent">Produtos</.link>
-        com tipo “balcão”.
+        com tipo "balcão".
       </div>
 
       <ul :if={@items != []} class="pos-grid">

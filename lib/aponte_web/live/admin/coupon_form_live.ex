@@ -118,7 +118,7 @@ defmodule AponteWeb.Admin.CouponFormLive do
           eyebrow="Cupom"
         />
         <p class="text-xs text-dim">
-          Cupom que qualquer cliente pode usar. ao criar (ativo), os inscritos recebem um aviso.
+          Cupom que qualquer cliente pode usar. Ao criar (ativo), os inscritos recebem um aviso.
         </p>
 
         <.form for={@form} phx-change="validate" phx-submit="save" class="stack-5" id="coupon-form">

@@ -126,7 +126,7 @@ defmodule AponteWeb.Admin.OrgGalleryLive do
     socket
     |> maybe_flash(oks > 0, :info, "#{oks} imagem(ns) adicionada(s).")
     |> maybe_flash(over?, :info, "Atenção: a org passou da quota de armazenamento.")
-    |> maybe_flash(dups > 0, :error, "imagem já enviada")
+    |> maybe_flash(dups > 0, :error, "Imagem já enviada.")
     |> maybe_flash(errs > 0, :error, "#{errs} imagem(ns) falharam (arquivo inválido?).")
   end
 
