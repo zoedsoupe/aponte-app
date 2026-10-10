@@ -141,6 +141,25 @@ defmodule AponteWeb.Admin.OrgFormLiveTest do
       assert org.pix_key == "nova-chave@pix"
     end
 
+    test "rejects a PIX copia-e-cola pasted as the key", %{conn: conn, auth: auth} do
+      {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/perfil")
+
+      emv =
+        "00020126360014br.gov.bcb.pix01145306658900019752040000530398654040.005802" <>
+          "BR5908SESH LAB6006CAMPOS62070503***63042EE0"
+
+      {:ok, before} = Orgs.get_org_by_slug("sesh")
+
+      html =
+        view
+        |> form("#org-form", org: %{name: "SESH", pix_key: emv})
+        |> render_submit()
+
+      assert html =~ "copia-e-cola"
+      assert {:ok, org} = Orgs.get_org_by_slug("sesh")
+      assert org.pix_key == before.pix_key
+    end
+
     test "persists theme colors", %{conn: conn, auth: auth} do
       {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/perfil")
 

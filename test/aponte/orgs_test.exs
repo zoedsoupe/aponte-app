@@ -71,6 +71,25 @@ defmodule Aponte.OrgsTest do
       assert org.fg_color == "#F3F3F3"
     end
 
+    test "rejects a PIX copia-e-cola payload pasted as the key" do
+      emv = "00020126360014br.gov.bcb.pix0114chave5204000053039865802BR"
+
+      assert {:error, changeset} = Orgs.create_org(org_attrs(%{pix_key: emv}))
+      assert %{pix_key: _} = errors_on(changeset)
+    end
+
+    test "trims whitespace around the pix key" do
+      assert {:ok, org} = Orgs.create_org(org_attrs(%{pix_key: "  chave@pix.com  "}))
+      assert org.pix_key == "chave@pix.com"
+    end
+
+    test "rejects a pix key longer than the BR Code field limit" do
+      assert {:error, changeset} =
+               Orgs.create_org(org_attrs(%{pix_key: String.duplicate("a", 78)}))
+
+      assert %{pix_key: _} = errors_on(changeset)
+    end
+
     test "social_links entries need non-empty label and url" do
       assert {:ok, org} =
                Orgs.create_org(
