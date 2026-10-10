@@ -61,6 +61,10 @@ const Hooks = {
     },
     arm() {
       clearTimeout(this.timer);
+      // Errors persist until dismissed: a missed "esgotou / não está mais
+      // pendente" flash reads as a broken button. Info/notice still auto-hide so
+      // the toast never sits on top of a button.
+      if (this.el.classList.contains("flash--error")) return;
       this.timer = setTimeout(() => this.el.click(), 4500);
     },
     destroyed() {
@@ -138,6 +142,11 @@ function bindFlash() {
     if (el.dataset.armed) continue;
     el.dataset.armed = "1";
     const hide = () => el.classList.add("flash--hide");
+    // Errors stay until tapped; info/notice auto-hide.
+    if (el.classList.contains("flash--error")) {
+      el.addEventListener("click", hide);
+      continue;
+    }
     const t = setTimeout(hide, 4500);
     el.addEventListener("click", () => {
       clearTimeout(t);

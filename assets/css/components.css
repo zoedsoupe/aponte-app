@@ -373,6 +373,15 @@ body:has(.sesh-logo--hero) .brand {
   cursor: not-allowed;
 }
 
+/* Instant tap feedback: LiveView toggles phx-click-loading on the element for
+   the duration of the event's round-trip. Dim it and drop pointer events so an
+   impatient second tap can't stack or re-arm the two-tap confirm. */
+.btn.phx-click-loading {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: progress;
+}
+
 .btn--primary {
   background: var(--accent);
   border-color: var(--accent);

@@ -6,6 +6,9 @@ defmodule AponteWeb.Admin.DashboardLive do
 
   @topic "admin:orders"
 
+  # Two-tap confirm window; see OrderShowLive for rationale.
+  @confirm_window_ms 8_000
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket), do: Phoenix.PubSub.subscribe(Aponte.PubSub, @topic)
@@ -26,14 +29,14 @@ defmodule AponteWeb.Admin.DashboardLive do
   end
 
   # Two-tap confirm straight on the pending card (the producer's main loop).
-  # First tap arms this order ("tocar de novo"); the second within ~4s confirms.
+  # First tap arms this order ("tocar de novo"); the second within the window confirms.
   @impl true
   def handle_event("confirm_order", %{"id" => id}, %{assigns: %{armed_id: id}} = socket) do
     confirm_order(socket, id)
   end
 
   def handle_event("confirm_order", %{"id" => id}, socket) do
-    Process.send_after(self(), :disarm_confirm, 4_000)
+    Process.send_after(self(), :disarm_confirm, @confirm_window_ms)
     {:noreply, assign(socket, armed_id: id)}
   end
 

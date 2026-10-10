@@ -8,6 +8,10 @@ defmodule AponteWeb.Admin.OrderShowLive do
 
   @topic "admin:orders"
 
+  # Two-tap confirm window. Generous enough to survive a slow longpoll round-trip
+  # (a dropped/re-armed tap used to leave the order silently pending).
+  @confirm_window_ms 8_000
+
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     org = socket.assigns.org
@@ -28,9 +32,9 @@ defmodule AponteWeb.Admin.OrderShowLive do
 
   @impl true
   # Dois toques pra confirmar (S2): o primeiro arma ("tocar de novo"), o
-  # segundo dentro de ~4s confirma de fato. Sem JS: assign + send_after.
+  # segundo dentro da janela confirma de fato. Sem JS: assign + send_after.
   def handle_event("confirm", _params, %{assigns: %{confirm_armed: false}} = socket) do
-    Process.send_after(self(), :disarm_confirm, 4_000)
+    Process.send_after(self(), :disarm_confirm, @confirm_window_ms)
     {:noreply, assign(socket, confirm_armed: true)}
   end
 
