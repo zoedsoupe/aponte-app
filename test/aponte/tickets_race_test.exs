@@ -61,7 +61,7 @@ defmodule Aponte.TicketsRaceTest do
       |> Enum.map(fn _ ->
         Task.async(fn ->
           Ecto.Adapters.SQL.Sandbox.allow(Repo, parent, self())
-          Tickets.validate_ticket(ticket.code)
+          Tickets.validate_ticket(ticket.code, ticket.edition_id)
         end)
       end)
       |> Task.await_many(5_000)

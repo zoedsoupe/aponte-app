@@ -14,8 +14,10 @@ defmodule Aponte.Tickets do
   admins agindo no mesmo pedido nunca brigam.
 
   Ingressos só existem após confirmação — a validação na porta
-  (`validate_ticket/1`) opera numa tabela só, também via `update_all` atômico,
+  (`validate_ticket/2`) opera numa tabela só, também via `update_all` atômico,
   garantindo entrada única mesmo com dois porteiros escaneando o mesmo QR.
+  A validação é escopada à edição da porta: um código de outra org/edição
+  responde "não encontrado" em vez de queimar o ingresso de quem não é dali.
   """
 
   import Ecto.Query
@@ -515,28 +517,35 @@ defmodule Aponte.Tickets do
   # ── Validação na porta ──────────────────────────────────────────────────────
 
   @doc """
-  Valida (e queima) um ingresso pelo código. Entrada única: o `update_all`
-  condicional em `used_at IS NULL` garante exatamente uma validação por
-  código, mesmo com scanners concorrentes.
+  Valida (e queima) um ingresso pelo código, escopado à edição da porta.
+
+  O `edition_id` é obrigatório: sem ele um código de outra edição (ou outra
+  org) atravessaria a porta errada e seria queimado silenciosamente. Entrada
+  única: o `update_all` condicional em `used_at IS NULL` garante exatamente uma
+  validação por código, mesmo com scanners concorrentes.
   """
-  @spec validate_ticket(String.t()) ::
+  @spec validate_ticket(String.t(), Ecto.UUID.t()) ::
           {:ok, Ticket.t()}
           | {:error, {:already_used, DateTime.t()}}
           | {:error, :not_found}
-  def validate_ticket(raw_code) do
+  def validate_ticket(raw_code, edition_id) do
     code = normalize_code(raw_code)
     now = Clock.now_utc()
 
-    query = from t in Ticket, where: t.code == ^code and is_nil(t.used_at)
+    query =
+      from t in Ticket,
+        where: t.code == ^code and t.edition_id == ^edition_id and is_nil(t.used_at)
 
     case Repo.update_all(query, set: [used_at: now, updated_at: now]) do
       {1, _} ->
-        ticket = Repo.get_by!(Ticket, code: code) |> Repo.preload([:order])
+        ticket =
+          Repo.get_by!(Ticket, code: code, edition_id: edition_id) |> Repo.preload([:order])
+
         broadcast_door(ticket.edition_id)
         {:ok, ticket}
 
       {0, _} ->
-        case Repo.get_by(Ticket, code: code) do
+        case Repo.get_by(Ticket, code: code, edition_id: edition_id) do
           nil -> {:error, :not_found}
           %Ticket{used_at: at} -> {:error, {:already_used, at}}
         end

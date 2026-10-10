@@ -2,7 +2,8 @@ defmodule AponteWeb.Admin.ScannerLive do
   @moduledoc """
   Validação na porta. LiveView + hook de câmera (`assets/js/scanner.js`):
   o cliente lê o QR e dá `pushEvent("scan", %{code})`; o servidor valida
-  atomicamente via `Tickets.validate_ticket/1` e devolve painel verde/vermelho.
+  atomicamente via `Tickets.validate_ticket/2` (escopado à edição da porta) e
+  devolve painel verde/vermelho.
 
   Cada validação faz broadcast em `"door:<edition_id>"`, então vários celulares
   na porta veem o contador `validadas / vendidas` em tempo real.
@@ -94,7 +95,7 @@ defmodule AponteWeb.Admin.ScannerLive do
 
   defp validate(socket, code) do
     result =
-      case Tickets.validate_ticket(code) do
+      case Tickets.validate_ticket(code, socket.assigns.edition.id) do
         {:ok, ticket} ->
           %{kind: :ok, lote: lote_name(ticket), name: buyer_name(ticket), at: ticket.used_at}
 

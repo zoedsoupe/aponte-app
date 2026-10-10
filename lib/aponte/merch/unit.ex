@@ -4,7 +4,7 @@ defmodule Aponte.Merch.Unit do
   `code` Crockford base32 (8 chars), unico, ao portador. `redeemed_at` marca
   a retirada unica no balcao (setado atomicamente, igual `used_at` na porta).
 
-  Resgate e separado da porta: nao usa `validate_ticket/1`, tem tela propria.
+  Resgate e separado da porta: nao usa `validate_ticket/2`, tem tela propria.
   """
   use Ecto.Schema
 

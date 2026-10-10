@@ -242,24 +242,35 @@ defmodule Aponte.TicketsTest do
     end
   end
 
-  describe "validate_ticket/1" do
+  describe "validate_ticket/2" do
     setup do
       {edition, lot} = edition_with_lot()
       {:ok, order} = create(edition, order_attrs(edition, lot))
       {:ok, _} = Tickets.confirm_order(order.id)
       [ticket] = Repo.all(Ticket)
-      %{ticket: ticket}
+      %{edition: edition, ticket: ticket}
     end
 
     test "marks a ticket used on first scan, rejects the second", %{ticket: ticket} do
-      assert {:ok, validated} = Tickets.validate_ticket(ticket.code)
+      assert {:ok, validated} = Tickets.validate_ticket(ticket.code, ticket.edition_id)
       assert validated.used_at
 
-      assert {:error, {:already_used, _at}} = Tickets.validate_ticket(ticket.code)
+      assert {:error, {:already_used, _at}} =
+               Tickets.validate_ticket(ticket.code, ticket.edition_id)
     end
 
-    test "unknown code is not_found" do
-      assert {:error, :not_found} = Tickets.validate_ticket("ZZZZZZZZ")
+    test "unknown code is not_found", %{ticket: ticket} do
+      assert {:error, :not_found} = Tickets.validate_ticket("ZZZZZZZZ", ticket.edition_id)
+    end
+
+    test "a ticket from another edition does not validate, and is not burned", %{
+      edition: edition,
+      ticket: ticket
+    } do
+      other = edition_fixture(%{org_id: edition.org_id})
+
+      assert {:error, :not_found} = Tickets.validate_ticket(ticket.code, other.id)
+      assert ticket.used_at == nil
     end
 
     test "normalizes separators and Crockford lookalikes", %{ticket: ticket} do
@@ -271,7 +282,7 @@ defmodule Aponte.TicketsTest do
         |> String.replace("1", "l")
         |> then(&(String.slice(&1, 0, 4) <> "-" <> String.slice(&1, 4, 4)))
 
-      assert {:ok, _} = Tickets.validate_ticket(noisy)
+      assert {:ok, _} = Tickets.validate_ticket(noisy, ticket.edition_id)
     end
   end
 
@@ -307,7 +318,7 @@ defmodule Aponte.TicketsTest do
       assert {:ok, _} = Tickets.cancel_order(order.id)
       assert Repo.all(Ticket) == []
       assert Repo.get!(TicketType, lot.id).available == 5
-      assert {:error, :not_found} = Tickets.validate_ticket(ticket.code)
+      assert {:error, :not_found} = Tickets.validate_ticket(ticket.code, ticket.edition_id)
     end
   end
 
@@ -338,7 +349,7 @@ defmodule Aponte.TicketsTest do
         )
 
       [ticket | _] = Repo.all(Ticket)
-      {:ok, _} = Tickets.validate_ticket(ticket.code)
+      {:ok, _} = Tickets.validate_ticket(ticket.code, ticket.edition_id)
 
       stats = Tickets.stats(edition.id)
       assert stats.capacity == 10
@@ -432,7 +443,7 @@ defmodule Aponte.TicketsTest do
       assert t.order.customer_name == "Maria Porta"
 
       # validated tickets drop out of the door search
-      {:ok, _} = Tickets.validate_ticket(t.code)
+      {:ok, _} = Tickets.validate_ticket(t.code, t.edition_id)
       assert Tickets.search_door_tickets(org.id, edition.id, "maria") == []
     end
 
