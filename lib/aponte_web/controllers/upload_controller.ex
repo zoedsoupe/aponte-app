@@ -21,11 +21,23 @@ defmodule AponteWeb.UploadController do
       if File.regular?(path) do
         conn
         |> put_resp_header("cache-control", @cache_control)
+        |> maybe_sandbox(path)
         |> put_resp_content_type(MIME.from_path(path))
         |> send_file(200, path)
       else
         not_found(conn)
       end
+    end
+  end
+
+  # Admin-uploaded SVGs are stored raw, so a direct navigation would execute any
+  # script inside them. `sandbox` neutralizes that; <img> embedding ignores CSP,
+  # so real logo/merch images are unaffected.
+  defp maybe_sandbox(conn, path) do
+    if Path.extname(path) == ".svg" do
+      put_resp_header(conn, "content-security-policy", "sandbox")
+    else
+      conn
     end
   end
 

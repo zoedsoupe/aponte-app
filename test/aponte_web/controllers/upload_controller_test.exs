@@ -16,6 +16,27 @@ defmodule AponteWeb.UploadControllerTest do
     assert content_type =~ "text/plain"
   end
 
+  test "sandboxes served SVGs to neutralize stored script", %{conn: conn} do
+    path = Path.join([Uploads.root(), "editions", "logo.svg"])
+    File.mkdir_p!(Path.dirname(path))
+    File.write!(path, "<svg xmlns='http://www.w3.org/2000/svg'></svg>")
+
+    conn = get(conn, "/uploads/editions/logo.svg")
+
+    assert response(conn, 200)
+    assert get_resp_header(conn, "content-security-policy") == ["sandbox"]
+  end
+
+  test "does not sandbox non-SVG uploads", %{conn: conn} do
+    path = Path.join([Uploads.root(), "editions", "plain.txt"])
+    File.mkdir_p!(Path.dirname(path))
+    File.write!(path, "x")
+
+    conn = get(conn, "/uploads/editions/plain.txt")
+
+    assert get_resp_header(conn, "content-security-policy") == []
+  end
+
   test "rejects path traversal", %{conn: conn} do
     conn = get(conn, "/uploads/../mix.exs")
     assert response(conn, 404)

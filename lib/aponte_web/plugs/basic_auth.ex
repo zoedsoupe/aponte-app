@@ -14,12 +14,22 @@ defmodule AponteWeb.Plugs.BasicAuth do
     cfg = Application.fetch_env!(:aponte, :admin_auth)
 
     with {user, pass} when is_binary(user) <- Plug.BasicAuth.parse_basic_auth(conn),
-         true <- Plug.Crypto.secure_compare(user, cfg[:username]),
-         true <- Plug.Crypto.secure_compare(pass, cfg[:password]) do
+         true <- credentials_match?(user, pass, cfg) do
       conn
     else
       _ -> unauthorized(conn)
     end
+  end
+
+  # One constant-time compare over both credentials: comparing the username and
+  # password separately leaks which one matched via timing.
+  defp credentials_match?(user, pass, cfg) do
+    given = :crypto.hash(:sha256, user <> ":" <> pass)
+
+    expected =
+      :crypto.hash(:sha256, to_string(cfg[:username]) <> ":" <> to_string(cfg[:password]))
+
+    Plug.Crypto.secure_compare(given, expected)
   end
 
   defp unauthorized(conn) do

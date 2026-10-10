@@ -82,20 +82,22 @@ defmodule Aponte.Orgs.Org do
 
   defp emv_payload?(_), do: false
 
-  # Every entry must be a map with non-empty "label" and "url" keys.
+  # Every entry must be a map with a non-empty "label" and an http(s) "url".
+  # The scheme check keeps a `javascript:` URL from becoming an href in the
+  # public vitrine.
   defp validate_social_links(changeset) do
     validate_change(changeset, :social_links, fn :social_links, links ->
       if Enum.all?(links, &valid_social_link?/1) do
         []
       else
-        [social_links: "cada link precisa de label e url não vazios"]
+        [social_links: "cada link precisa de label e url http(s) válidos"]
       end
     end)
   end
 
   defp valid_social_link?(%{"label" => label, "url" => url})
        when is_binary(label) and is_binary(url) and label != "" and url != "",
-       do: true
+       do: String.starts_with?(url, ["http://", "https://"])
 
   defp valid_social_link?(_), do: false
 end

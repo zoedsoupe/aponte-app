@@ -108,6 +108,17 @@ defmodule Aponte.OrgsTest do
         assert %{social_links: _} = errors_on(changeset)
       end
     end
+
+    test "rejects a non-http social link that could render as an href" do
+      assert {:error, changeset} =
+               Orgs.create_org(
+                 org_attrs(%{
+                   social_links: [%{"label" => "x", "url" => "javascript:alert(1)"}]
+                 })
+               )
+
+      assert %{social_links: _} = errors_on(changeset)
+    end
   end
 
   describe "context" do
