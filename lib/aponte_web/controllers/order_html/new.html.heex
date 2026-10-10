@@ -30,8 +30,15 @@
       <div class="stack-5">
         <.form_section title="Ingressos">
           <p :if={@lots == []} class="text-sm text-dim">
-            Nenhum lote à venda agora. Fica de olho que abre logo.
+            Nenhum lote à venda agora. Fica de olho, abre logo.
           </p>
+          <a
+            :if={@lots == []}
+            href={~p"/#{@org.slug}/sobre" <> "#avisos"}
+            class="btn btn--ghost btn--block"
+          >
+            Quero receber avisos
+          </a>
 
           <ul :if={@lots != []} class="stack-3">
             <.lot_row lots={@lots} items={@items} />

@@ -17,6 +17,13 @@
     <p :if={@merch == []} class="text-sm text-dim">
       Nenhum produto disponível agora. Volta logo.
     </p>
+    <a
+      :if={@merch == []}
+      href={~p"/#{@org.slug}/sobre" <> "#avisos"}
+      class="btn btn--ghost btn--block"
+    >
+      Quero receber avisos
+    </a>
 
     <ul :if={@merch != []} class="store-grid">
       <.store_card items={@merch} qtys={@items} />
