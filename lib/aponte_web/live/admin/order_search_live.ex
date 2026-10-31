@@ -112,12 +112,9 @@ defmodule AponteWeb.Admin.OrderSearchLive do
                 {Clock.format(o.inserted_at, :datetime)}
               </td>
               <td class="td-actions">
-                <%!-- ponytail: inline onclick clipboard, not the data-copy-target hook —
-                      LiveView-diffed rows aren't re-bound by copy.js (no page-loading-stop
-                      on phx-change). UUID url has no quotes to escape. --%>
                 <button
                   type="button"
-                  onclick={"navigator.clipboard.writeText('#{order_url(@org, o.id)}')"}
+                  data-copy-text={order_url(@org, o.id)}
                   class="btn btn--ghost btn--sm"
                 >
                   Copiar link

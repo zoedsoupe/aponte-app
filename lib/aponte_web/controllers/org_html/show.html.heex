@@ -5,18 +5,18 @@
 
       <div class="vitrine-edition-body stack-4">
         <div class="stack-2">
-          <p class="vitrine-eyebrow">{"#{@org.name} ##{@edition.number}"}</p>
-          <h1
+          <p
             :if={
               @edition.name not in [
                 "#{@org.name} ##{@edition.number}",
                 "#{@org.name} #{@edition.number}"
               ]
             }
-            class="vitrine-edition-title"
+            class="vitrine-eyebrow"
           >
-            {@edition.name}
-          </h1>
+            {"#{@org.name} ##{@edition.number}"}
+          </p>
+          <h1 class="vitrine-edition-title">{@edition.name}</h1>
         </div>
 
         <p class="date-duo">
@@ -40,7 +40,7 @@
             href={"https://www.google.com/maps/search/?api=1&query=#{URI.encode_www_form("#{@edition.venue} #{@edition.venue_address}")}"}
             target="_blank"
             rel="noopener"
-            class="text-xs text-dim"
+            class="text-xs text-dim tap-target"
           >
             {@edition.venue_address}
           </a>

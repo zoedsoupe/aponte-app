@@ -59,7 +59,7 @@
 
       <ul class="stack-3">
         <li :for={ticket <- @order.tickets} class="ticket-card">
-          <div class="qr-frame" aria-label="qr code do ingresso">
+          <div class="qr-frame" role="img" aria-label="QR code do ingresso">
             {Phoenix.HTML.raw(ticket_qr(ticket))}
           </div>
           <span class="text-mono text-lg">{ticket_display_code(ticket)}</span>
@@ -76,7 +76,7 @@
       </header>
       <ul class="stack-3">
         <li :for={unit <- @order.merch_units} class="ticket-card">
-          <div class="qr-frame" aria-label="qr code do produto">
+          <div class="qr-frame" role="img" aria-label="QR code do produto">
             {Phoenix.HTML.raw(merch_qr(unit))}
           </div>
           <span class="text-base">{unit.merch_item_name_snapshot}</span>
@@ -102,7 +102,7 @@
       <ol class="pix-steps stack-4">
         <li class="pix-step stack-2">
           <span class="pix-step-label">1. Copia o código ou aponta a câmera pro QR</span>
-          <div class="qr-frame" aria-label="qr code pix">
+          <div class="qr-frame" role="img" aria-label="QR code PIX">
             {Phoenix.HTML.raw(@pix.svg)}
           </div>
           <div class="stack-2">

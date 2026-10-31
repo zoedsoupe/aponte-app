@@ -3,10 +3,14 @@
     <h1 class="text-xl">Galeria</h1>
 
     <ul :if={@images != []} class="gallery-page-grid" data-gallery>
-      <li :for={img <- @images}>
+      <li :for={{img, index} <- Enum.with_index(@images, 1)}>
         <%!-- href stays for long-press save / open-in-new-tab; lightbox.js
              intercepts the tap and shows the full image in-app. --%>
-        <a href={image_url(@org, img.path)} data-lightbox>
+        <a
+          href={image_url(@org, img.path)}
+          data-lightbox
+          aria-label={"Foto #{index} da galeria de #{@org.name}"}
+        >
           <img src={image_url(@org, img.thumb_path)} alt="" loading="lazy" />
         </a>
       </li>

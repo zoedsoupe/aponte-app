@@ -262,11 +262,9 @@ defmodule AponteWeb.Admin.DashboardLive do
                     do: "Tocar de novo: #{money(o.total_cents)}",
                     else: "Confirmar pagamento"}
                 </button>
-                <%!-- ponytail: inline onclick clipboard — LiveView-diffed rows
-                      aren't re-bound by copy.js. UUID url has no quotes to escape. --%>
                 <button
                   type="button"
-                  onclick={"navigator.clipboard.writeText('#{url(~p"/#{@org.slug}/compra/#{o.id}")}')"}
+                  data-copy-text={url(~p"/#{@org.slug}/compra/#{o.id}")}
                   class="btn btn--ghost btn--sm"
                 >
                   Copiar link
@@ -283,7 +281,7 @@ defmodule AponteWeb.Admin.DashboardLive do
                 <h2 class="section-label">{@edition.name}</h2>
                 <%!-- só links que exigem a edição na URL; o resto vive na
                      tab bar (Produtos, Porta, Balcão) e no header (Cupons, DJ). --%>
-                <nav class="admin-quicklinks">
+                <nav class="admin-quicklinks" aria-label="Ações da edição">
                   <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}/cortesia"}>Cortesia</a>
                   <a href={~p"/admin/#{@org.slug}/edicoes/#{@edition.id}"}>Editar</a>
                 </nav>

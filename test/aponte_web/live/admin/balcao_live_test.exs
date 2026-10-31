@@ -47,7 +47,7 @@ defmodule AponteWeb.Admin.BalcaoLiveTest do
 
     view |> element(".pos-item-tap") |> render_click()
     view |> element("button", "Dinheiro") |> render_click()
-    view |> element("button", "cancelar") |> render_click()
+    view |> element("button", "Cancelar") |> render_click()
 
     assert Bar.stats(edition.id).count == 0
   end

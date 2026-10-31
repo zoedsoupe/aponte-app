@@ -107,7 +107,7 @@ defmodule AponteWeb.Layouts do
         >
           /admin
         </a>
-        <nav class="admin-top-nav">
+        <nav class="admin-top-nav" aria-label="Configurações">
           <span :if={@org} class="admin-swatches" title={"tema de #{@org.name}"}>
             <span class="swatch" style={"background-color:#{theme_color(@org, :bg_color, "#FAF5EC")}"}>
             </span>
@@ -124,7 +124,7 @@ defmodule AponteWeb.Layouts do
       </header>
 
       <main class="site-main">
-        <a :if={@back} href={@back_to} class="text-xs text-dim">← {@back}</a>
+        <a :if={@back} href={@back_to} class="admin-back text-xs text-dim">← {@back}</a>
         {render_slot(@inner_block)}
       </main>
 

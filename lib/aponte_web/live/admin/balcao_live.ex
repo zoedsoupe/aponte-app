@@ -212,10 +212,11 @@ defmodule AponteWeb.Admin.BalcaoLive do
       <section class="stack-4">
         <.admin_header title="Balcão" eyebrow={@edition && @edition.name} />
 
-        <div class="tabs" role="tablist">
+        <div class="tabs">
           <button
             type="button"
             class={["tab", @mode == :sell && "tab--active"]}
+            aria-pressed={to_string(@mode == :sell)}
             phx-click="set-mode"
             phx-value-mode="sell"
           >
@@ -224,6 +225,7 @@ defmodule AponteWeb.Admin.BalcaoLive do
           <button
             type="button"
             class={["tab", @mode == :redeem && "tab--active"]}
+            aria-pressed={to_string(@mode == :redeem)}
             phx-click="set-mode"
             phx-value-mode="redeem"
           >
@@ -242,32 +244,48 @@ defmodule AponteWeb.Admin.BalcaoLive do
       </section>
 
       <%!-- PIX: QR pro total, confirma ao receber --%>
-      <div :if={@pix} class="sheet" role="dialog">
+      <div
+        :if={@pix}
+        class="sheet"
+        role="dialog"
+        aria-label="Pagamento PIX"
+      >
         <div class="sheet-body stack-3">
           <p class="text-sm text-dim">PIX · {money(@pix.total)}</p>
-          <div class="qr-frame" aria-label="qr code pix">{Phoenix.HTML.raw(@pix.svg)}</div>
+          <div class="qr-frame" role="img" aria-label="QR code PIX">
+            {Phoenix.HTML.raw(@pix.svg)}
+          </div>
           <code class="pix-copy text-mono text-xs" id="balcao-pix-copy" data-pix-copy>
             {@pix.emv}
           </code>
           <button type="button" class="btn btn--ghost btn--block" data-copy-target="#balcao-pix-copy">
-            copiar código
+            Copiar código
           </button>
           <.button type="button" variant={:primary} class="btn--block" phx-click="confirm-pix">
             Recebido
           </.button>
-          <button type="button" class="text-xs text-dim" phx-click="cancel-pix">cancelar</button>
+          <button type="button" class="btn btn--ghost btn--block" phx-click="cancel-pix">
+            Cancelar
+          </button>
         </div>
       </div>
 
       <%!-- dinheiro: mesma confirmação do PIX, sem QR --%>
-      <div :if={@cash} class="sheet" role="dialog">
+      <div
+        :if={@cash}
+        class="sheet"
+        role="dialog"
+        aria-label="Pagamento em dinheiro"
+      >
         <div class="sheet-body stack-3">
           <p class="text-sm text-dim">Dinheiro · {money(@cash.total)}</p>
           <p class="text-base">Recebido {money(@cash.total)} em dinheiro?</p>
           <.button type="button" variant={:primary} class="btn--block" phx-click="confirm-cash">
             Recebido
           </.button>
-          <button type="button" class="text-xs text-dim" phx-click="cancel-cash">cancelar</button>
+          <button type="button" class="btn btn--ghost btn--block" phx-click="cancel-cash">
+            Cancelar
+          </button>
         </div>
       </div>
 

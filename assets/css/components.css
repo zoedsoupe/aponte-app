@@ -278,6 +278,12 @@ body:has(.sesh-logo--hero) .brand {
   background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
+button.chip {
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+  cursor: pointer;
+}
+
 .chip--cinnamon {
   color: var(--cinnamon-2);
   border-color: color-mix(in srgb, var(--accent-warm) 25%, transparent);
@@ -320,7 +326,7 @@ body:has(.sesh-logo--hero) .brand {
 }
 
 .preset-btn {
-  min-height: 36px;
+  min-height: var(--tap);
   padding: 0 var(--s-3);
   background: transparent;
   border: 1px solid var(--border-strong);
@@ -1010,7 +1016,7 @@ select.input {
 .sheet {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 70;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1020,7 +1026,9 @@ select.input {
 .sheet-body {
   width: 100%;
   max-width: 30rem;
-  padding: var(--s-4);
+  max-height: 92dvh;
+  overflow-y: auto;
+  padding: var(--s-4) var(--s-4) calc(var(--s-4) + var(--safe-bottom));
   background: var(--bg);
   border: 1px solid var(--border);
   border-top-left-radius: var(--radius);
@@ -1152,6 +1160,17 @@ details summary::-webkit-details-marker {
   display: none;
 }
 
+.home-topnav a,
+.admin-top-nav a,
+.admin-quicklinks a,
+details summary,
+.admin-back,
+.tap-target {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+}
+
 details[open] summary {
   color: var(--fg-muted);
 }
@@ -1165,6 +1184,7 @@ details[open] summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--s-3);
   padding-bottom: var(--s-3);
   border-bottom: 1px solid var(--border);
@@ -1173,6 +1193,7 @@ details[open] summary {
 .admin-top-nav {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--s-3);
   min-width: 0;
 }
@@ -1260,7 +1281,7 @@ details[open] summary {
 .admin-action {
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
+  min-height: var(--tap);
   padding: 0 var(--s-3);
   border: 1px solid var(--accent);
   border-radius: var(--radius);
@@ -1303,7 +1324,7 @@ details[open] summary {
 
 /* button size variants */
 .btn--sm {
-  min-height: 32px;
+  min-height: var(--tap);
   padding: 0 var(--s-3);
   font-size: var(--text-xs);
 }
@@ -1794,6 +1815,11 @@ body::after {
   align-items: center;
 }
 
+.scan-result .text-dim,
+.scan-result .text-muted {
+  color: inherit;
+}
+
 .scan-result-mark {
   font-size: 5rem;
   line-height: 1;
@@ -1987,6 +2013,14 @@ body:has(.aponte-logo--hero) .brand {
   /* reserve space so content never ends under the bar */
   body:has(.tab-bar) .shell {
     padding-bottom: calc(var(--tab-bar-h) + var(--safe-bottom) + var(--s-7));
+  }
+
+  body:has(.tab-bar):has(.floating-cta) .shell,
+  body:has(.tab-bar):has(.btn--float) .shell,
+  body:has(.tab-bar):has(.cta-dock) .shell {
+    padding-bottom: calc(
+      var(--tab-bar-h) + var(--safe-bottom) + var(--s-7) + 4.5rem
+    );
   }
 
   body:has(.tab-bar) .btn--float,
@@ -2599,6 +2633,8 @@ a.inset-row:hover {
 .lightbox-close,
 .lightbox-nav {
   position: absolute;
+  min-width: var(--tap);
+  min-height: var(--tap);
   padding: var(--s-3);
   border: 0;
   background: none;
@@ -2769,6 +2805,10 @@ a.inset-row:hover {
     left: var(--s-4);
     top: 50%;
     transform: translateY(-50%);
+    max-width: max(0px, calc((100vw - 40rem) / 2 - var(--s-4)));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-family: var(--font-display);
     font-stretch: 122%;
     font-weight: 600;

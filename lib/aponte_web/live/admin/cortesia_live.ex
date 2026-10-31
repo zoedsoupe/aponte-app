@@ -157,7 +157,7 @@ defmodule AponteWeb.Admin.CortesiaLive do
           </ul>
           <button
             type="button"
-            onclick={"navigator.clipboard.writeText('#{@emitted.url}')"}
+            data-copy-text={@emitted.url}
             class="btn btn--ghost btn--sm btn--block"
           >
             Copiar link

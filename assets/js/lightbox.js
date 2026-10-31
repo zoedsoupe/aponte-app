@@ -16,6 +16,7 @@ export function bindGalleryLightbox() {
   overlay.hidden = true;
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", "Foto da galeria");
   overlay.innerHTML = `
     <button type="button" class="lightbox-close" aria-label="fechar">×</button>
     <img class="lightbox-img" alt="" />

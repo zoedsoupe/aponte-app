@@ -352,10 +352,11 @@ defmodule AponteWeb.Admin.EditionFormLive do
 
           <.form_section title="Identidade visual">
             <div class="field stack-1">
-              <span class="field-label">Cor de destaque</span>
+              <label for="edition-accent-color" class="field-label">Cor de destaque</label>
               <div class="row gap-3 align-center">
                 <input
                   type="color"
+                  id="edition-accent-color"
                   name="edition[accent_color]"
                   value={accent(@form)}
                   class="color-input"

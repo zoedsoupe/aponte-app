@@ -420,7 +420,7 @@ defmodule AponteWeb.Admin.OrgFormLive do
 
     ~H"""
     <div class="field stack-1">
-      <span class="field-label">{@label}</span>
+      <label for={@field.id} class="field-label">{@label}</label>
       <div class="row gap-3 align-center">
         <input type="color" name={@field.name} id={@field.id} value={@value} class="color-input" />
         <span class="text-mono text-xs">{@value}</span>
