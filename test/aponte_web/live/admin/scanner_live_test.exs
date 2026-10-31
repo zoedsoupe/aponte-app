@@ -4,7 +4,7 @@ defmodule AponteWeb.Admin.ScannerLiveTest do
   import Phoenix.LiveViewTest
   import Aponte.Fixtures
 
-  alias Aponte.{Repo, Tickets}
+  alias Aponte.{Editions, Repo, Tickets}
   alias Aponte.Tickets.Ticket
 
   setup do
@@ -31,6 +31,28 @@ defmodule AponteWeb.Admin.ScannerLiveTest do
     {:ok, _view, html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
     assert html =~ "Porta"
     assert html =~ "validadas 0 / vendidas 1"
+  end
+
+  test "global scanner follows a newly published edition", %{
+    conn: conn,
+    auth: auth,
+    edition: current_edition
+  } do
+    {:ok, view, _html} = conn |> authed(auth) |> live(~p"/admin/sesh/validar")
+
+    next_edition =
+      Aponte.Fixtures.edition_fixture(%{
+        org_id: current_edition.org_id,
+        name: "SESH #NEXT",
+        starts_at: DateTime.add(DateTime.utc_now(), 10 * 86_400) |> DateTime.truncate(:second),
+        status: :draft
+      })
+
+    assert {:ok, _published_edition} = Editions.publish(next_edition)
+
+    html = render(view)
+    assert html =~ "SESH #NEXT"
+    assert html =~ "validadas 0 / vendidas 0"
   end
 
   test "first scan is green, rescan is red (já validado)", %{conn: conn, auth: auth, ticket: t} do

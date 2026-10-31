@@ -15,6 +15,11 @@ defmodule AponteWeb.Admin.ScannerLive do
   @impl true
   def mount(params, _session, socket) do
     org = socket.assigns.org
+    follow_current_edition? = is_nil(params["edition_id"])
+
+    if connected?(socket) and follow_current_edition? do
+      Phoenix.PubSub.subscribe(Aponte.PubSub, "editions")
+    end
 
     # Porta da edição selecionada no painel quando vier `:edition_id`; senão a
     # publicada atual (link global do topo). A edição precisa pertencer à org
@@ -30,6 +35,7 @@ defmodule AponteWeb.Admin.ScannerLive do
          |> assign(
            scanner: true,
            edition: edition,
+           follow_current_edition?: follow_current_edition?,
            result: nil,
            name_query: "",
            name_matches: [],
@@ -87,6 +93,31 @@ defmodule AponteWeb.Admin.ScannerLive do
 
   @impl true
   def handle_info({:validated, _edition_id}, socket), do: {:noreply, load_stats(socket)}
+
+  def handle_info(
+        {:edition_published, published_edition_id},
+        %{assigns: %{follow_current_edition?: true, edition: previous}} = socket
+      ) do
+    edition = Editions.current_edition(socket.assigns.org.id)
+
+    if edition && edition.id == published_edition_id do
+      if previous && previous.id != edition.id do
+        Phoenix.PubSub.unsubscribe(Aponte.PubSub, "door:#{previous.id}")
+      end
+
+      if is_nil(previous) || previous.id != edition.id do
+        Phoenix.PubSub.subscribe(Aponte.PubSub, "door:#{edition.id}")
+      end
+
+      {:noreply,
+       socket
+       |> assign(edition: edition, result: nil, name_query: "", name_matches: [])
+       |> load_stats()}
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   # ── core ────────────────────────────────────────────────────────────────────

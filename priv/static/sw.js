@@ -1,4 +1,4 @@
-const CACHE = "aponte-v2";
+const CACHE = "aponte-v3";
 const SHELL = [
   "/",
   "/manifest.webmanifest",

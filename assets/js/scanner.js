@@ -8,6 +8,7 @@ import jsQR from "../vendor/jsqr.js";
 
 const FRAME_INTERVAL_MS = 100; // ~10 fps — enough for QR, easy on the battery
 const DEBOUNCE_MS = 3000; // same code within 3s = one scan
+const MAX_DIM = 640; // bound per-frame work on mobile cameras
 const MUTE_KEY = "aponte.scanner.mute"; // persisted sound preference
 
 // Door ergonomics: two distinct tones so the operator can tell ok from error by
@@ -84,7 +85,10 @@ const Scanner = {
     const sig = el ? `${el.className}|${(el.textContent || "").trim().slice(0, 40)}` : "";
     if (sig === this.lastResult) return;
     this.lastResult = sig;
-    if (!el) return;
+    if (!el) {
+      this.lastAt = 0;
+      return;
+    }
     beep(el.classList.contains("scan-result--ok") ? "ok" : "err");
   },
 
@@ -139,18 +143,24 @@ const Scanner = {
     if (!this.running) return;
     requestAnimationFrame(this.tick);
 
+    if (document.querySelector(".scan-result")) return;
+
     if (ts - this.lastFrame < FRAME_INTERVAL_MS) return;
     this.lastFrame = ts;
 
     const v = this.video;
     if (!v || v.readyState !== v.HAVE_ENOUGH_DATA) return;
 
-    const w = v.videoWidth;
-    const h = v.videoHeight;
-    if (!w || !h) return;
+    const vw = v.videoWidth;
+    const vh = v.videoHeight;
+    if (!vw || !vh) return;
 
-    this.canvas.width = w;
-    this.canvas.height = h;
+    const scale = Math.min(1, MAX_DIM / Math.max(vw, vh));
+    const w = Math.round(vw * scale);
+    const h = Math.round(vh * scale);
+
+    if (this.canvas.width !== w) this.canvas.width = w;
+    if (this.canvas.height !== h) this.canvas.height = h;
     this.ctx.drawImage(v, 0, 0, w, h);
 
     const image = this.ctx.getImageData(0, 0, w, h);

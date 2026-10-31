@@ -31,7 +31,7 @@ primary_region = "gru"
   # sqlite => máquina única. Sem auto-scale horizontal.
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
   [http_service.concurrency]
     type = "connections"
