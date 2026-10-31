@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/zoedsoupe/aponte-app/compare/v0.2.1...v0.2.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* **scanner:** harden door-night flow ([4887c3d](https://github.com/zoedsoupe/aponte-app/commit/4887c3d0c166d37b67851d34e936737d417e2527))
+* **ui:** improve event-night usability ([5cd472b](https://github.com/zoedsoupe/aponte-app/commit/5cd472b95770a486d9caee826b7a560a4c72e1a4))
+
 ## [0.2.1](https://github.com/zoedsoupe/aponte-app/compare/v0.2.0...v0.2.1) (2026-10-10)
 
 
