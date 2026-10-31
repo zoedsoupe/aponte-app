@@ -48,7 +48,7 @@ defmodule AponteWeb.LoadOrgTest do
     conn =
       conn
       |> put_req_header("content-type", "application/json")
-      |> post("/sesh/push/subscribe", Jason.encode!(body))
+      |> post("/sesh/push/subscribe", JSON.encode!(body))
 
     assert json_response(conn, 201) == %{"ok" => true}
     assert conn.assigns.org.id == org.id

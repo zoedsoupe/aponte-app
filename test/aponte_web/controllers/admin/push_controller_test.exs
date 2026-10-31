@@ -49,7 +49,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
       conn =
         conn
         |> put_req_header("content-type", "application/json")
-        |> post(~p"/admin/sesh/push/subscribe", Jason.encode!(%{subscription: @subscription}))
+        |> post(~p"/admin/sesh/push/subscribe", JSON.encode!(%{subscription: @subscription}))
 
       assert conn.status == 401
     end
@@ -64,7 +64,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
 
   describe "POST /admin/push/subscribe" do
     test "persists a new subscription", %{conn: conn, auth_header: auth} do
-      body = Jason.encode!(%{subscription: @subscription, user_agent: "Test/1.0"})
+      body = JSON.encode!(%{subscription: @subscription, user_agent: "Test/1.0"})
 
       conn =
         conn
@@ -83,7 +83,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
     end
 
     test "is idempotent (same endpoint replaces keys)", %{conn: conn, auth_header: auth} do
-      body1 = Jason.encode!(%{subscription: @subscription})
+      body1 = JSON.encode!(%{subscription: @subscription})
 
       conn
       |> authed(auth)
@@ -93,7 +93,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
       new_sub =
         put_in(@subscription, ["keys", "p256dh"], "BNEW_REPLACEMENT_KEY_____________value")
 
-      body2 = Jason.encode!(%{subscription: new_sub})
+      body2 = JSON.encode!(%{subscription: new_sub})
 
       conn =
         build_conn()
@@ -107,7 +107,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
 
     test "returns 422 on missing required keys", %{conn: conn, auth_header: auth} do
       body =
-        Jason.encode!(%{
+        JSON.encode!(%{
           subscription: %{"endpoint" => "https://example.com/foo", "keys" => %{}}
         })
 
@@ -138,7 +138,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
         |> put_req_header("content-type", "application/json")
         |> delete(
           ~p"/admin/sesh/push/subscribe",
-          Jason.encode!(%{endpoint: @subscription["endpoint"]})
+          JSON.encode!(%{endpoint: @subscription["endpoint"]})
         )
 
       assert %{"ok" => true} = json_response(conn, 200)
@@ -150,7 +150,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
         conn
         |> authed(auth)
         |> put_req_header("content-type", "application/json")
-        |> delete(~p"/admin/sesh/push/subscribe", Jason.encode!(%{endpoint: "missing"}))
+        |> delete(~p"/admin/sesh/push/subscribe", JSON.encode!(%{endpoint: "missing"}))
 
       assert %{"ok" => true} = json_response(conn, 200)
     end
@@ -160,7 +160,7 @@ defmodule AponteWeb.Admin.PushControllerTest do
         conn
         |> authed(auth)
         |> put_req_header("content-type", "application/json")
-        |> delete(~p"/admin/sesh/push/subscribe", Jason.encode!(%{}))
+        |> delete(~p"/admin/sesh/push/subscribe", JSON.encode!(%{}))
 
       assert json_response(conn, 400)
     end
